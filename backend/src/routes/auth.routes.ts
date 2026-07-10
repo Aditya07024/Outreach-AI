@@ -104,7 +104,11 @@ router.post('/razorpay/order', async (req, res) => {
       receipt: `receipt_${Date.now()}`
     });
 
-    return res.json(order);
+    const orderData = JSON.parse(JSON.stringify(order));
+    return res.json({
+      ...orderData,
+      key_id: keyId
+    });
   } catch (error: any) {
     return res.status(500).json({ error: error.message || 'Razorpay order creation failed' });
   }
