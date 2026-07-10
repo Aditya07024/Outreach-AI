@@ -13,13 +13,13 @@ export class GmailService {
   );
 
   /**
-   * Get OAuth authorization URL, encoding userId in the state query parameter
+   * Get OAuth authorization URL, encoding userId or action in the state query parameter
    */
-  static getAuthUrl(userId: number): string {
+  static getAuthUrl(userId: number | string): string {
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline', // crucial to get refresh token
       prompt: 'consent',      // force consent screen to guarantee refresh token
-      state: String(userId),  // pass user ID as state parameter
+      state: String(userId),  // pass user ID or action state parameter
       scope: [
         'https://www.googleapis.com/auth/gmail.send',
         'https://www.googleapis.com/auth/userinfo.email',
@@ -73,6 +73,31 @@ export class GmailService {
       return email;
     } catch (error: any) {
       await logger.error('OAUTH', `Failed to handle Google OAuth callback for user ${userId}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Exchange OAuth authorization code for user email and tokens (for sign-in authentication)
+   */
+  static async getEmailFromCode(code: string): Promise<{ email: string; tokens: any }> {
+    try {
+      const { tokens } = await this.oauth2Client.getToken(code);
+      const client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
+      );
+      client.setCredentials(tokens);
+      const oauth2 = google.oauth2({ version: 'v2', auth: client });
+      const userInfo = await oauth2.userinfo.get();
+      const email = userInfo.data.email;
+      if (!email) {
+        throw new Error('Could not retrieve email from Google OAuth profile');
+      }
+      return { email, tokens };
+    } catch (error: any) {
+      await logger.error('OAUTH', 'Failed to retrieve email from code', error);
       throw error;
     }
   }

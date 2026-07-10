@@ -13,33 +13,79 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'aditya07';
 
 // Retrieve Gmail authentication URL
-router.get('/url', requireAuth, (req: AuthenticatedRequest, res) => {
+router.get('/url', (req, res) => {
   try {
-    const userId = req.user!.id;
-    const url = GmailService.getAuthUrl(userId);
-    res.json({ url });
+    const action = req.query.action as string;
+    if (action === 'login') {
+      const url = GmailService.getAuthUrl('login');
+      return res.json({ url });
+    }
+    
+    // Connect Gmail inside settings requires requireAuth
+    requireAuth(req as any, res as any, () => {
+      const userId = (req as any).user!.id;
+      const url = GmailService.getAuthUrl(userId);
+      res.json({ url });
+    });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to generate OAuth URL' });
   }
 });
 
-// OAuth Callback from Google redirect (public callback, uses state param for userId lookup)
+// OAuth Callback from Google redirect (public callback)
 router.get('/callback', async (req, res) => {
   const code = req.query.code as string;
-  const state = req.query.state as string;
-  const userId = state ? Number(state) : 1;
+  const state = req.query.state as string; // 'login' or numeric userId
 
   if (!code) {
     await logger.error('OAUTH', 'Google OAuth callback received without a code parameter');
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/settings?error=no_code`);
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/#error=no_code`);
   }
 
   try {
-    const email = await GmailService.handleCallback(code, userId);
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/settings?connected=true&email=${encodeURIComponent(email)}`);
+    if (state === 'login') {
+      // 1. SIGN IN / SIGN UP FLOW
+      const { email } = await GmailService.getEmailFromCode(code);
+      
+      let user = await prisma.user.findUnique({
+        where: { email }
+      });
+
+      const isAdminEmail = email === 'adityakumar07024@gmail.com' || email === 'adityakumarjat106@gmail.com';
+
+      if (!user) {
+        // Create new user, paid = true if admin email, else false
+        user = await prisma.user.create({
+          data: {
+            email,
+            paid: isAdminEmail,
+            role: isAdminEmail ? 'admin' : 'paid_user'
+          }
+        });
+      } else if (isAdminEmail && user.role !== 'admin') {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { role: 'admin', paid: true }
+        });
+      }
+
+      // If user is paid, redirect to frontend with JWT token
+      if (user.paid || user.role === 'admin') {
+        const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '365d' });
+        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/#token=${token}`);
+      } else {
+        // Otherwise, redirect to payment screen with user ID
+        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/#payment_required=true&userId=${user.id}`);
+      }
+    } else {
+      // 2. CONNECT GMAIL ACCOUNT FLOW
+      const userId = state ? Number(state) : 1;
+      const email = await GmailService.handleCallback(code, userId);
+      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/settings?connected=true&email=${encodeURIComponent(email)}`);
+    }
   } catch (error: any) {
-    await logger.error('OAUTH', `OAuth callback exchange failed for user ${userId}`, error);
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/settings?error=${encodeURIComponent(error.message || 'auth_failed')}`);
+    await logger.error('OAUTH', 'OAuth callback exchange failed', error);
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/#error=${encodeURIComponent(error.message || 'auth_failed')}`);
   }
 });
 
@@ -78,7 +124,7 @@ router.post('/login', async (req, res) => {
       // Find or create User 1 (Admin)
       let user = await prisma.user.findUnique({ where: { id: 1 } });
       if (!user) {
-        user = await prisma.user.create({ data: { id: 1, role: 'admin' } });
+        user = await prisma.user.create({ data: { id: 1, role: 'admin', paid: true } });
       }
 
       const token = jwt.sign({ id: user.id, role: 'admin' }, JWT_SECRET, { expiresIn: '365d' });
@@ -134,7 +180,7 @@ router.post('/razorpay/order', async (req, res) => {
 
 // 3. Verify Razorpay payment signature
 router.post('/razorpay/verify', async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, userId } = req.body;
 
   if (!razorpay_order_id || !razorpay_payment_id) {
     return res.status(400).json({ error: 'Order ID and Payment ID are required' });
@@ -142,15 +188,24 @@ router.post('/razorpay/verify', async (req, res) => {
 
   try {
     const handleSuccessPayment = async () => {
-      // Create a new User record for this paid session
-      const user = await prisma.user.create({
-        data: {
-          role: 'paid_user'
-        }
-      });
+      let user;
+      if (userId) {
+        user = await prisma.user.update({
+          where: { id: Number(userId) },
+          data: { paid: true }
+        });
+      } else {
+        // Fallback for custom verify
+        user = await prisma.user.create({
+          data: {
+            role: 'paid_user',
+            paid: true
+          }
+        });
+      }
       
-      const token = jwt.sign({ id: user.id, role: 'paid_user' }, JWT_SECRET, { expiresIn: '365d' });
-      return res.json({ success: true, token, role: 'paid_user' });
+      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '365d' });
+      return res.json({ success: true, token, role: user.role });
     };
 
     // If it is a mock order

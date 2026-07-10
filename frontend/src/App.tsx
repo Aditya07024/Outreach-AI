@@ -49,6 +49,7 @@ export const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
   const [gmailStatus, setGmailStatus] = useState<{ connected: boolean; email?: string } | null>(null);
   const [currentTitle, setCurrentTitle] = useState('Dashboard');
+  const [paymentRequiredUserId, setPaymentRequiredUserId] = useState<string | null>(null);
 
   const fetchGmailStatus = async () => {
     if (!localStorage.getItem('token')) return;
@@ -61,6 +62,27 @@ export const App: React.FC = () => {
       console.error('Failed to retrieve Gmail OAuth connection status', err);
     }
   };
+
+  useEffect(() => {
+    // Process URL authentication or payment redirects from Google Callback
+    const hash = window.location.hash;
+    if (hash) {
+      const cleanHash = hash.startsWith('#') ? hash.substring(1) : hash;
+      const params = new URLSearchParams(cleanHash);
+      const token = params.get('token');
+      const paymentRequired = params.get('payment_required');
+      const userId = params.get('userId');
+
+      if (token) {
+        localStorage.setItem('token', token);
+        window.location.hash = ''; // clear hash
+        setIsAuthenticated(true);
+      } else if (paymentRequired === 'true' && userId) {
+        setPaymentRequiredUserId(userId);
+        window.location.hash = '';
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -86,7 +108,13 @@ export const App: React.FC = () => {
   };
 
   if (!isAuthenticated) {
-    return <LandingPage onAuthenticated={() => setIsAuthenticated(true)} />;
+    return (
+      <LandingPage 
+        onAuthenticated={() => setIsAuthenticated(true)} 
+        initialPaymentRequiredUserId={paymentRequiredUserId}
+        onClearPaymentRequired={() => setPaymentRequiredUserId(null)}
+      />
+    );
   }
 
   return (

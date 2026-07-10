@@ -37,7 +37,9 @@ model GmailCredentials {
 
 model User {
   id        Int        @id @default(autoincrement())
+  email     String?    @unique
   role      String     @default("paid_user")
+  paid      Boolean    @default(false)
   createdAt DateTime   @default(now())
   resumes   Resume[]
   campaigns Campaign[]

@@ -3,9 +3,15 @@ import { Sparkles, Mail, Send, CheckCircle2, ShieldCheck, KeyRound, Lock, AlertC
 
 interface LandingPageProps {
   onAuthenticated: () => void;
+  initialPaymentRequiredUserId: string | null;
+  onClearPaymentRequired: () => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ 
+  onAuthenticated, 
+  initialPaymentRequiredUserId, 
+  onClearPaymentRequired 
+}) => {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -25,6 +31,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated }) => 
       document.body.removeChild(script);
     };
   }, []);
+
+  const handleGoogleSignIn = async () => {
+    setErrorMsg(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/auth/google/url?action=login');
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('Failed to retrieve authentication URL.');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Google Sign-In failed to initialize');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +115,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated }) => 
               body: JSON.stringify({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature
+                razorpay_signature: response.razorpay_signature,
+                userId: initialPaymentRequiredUserId
               })
             });
             const verifyData = await verifyRes.json();
@@ -132,7 +157,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated }) => 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           razorpay_order_id: mockOrderId,
-          razorpay_payment_id: `pay_mock_${Date.now()}`
+          razorpay_payment_id: `pay_mock_${Date.now()}`,
+          userId: initialPaymentRequiredUserId
         })
       });
       const data = await res.json();
@@ -233,49 +259,84 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated }) => 
             )}
 
             {!showAdminLogin ? (
-              // USER PAYMENT CARD
-              <div className="space-y-6">
-                <div className="text-center space-y-2">
-                  <h3 className="text-lg font-bold text-neutral-200">Unlock Lifetime License</h3>
-                  <p className="text-xs text-neutral-500">Get complete unlimited access to your personal AI outreach suite.</p>
-                </div>
-
-                <div className="p-6 bg-zinc-950/40 border border-neutral-850 rounded-xl text-center space-y-4">
-                  <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Lifetime License</div>
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-neutral-500 text-sm font-semibold">₹</span>
-                    <span className="text-3xl font-extrabold text-neutral-100">499</span>
-                    <span className="text-neutral-500 text-xs">/ one-time payment</span>
+              initialPaymentRequiredUserId ? (
+                // USER PAYMENT CARD (rendered post-login if account is unpaid)
+                <div className="space-y-6">
+                  <div className="text-center space-y-2">
+                    <h3 className="text-lg font-bold text-neutral-200">Unlock Lifetime License</h3>
+                    <p className="text-xs text-neutral-500">Get complete unlimited access to your personal AI outreach suite.</p>
                   </div>
-                  
-                  <div className="space-y-2 pt-2 border-t border-neutral-900 text-left">
-                    {[
-                      'Add unlimited campaigns & contacts',
-                      'Personalized Grok AI cover letters',
-                      'Local PDF Resume parsing/attachments',
-                      'Secure OAuth Google sign-in auth'
-                    ].map((feat, idx) => (
-                      <div key={idx} className="flex gap-2 items-center text-[10px] text-neutral-450">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                        <span>{feat}</span>
-                      </div>
-                    ))}
+
+                  <div className="p-6 bg-zinc-950/40 border border-neutral-850 rounded-xl text-center space-y-4">
+                    <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Lifetime License</div>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-neutral-500 text-sm font-semibold">₹</span>
+                      <span className="text-3xl font-extrabold text-neutral-100">499</span>
+                      <span className="text-neutral-500 text-xs">/ one-time payment</span>
+                    </div>
+                    
+                    <div className="space-y-2 pt-2 border-t border-neutral-900 text-left">
+                      {[
+                        'Add unlimited campaigns & contacts',
+                        'Personalized Grok AI cover letters',
+                        'Local PDF Resume parsing/attachments',
+                        'Secure OAuth Google sign-in auth'
+                      ].map((feat, idx) => (
+                        <div key={idx} className="flex gap-2 items-center text-[10px] text-neutral-450">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
+                  <button
+                    onClick={handleStartPurchase}
+                    disabled={isSubmitting}
+                    className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-lg text-xs transition-colors shadow-lg shadow-white/5 flex items-center justify-center gap-2"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-zinc-950" />
+                    {isSubmitting ? 'Initializing Pay...' : 'Unlock Platform with Razorpay'}
+                  </button>
+
+                  <button
+                    onClick={onClearPaymentRequired}
+                    className="w-full py-2.5 bg-transparent border border-neutral-850 hover:bg-neutral-900 text-neutral-300 font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-2"
+                  >
+                    Cancel / Sign Out
+                  </button>
+
+                  <p className="text-[9px] text-neutral-600 text-center">
+                    Payments are secure and processed via Razorpay gateway services.
+                  </p>
                 </div>
+              ) : (
+                // GOOGLE SIGN IN CARD (default visitor state)
+                <div className="space-y-6">
+                  <div className="text-center space-y-2">
+                    <h3 className="text-lg font-bold text-neutral-200">Sign In to Outreach AI</h3>
+                    <p className="text-xs text-neutral-500">Sign in with Google to start sending job applications.</p>
+                  </div>
 
-                <button
-                  onClick={handleStartPurchase}
-                  disabled={isSubmitting}
-                  className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-lg text-xs transition-colors shadow-lg shadow-white/5 flex items-center justify-center gap-2"
-                >
-                  <Lock className="w-3.5 h-3.5 text-zinc-950" />
-                  {isSubmitting ? 'Initializing Pay...' : 'Unlock Platform with Razorpay'}
-                </button>
+                  <button
+                    onClick={handleGoogleSignIn}
+                    disabled={isSubmitting}
+                    className="w-full py-3 bg-neutral-900 border border-neutral-800 hover:bg-neutral-850 hover:border-neutral-700 text-neutral-200 font-bold rounded-xl text-xs transition-all duration-200 shadow-lg flex items-center justify-center gap-3 active:scale-[0.98]"
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+                      <path
+                        fill="#EA4335"
+                        d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.2-5.136 4.2a6.386 6.386 0 0 1-6.39-6.39 6.386 6.386 0 0 1 6.39-6.39c2.866 0 4.743 1.177 5.733 2.11l3.22-3.22A10.825 10.825 0 0 0 12.24 1.2a10.8 10.8 0 0 0-10.8 10.8 10.8 10.8 0 0 0 10.8 10.8c5.842 0 10.963-4.225 10.963-10.8 0-.665-.06-1.25-.19-1.715H12.24Z"
+                      />
+                    </svg>
+                    {isSubmitting ? 'Initializing...' : 'Continue with Google'}
+                  </button>
 
-                <p className="text-[9px] text-neutral-600 text-center">
-                  Payments are secure and processed via Razorpay gateway services.
-                </p>
-              </div>
+                  <p className="text-[10px] text-neutral-500 text-center leading-normal">
+                    New users will be redirected to pay a one-time ₹499 lifetime access fee after Google Sign-In.
+                  </p>
+                </div>
+              )
             ) : (
               // OWNER passcode LOGIN FORM
               <form onSubmit={handleAdminLogin} className="space-y-6">
@@ -312,7 +373,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated }) => 
                     }}
                     className="w-full py-2.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 font-bold rounded-lg text-xs transition-colors"
                   >
-                    Back to Checkout
+                    Back to Login
                   </button>
                 </div>
               </form>
