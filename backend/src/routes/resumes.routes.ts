@@ -61,10 +61,13 @@ router.post('/', upload.single('resume'), async (req: AuthenticatedRequest, res)
     }
 
     const name = req.body.name || req.file.originalname.replace('.pdf', '');
+    const description = req.body.description || null;
+
     const resume = await prisma.resume.create({
       data: {
         name,
         filePath: req.file.path,
+        description,
         userId,
       },
     });
@@ -74,6 +77,37 @@ router.post('/', upload.single('resume'), async (req: AuthenticatedRequest, res)
   } catch (error: any) {
     await logger.error('API', 'Failed to upload resume', error);
     res.status(500).json({ error: error.message || 'Failed to upload resume' });
+  }
+});
+
+// Update resume details
+router.put('/:id', async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = Number(req.params.id);
+    const userId = req.user!.id;
+    const { name, description } = req.body;
+
+    const existing = await prisma.resume.findFirst({
+      where: { id, userId },
+    });
+    
+    if (!existing) {
+      return res.status(404).json({ error: 'Resume not found or unauthorized' });
+    }
+
+    const updated = await prisma.resume.update({
+      where: { id },
+      data: {
+        name: name !== undefined ? name : undefined,
+        description: description !== undefined ? description : undefined,
+      },
+    });
+
+    await logger.info('API', `Updated resume details: ${updated.name}`);
+    res.json(updated);
+  } catch (error: any) {
+    await logger.error('API', `Failed to update resume ID ${req.params.id}`, error);
+    res.status(500).json({ error: error.message || 'Failed to update resume' });
   }
 });
 

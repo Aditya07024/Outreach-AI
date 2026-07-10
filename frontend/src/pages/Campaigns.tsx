@@ -319,15 +319,29 @@ export const Campaigns: React.FC = () => {
                       No resumes uploaded. Please upload a PDF resume in settings or resumes tab first.
                     </div>
                   ) : (
-                    <select
-                      value={newResumeId || ''}
-                      onChange={(e) => setNewResumeId(Number(e.target.value))}
-                      className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
-                    >
-                      {resumes.map((r) => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
-                    </select>
+                    <>
+                      <select
+                        value={newResumeId || ''}
+                        onChange={(e) => setNewResumeId(Number(e.target.value))}
+                        className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+                      >
+                        {resumes.map((r) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                      {(() => {
+                        const selectedResume = resumes.find(r => r.id === newResumeId);
+                        if (selectedResume?.description) {
+                          return (
+                            <div className="text-[10px] text-neutral-450 bg-neutral-900/50 p-2 rounded border border-neutral-850 mt-1.5 italic">
+                              <span className="font-bold text-neutral-350 block not-italic mb-0.5">Resume Description:</span>
+                              {selectedResume.description}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </>
                   )}
                 </div>
 
@@ -589,6 +603,18 @@ export const Campaigns: React.FC = () => {
                           <option key={r.id} value={r.id}>{r.name}</option>
                         ))}
                       </select>
+                      {(() => {
+                        const selectedResume = resumes.find(r => r.id === editResumeId);
+                        if (selectedResume?.description) {
+                          return (
+                            <div className="text-[10px] text-neutral-450 bg-zinc-950/40 p-2.5 rounded border border-neutral-850 mt-1.5 italic md:col-span-2">
+                              <span className="font-bold text-neutral-450 block not-italic mb-0.5">Resume Description:</span>
+                              {selectedResume.description}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
 

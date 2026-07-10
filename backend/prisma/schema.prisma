@@ -49,6 +49,7 @@ model Resume {
   id         Int        @id @default(autoincrement())
   name       String
   filePath   String
+  description String?
   uploadedAt DateTime   @default(now())
   userId     Int?
   user       User?      @relation(fields: [userId], references: [id], onDelete: Cascade)

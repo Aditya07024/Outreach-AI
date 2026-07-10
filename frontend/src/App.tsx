@@ -4,6 +4,9 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { LandingPage } from './pages/LandingPage';
 
+import { PrivacyPolicy } from './pages/PrivacyPolicy';
+import { TermsAndConditions } from './pages/TermsAndConditions';
+
 // Views
 import { Dashboard } from './pages/Dashboard';
 import { Campaigns } from './pages/Campaigns';
@@ -106,6 +109,14 @@ export const App: React.FC = () => {
     setIsAuthenticated(false);
     setGmailStatus(null);
   };
+
+  const pathname = window.location.pathname;
+  if (pathname === '/privacy') {
+    return <PrivacyPolicy />;
+  }
+  if (pathname === '/terms') {
+    return <TermsAndConditions />;
+  }
 
   if (!isAuthenticated) {
     return (

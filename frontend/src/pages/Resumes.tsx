@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Upload, FileText, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { Upload, FileText, Trash2, CheckCircle2, Circle, Edit3 } from 'lucide-react';
 import { Resume, Settings } from '../types';
 
 export const Resumes: React.FC = () => {
@@ -7,7 +7,13 @@ export const Resumes: React.FC = () => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadName, setUploadName] = useState('');
+  const [uploadDescription, setUploadDescription] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+
+  // Editing state
+  const [editingResume, setEditingResume] = useState<Resume | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   const fetchData = async () => {
     try {
@@ -48,6 +54,7 @@ export const Resumes: React.FC = () => {
     const formData = new FormData();
     formData.append('resume', uploadFile);
     formData.append('name', uploadName);
+    formData.append('description', uploadDescription);
 
     try {
       const response = await fetch('/api/resumes', {
@@ -60,11 +67,42 @@ export const Resumes: React.FC = () => {
 
       setUploadFile(null);
       setUploadName('');
+      setUploadDescription('');
       fetchData();
     } catch (err: any) {
       alert(err.message || 'Failed to upload resume.');
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleStartEdit = (resume: Resume) => {
+    setEditingResume(resume);
+    setEditName(resume.name);
+    setEditDescription(resume.description || '');
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingResume) return;
+
+    try {
+      const response = await fetch(`/api/resumes/${editingResume.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editName,
+          description: editDescription
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to save changes');
+
+      setEditingResume(null);
+      fetchData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to edit resume details.');
     }
   };
 
@@ -122,18 +160,23 @@ export const Resumes: React.FC = () => {
                 const isDefault = settings?.defaultResumeId === resume.id;
                 
                 return (
-                  <div key={resume.id} className="flex justify-between items-center py-4 first:pt-0 last:pb-0">
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-8 h-8 text-neutral-500 flex-shrink-0" />
+                  <div key={resume.id} className="flex justify-between items-center py-4 first:pt-0 last:pb-0 gap-4">
+                    <div className="flex items-start gap-3">
+                      <FileText className="w-8 h-8 text-neutral-500 flex-shrink-0 mt-0.5" />
                       <div>
                         <span className="font-semibold text-neutral-200 text-xs block">{resume.name}</span>
-                        <span className="text-[10px] text-neutral-500 font-medium block mt-0.5">
+                        {resume.description && (
+                          <p className="text-[10px] text-neutral-450 mt-1 italic leading-relaxed max-w-md">
+                            {resume.description}
+                          </p>
+                        )}
+                        <span className="text-[9px] text-neutral-500 font-medium block mt-1.5">
                           Uploaded on {new Date(resume.uploadedAt).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                       {/* Default Toggle Button */}
                       <button
                         onClick={() => handleSetDefault(resume.id)}
@@ -146,20 +189,29 @@ export const Resumes: React.FC = () => {
                         {isDefault ? (
                           <>
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Default Resume</span>
+                            <span>Default</span>
                           </>
                         ) : (
                           <>
                             <Circle className="w-3.5 h-3.5 text-neutral-600" />
-                            <span>Make Default</span>
+                            <span>Set Default</span>
                           </>
                         )}
+                      </button>
+
+                      {/* Rename / Edit Button */}
+                      <button
+                        onClick={() => handleStartEdit(resume)}
+                        className="p-1.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 rounded-md transition-all"
+                        title="Rename or edit description"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
                       </button>
 
                       {/* Delete Button */}
                       <button
                         onClick={() => handleDelete(resume.id)}
-                        className="p-1.5 bg-neutral-900 hover:bg-rose-950/20 border border-neutral-800 hover:border-rose-900/35 text-neutral-500 hover:text-rose-400 rounded-md transition-all"
+                        className="p-1.5 bg-neutral-900 hover:bg-rose-950/20 border border-rose-900/30 hover:border-rose-900/35 text-neutral-500 hover:text-rose-400 rounded-md transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -177,7 +229,7 @@ export const Resumes: React.FC = () => {
 
           <form onSubmit={handleUpload} className="space-y-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Profile Label</label>
+              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Profile Label Name</label>
               <input
                 type="text"
                 value={uploadName}
@@ -185,6 +237,17 @@ export const Resumes: React.FC = () => {
                 placeholder="e.g. Backend Developer"
                 className="rounded-md border border-neutral-850 bg-zinc-950 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
                 required
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Profile Description (Optional)</label>
+              <textarea
+                value={uploadDescription}
+                onChange={(e) => setUploadDescription(e.target.value)}
+                placeholder="e.g. Tailored for Go, NodeJS, PostgreSQL backend roles..."
+                rows={2}
+                className="rounded-md border border-neutral-850 bg-zinc-950 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700 resize-none font-sans"
               />
             </div>
 
@@ -216,6 +279,54 @@ export const Resumes: React.FC = () => {
         </div>
 
       </div>
+
+      {/* RENAME / EDIT RESUME DETAILS MODAL */}
+      {editingResume && (
+        <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md border border-neutral-800 bg-zinc-900 rounded-xl p-6 space-y-4 shadow-xl relative">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-500 to-cyan-500" />
+            <h3 className="text-sm font-semibold text-neutral-250 uppercase tracking-wider">
+              Edit Resume Details
+            </h3>
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Resume Name</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="rounded-md border border-neutral-800 bg-zinc-950 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-neutral-455 font-semibold uppercase tracking-wider">Description</label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={3}
+                  className="rounded-md border border-neutral-800 bg-zinc-950 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700 resize-none font-sans"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingResume(null)}
+                  className="w-1/2 py-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 font-semibold rounded-lg text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-lg text-xs transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

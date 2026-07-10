@@ -419,8 +419,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       )}
 
       {/* Footer */}
-      <footer className="py-6 border-t border-neutral-900 text-center text-[10px] text-neutral-500 z-10">
-        © 2026 AI Job Outreach Assistant. Personal use project, all rights reserved.
+      <footer className="py-6 border-t border-neutral-900 text-[10px] text-neutral-500 z-10 flex flex-col sm:flex-row justify-between items-center max-w-7xl mx-auto w-full px-6 gap-3">
+        <span>© 2026 AI Job Outreach Assistant. All rights reserved.</span>
+        <div className="flex gap-4">
+          <a href="/privacy" className="hover:text-neutral-300 transition-colors">Privacy Policy</a>
+          <a href="/terms" className="hover:text-neutral-300 transition-colors">Terms of Service</a>
+        </div>
       </footer>
     </div>
   );
