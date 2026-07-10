@@ -88,12 +88,23 @@ export const Campaigns: React.FC = () => {
   useEffect(() => {
     if (selectedCampId) {
       fetchCampaignDetails(selectedCampId);
-      const timer = setInterval(() => fetchCampaignDetails(selectedCampId), 8000);
+      
+      const hasActiveProcess = 
+        campaignDetails?.status === 'SENDING' || 
+        campaignDetails?.contacts?.some(c => c.status === 'GENERATING');
+
+      const intervalMs = hasActiveProcess ? 3000 : 8000;
+
+      const timer = setInterval(() => {
+        fetchCampaignDetails(selectedCampId);
+        fetchCampaigns();
+      }, intervalMs);
+
       return () => clearInterval(timer);
     } else {
       setCampaignDetails(null);
     }
-  }, [selectedCampId]);
+  }, [selectedCampId, campaignDetails?.status, campaignDetails?.contacts?.filter(c => c.status === 'GENERATING').length]);
 
   useEffect(() => {
     if (campaignDetails) {
@@ -254,10 +265,28 @@ export const Campaigns: React.FC = () => {
 
       setContactSubject(data.emailSubject || '');
       setContactBody(data.emailBody || '');
+      if (selectedCampId) fetchCampaignDetails(selectedCampId);
     } catch (err: any) {
       alert(err.message || 'Failed to regenerate email');
     } finally {
       setIsSavingContact(false);
+    }
+  };
+
+  const handleRegenerateContactDirect = async (contactId: number) => {
+    try {
+      const response = await fetch(`/api/contacts/${contactId}/regenerate`, {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to regenerate email');
+      
+      if (selectedCampId) {
+        fetchCampaignDetails(selectedCampId);
+        fetchCampaigns();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to regenerate email');
     }
   };
 
@@ -664,6 +693,65 @@ export const Campaigns: React.FC = () => {
                 </form>
               )}
 
+              {/* Progress Bars */}
+              {(() => {
+                const total = campaignDetails.contacts?.length || 0;
+                if (total === 0) return null;
+
+                const pendingAI = campaignDetails.contacts?.filter(c => c.status === 'PENDING').length || 0;
+                const generating = campaignDetails.contacts?.filter(c => c.status === 'GENERATING').length || 0;
+                const sent = campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0;
+                const failed = campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0;
+
+                const isSendingActive = campaignDetails.status === 'SENDING';
+
+                if (generating > 0) {
+                  const completed = total - pendingAI - generating;
+                  const percent = Math.min(100, Math.round((completed / total) * 105)) > 100 ? 100 : Math.min(100, Math.round((completed / total) * 100));
+                  return (
+                    <div className="bg-zinc-900/30 border border-neutral-900 rounded-xl p-4 space-y-2.5">
+                      <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-wider">
+                        <span className="text-indigo-400 animate-pulse flex items-center gap-1.5 font-sans">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />
+                          Generative Email Drafting in Progress...
+                        </span>
+                        <span className="text-neutral-450 font-mono">{completed} / {total} Completed ({percent}%)</span>
+                      </div>
+                      <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden border border-neutral-900">
+                        <div 
+                          className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-all duration-500" 
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (isSendingActive) {
+                  const completed = sent + failed;
+                  const percent = Math.min(100, Math.round((completed / total) * 100));
+                  return (
+                    <div className="bg-zinc-900/30 border border-neutral-900 rounded-xl p-4 space-y-2.5">
+                      <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-wider">
+                        <span className="text-emerald-400 animate-pulse flex items-center gap-1.5 font-sans">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                          Campaign Sending Sequence Active...
+                        </span>
+                        <span className="text-neutral-450 font-mono">{completed} / {total} Delivered ({percent}%)</span>
+                      </div>
+                      <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden border border-neutral-900">
+                        <div 
+                          className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-full transition-all duration-500" 
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              })()}
+
               {/* Status Metrics Ribbon */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
                 {[
@@ -763,18 +851,38 @@ export const Campaigns: React.FC = () => {
                             </td>
                             <td className="p-4">
                               {contact.emailSubject ? (
-                                <button
-                                  onClick={() => openContactEditor(contact)}
-                                  className="flex items-center gap-1 text-[10px] text-neutral-400 hover:text-neutral-200 transition-colors"
-                                >
-                                  <Sparkles className="w-3 h-3 text-sky-400" />
-                                  <span>Review Email</span>
-                                </button>
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    onClick={() => openContactEditor(contact)}
+                                    className="flex items-center gap-1.5 text-[10px] text-neutral-400 hover:text-neutral-200 transition-colors"
+                                  >
+                                    <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                                    <span>Review Email</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleRegenerateContactDirect(contact.id)}
+                                    className="flex items-center gap-1.5 text-[10px] text-neutral-450 hover:text-indigo-400 transition-colors"
+                                    title="Regenerate this specific email using AI"
+                                  >
+                                    <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+                                    <span>Regen</span>
+                                  </button>
+                                </div>
                               ) : (
-                                <span className="flex items-center gap-1 text-[10px] text-neutral-600">
-                                  <MailQuestion className="w-3 h-3" />
-                                  <span>No Email Gen</span>
-                                </span>
+                                <div className="flex items-center gap-3">
+                                  <span className="flex items-center gap-1 text-[10px] text-neutral-600">
+                                    <MailQuestion className="w-3 h-3" />
+                                    <span>No Email Gen</span>
+                                  </span>
+                                  <button
+                                    onClick={() => handleRegenerateContactDirect(contact.id)}
+                                    className="flex items-center gap-1.5 text-[10px] text-neutral-450 hover:text-indigo-400 transition-colors"
+                                    title="Generate email for this contact using AI"
+                                  >
+                                    <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+                                    <span>Generate</span>
+                                  </button>
+                                </div>
                               )}
                             </td>
                             <td className="p-4 text-center">
