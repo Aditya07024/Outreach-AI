@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-zinc-950 text-neutral-100 antialiased font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-zinc-950;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-neutral-800 rounded-full hover:bg-neutral-700 transition-colors;
+  }
+}
+
+/* Linear & Notion Custom Aesthetics */
+.glass-panel {
+  background: rgba(18, 18, 21, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(63, 63, 70, 0.4);
+}
+
+.border-subtle {
+  border-color: rgba(63, 63, 70, 0.4);
+}
+
+.glow-btn {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.glow-btn::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(to bottom right, #ffffff, rgba(255, 255, 255, 0.2));
+  opacity: 0.15;
+  z-index: -1;
+  transition: opacity 0.2s;
+}
+
+.glow-btn:hover::after {
+  opacity: 0.3;
+}
+
+/* Card gradients */
+.card-gradient-1 {
+  background: radial-gradient(100% 100% at 50% 0%, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0) 100%), #09090b;
+}
+
+.card-gradient-2 {
+  background: radial-gradient(100% 100% at 50% 0%, rgba(59, 130, 246, 0.07) 0%, rgba(0, 0, 0, 0) 100%), #09090b;
+}
+
+.card-gradient-3 {
+  background: radial-gradient(100% 100% at 50% 0%, rgba(16, 185, 129, 0.07) 0%, rgba(0, 0, 0, 0) 100%), #09090b;
+}

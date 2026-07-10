@@ -1,0 +1,108 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Settings {
+  id                   Int      @id @default(1)
+  name                 String   @default("")
+  phone                String   @default("")
+  portfolio            String   @default("")
+  github               String   @default("")
+  linkedin             String   @default("")
+  preferredRole        String   @default("")
+  desiredSalary        String   @default("")
+  location             String   @default("")
+  defaultResumeId      Int?
+  customPrompt         String   @default("Write a concise and professional cold email. Mention my technical skills and internships. Keep under 150 words. Do not exaggerate.")
+  delayMin             Int      @default(30) // seconds
+  delayMax             Int      @default(90) // seconds
+  technicalFilter      Boolean  @default(true)
+}
+
+model GmailCredentials {
+  id           Int      @id @default(1)
+  email        String
+  accessToken  String   // Encrypted
+  refreshToken String?  // Encrypted
+  expiryDate   BigInt?
+  tokenType    String?
+  scope        String?
+  connectedAt  DateTime @default(now())
+}
+
+model Resume {
+  id         Int        @id @default(autoincrement())
+  name       String
+  filePath   String
+  uploadedAt DateTime   @default(now())
+  campaigns  Campaign[]
+}
+
+model Campaign {
+  id              Int            @id @default(autoincrement())
+  name            String
+  description     String?
+  status          String         @default("DRAFT") // DRAFT, SENDING, PAUSED, COMPLETED
+  resumeId        Int?
+  resume          Resume?        @relation(fields: [resumeId], references: [id])
+  templateType    String         @default("AI_GENERATED") // AI_GENERATED, SAVED_TEMPLATE, MANUAL
+  templateSubject String?
+  templateBody    String?
+  contacts        Contact[]
+  emailHistory    EmailHistory[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Contact {
+  id              Int            @id @default(autoincrement())
+  campaignId      Int
+  campaign        Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email           String
+  firstName       String?
+  lastName        String?
+  title           String?
+  role            String?
+  company         String?
+  phone           String?
+  linkedin        String?
+  country         String?
+  isTechnical     Boolean        @default(false)
+  status          String         @default("PENDING") // PENDING, GENERATING, READY_TO_SEND, SENT, FAILED, SKIPPED
+  duplicateStatus String?        // "NONE", "DUPLICATE_EMAIL", "DUPLICATE_COMPANY", "PREVIOUS_CAMPAIGN"
+  emailSubject    String?
+  emailBody       String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  emailHistory    EmailHistory[]
+
+  @@unique([campaignId, email])
+}
+
+model EmailHistory {
+  id             Int      @id @default(autoincrement())
+  contactId      Int
+  contact        Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  campaignId     Int
+  campaign       Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  subject        String
+  body           String
+  status         String   // SENT, FAILED
+  errorMsg       String?
+  gmailMessageId String?
+  sentAt         DateTime @default(now())
+}
+
+model Log {
+  id        Int      @id @default(autoincrement())
+  level     String   // INFO, WARN, ERROR
+  source    String   // CSV_IMPORT, EMAIL_GENERATION, EMAIL_SENDING, OAUTH, API
+  message   String
+  details   String?  // JSON context
+  timestamp DateTime @default(now())
+}

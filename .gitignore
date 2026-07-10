@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment configurations containing secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+**/.env
+**/.env.local
+
+# Build folders
+dist/
+**/dist/
+build/
+.tsbuildinfo
+
+# Uploads and temporary assets
+backend/uploads/
+logs/
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
