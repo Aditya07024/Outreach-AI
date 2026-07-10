@@ -108,8 +108,8 @@ export class SendingEngine {
           contact.email,
           contact.emailSubject,
           contact.emailBody,
-          campaign.resume?.filePath || undefined,
-          campaign.resume?.name || undefined
+          campaign.resume?.fileContent || undefined,
+          campaign.resume?.name ? `${campaign.resume.name}.pdf` : undefined
         );
       } catch (err: any) {
         sendError = err.message || String(err);

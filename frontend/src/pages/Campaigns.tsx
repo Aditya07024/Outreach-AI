@@ -47,6 +47,9 @@ export const Campaigns: React.FC = () => {
   const [contactBody, setContactBody] = useState('');
   const [isSavingContact, setIsSavingContact] = useState(false);
 
+  // Active generation tracking
+  const [isGeneratingEmails, setIsGeneratingEmails] = useState(false);
+
   const fetchCampaigns = async () => {
     try {
       const response = await fetch('/api/campaigns');
@@ -91,7 +94,8 @@ export const Campaigns: React.FC = () => {
       
       const hasActiveProcess = 
         campaignDetails?.status === 'SENDING' || 
-        campaignDetails?.contacts?.some(c => c.status === 'GENERATING');
+        campaignDetails?.contacts?.some(c => c.status === 'GENERATING') ||
+        isGeneratingEmails;
 
       const intervalMs = hasActiveProcess ? 3000 : 8000;
 
@@ -104,7 +108,18 @@ export const Campaigns: React.FC = () => {
     } else {
       setCampaignDetails(null);
     }
-  }, [selectedCampId, campaignDetails?.status, campaignDetails?.contacts?.filter(c => c.status === 'GENERATING').length]);
+  }, [selectedCampId, campaignDetails?.status, campaignDetails?.contacts?.filter(c => c.status === 'GENERATING').length, isGeneratingEmails]);
+
+  // Turn off generation tracking when all pending/generating items are completed
+  useEffect(() => {
+    if (isGeneratingEmails && campaignDetails) {
+      const pendingCount = campaignDetails.contacts?.filter(c => c.status === 'PENDING').length || 0;
+      const generatingCount = campaignDetails.contacts?.filter(c => c.status === 'GENERATING').length || 0;
+      if (pendingCount === 0 && generatingCount === 0) {
+        setIsGeneratingEmails(false);
+      }
+    }
+  }, [campaignDetails, isGeneratingEmails]);
 
   useEffect(() => {
     if (campaignDetails) {
@@ -194,6 +209,10 @@ export const Campaigns: React.FC = () => {
   const triggerAction = async (action: 'start' | 'pause' | 'cancel' | 'retry' | 'generate') => {
     if (!selectedCampId) return;
 
+    if (action === 'generate') {
+      setIsGeneratingEmails(true);
+    }
+
     try {
       const response = await fetch(`/api/campaigns/${selectedCampId}/${action}`, {
         method: 'POST',
@@ -204,6 +223,9 @@ export const Campaigns: React.FC = () => {
       fetchCampaignDetails(selectedCampId);
       fetchCampaigns();
     } catch (err: any) {
+      if (action === 'generate') {
+        setIsGeneratingEmails(false);
+      }
       alert(err.message || 'Operation failed.');
     }
   };
@@ -732,10 +754,11 @@ export const Campaigns: React.FC = () => {
                 const failed = campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0;
 
                 const isSendingActive = campaignDetails.status === 'SENDING';
+                const isGeneratingActive = generating > 0 || (isGeneratingEmails && (generating > 0 || pendingAI > 0));
 
-                if (generating > 0) {
+                if (isGeneratingActive) {
                   const completed = total - pendingAI - generating;
-                  const percent = Math.min(100, Math.round((completed / total) * 105)) > 100 ? 100 : Math.min(100, Math.round((completed / total) * 100));
+                  const percent = Math.min(100, Math.round((completed / total) * 100));
                   return (
                     <div className="bg-zinc-900/30 border border-neutral-900 rounded-xl p-4 space-y-2.5">
                       <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-wider">

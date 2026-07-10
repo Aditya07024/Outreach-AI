@@ -184,19 +184,19 @@ export class GmailService {
   }
 
   /**
-   * Send an email with optional PDF resume attachment
+   * Send an email with optional PDF resume attachment (Base64 encoded)
    */
   static async sendEmail(
     userId: number,
     to: string,
     subject: string,
     body: string,
-    attachmentPath?: string,
+    attachmentBase64?: string,
     attachmentName?: string
   ): Promise<string> {
     try {
       const gmail = await this.getClient(userId);
-      const rawMime = this.buildMimeMessage(to, subject, body, attachmentPath, attachmentName);
+      const rawMime = this.buildMimeMessage(to, subject, body, attachmentBase64, attachmentName);
       
       // Base64URL encode the MIME message
       const encodedRaw = Buffer.from(rawMime)
@@ -226,7 +226,7 @@ export class GmailService {
     to: string,
     subject: string,
     body: string,
-    attachmentPath?: string,
+    attachmentBase64?: string,
     attachmentName?: string
   ): string {
     const boundary = `__boundary_${Date.now().toString(16)}__`;
@@ -254,11 +254,9 @@ export class GmailService {
 
     const attachmentParts: string[] = [];
 
-    if (attachmentPath && fs.existsSync(attachmentPath)) {
+    if (attachmentBase64) {
       try {
-        const fileContent = fs.readFileSync(attachmentPath);
-        const base64File = fileContent.toString('base64');
-        const filename = attachmentName || path.basename(attachmentPath);
+        const filename = attachmentName || 'resume.pdf';
 
         attachmentParts.push(
           `--${boundary}`,
@@ -266,7 +264,7 @@ export class GmailService {
           `Content-Disposition: attachment; filename="${filename}"`,
           'Content-Transfer-Encoding: base64',
           '',
-          base64File.match(/.{1,76}/g)?.join('\r\n') || base64File,
+          attachmentBase64.match(/.{1,76}/g)?.join('\r\n') || attachmentBase64,
           ''
         );
       } catch (err) {

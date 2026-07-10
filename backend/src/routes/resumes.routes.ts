@@ -8,7 +8,7 @@ import { AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
-// Ensure uploads directory exists
+// Ensure uploads directory exists for temporary multer storage
 const uploadDir = path.join(__dirname, '../../uploads/resumes');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -29,7 +29,6 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
-    // Only PDF allowed
     const ext = path.extname(file.originalname).toLowerCase();
     if (ext !== '.pdf') {
       return cb(new Error('Only PDF resumes are supported.'));
@@ -63,18 +62,34 @@ router.post('/', upload.single('resume'), async (req: AuthenticatedRequest, res)
     const name = req.body.name || req.file.originalname.replace('.pdf', '');
     const description = req.body.description || null;
 
+    // Read the PDF file content and convert it to Base64
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const fileContent = fileBuffer.toString('base64');
+
+    // Remove the temp file from disk immediately
+    fs.unlinkSync(req.file.path);
+
     const resume = await prisma.resume.create({
       data: {
         name,
         filePath: req.file.path,
+        fileContent,
         description,
         userId,
       },
     });
 
-    await logger.info('API', `Uploaded new resume: ${name} (path: ${req.file.path})`);
+    await logger.info('API', `Uploaded new resume: ${name} to database (size: ${fileBuffer.length} bytes)`);
     res.status(201).json(resume);
   } catch (error: any) {
+    // Attempt temp file cleaning on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (err) {
+        console.error('Failed to clean up temp file:', err);
+      }
+    }
     await logger.error('API', 'Failed to upload resume', error);
     res.status(500).json({ error: error.message || 'Failed to upload resume' });
   }
@@ -124,9 +139,13 @@ router.delete('/:id', async (req: AuthenticatedRequest, res) => {
       return res.status(404).json({ error: 'Resume not found' });
     }
 
-    // Delete local file if it exists
-    if (fs.existsSync(resume.filePath)) {
-      fs.unlinkSync(resume.filePath);
+    // Try deleting local file if it exists (for legacy local files upload only)
+    if (resume.filePath && fs.existsSync(resume.filePath)) {
+      try {
+        fs.unlinkSync(resume.filePath);
+      } catch (err) {
+        console.error('Failed to delete legacy file from disk:', err);
+      }
     }
 
     await prisma.resume.delete({ where: { id } });
