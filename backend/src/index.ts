@@ -1,6 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 
@@ -16,8 +18,6 @@ import logsRoutes from './routes/logs.routes';
 // Services
 import { SendingEngine } from './services/sending.engine';
 import prisma from './utils/prisma';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
