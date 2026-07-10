@@ -290,6 +290,24 @@ export const Campaigns: React.FC = () => {
     }
   };
 
+  const handleClearEmails = async () => {
+    if (!selectedCampId) return;
+    if (!confirm('Are you sure you want to delete all generated email drafts for this campaign? Already sent emails will not be affected.')) return;
+
+    try {
+      const response = await fetch(`/api/campaigns/${selectedCampId}/clear-emails`, {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to clear emails');
+      
+      fetchCampaignDetails(selectedCampId);
+      fetchCampaigns();
+    } catch (err: any) {
+      alert(err.message || 'Operation failed.');
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       {!selectedCampId ? (
@@ -567,10 +585,20 @@ export const Campaigns: React.FC = () => {
 
                   <button
                     onClick={() => triggerAction('cancel')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-rose-400 font-bold rounded-md text-[10px] uppercase tracking-wider transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-rose-450 font-bold rounded-md text-[10px] uppercase tracking-wider transition-colors"
                     title="Reset to draft"
                   >
                     Reset
+                  </button>
+
+                  <button
+                    onClick={handleClearEmails}
+                    disabled={campaignDetails.status === 'SENDING'}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:bg-rose-950/20 text-neutral-400 hover:text-rose-400 font-bold rounded-md text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40"
+                    title="Wipe generated email subjects and bodies back to pending"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    Clear Drafts
                   </button>
                 </div>
               </div>

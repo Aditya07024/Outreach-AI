@@ -401,4 +401,40 @@ router.post('/:id/generate', async (req: AuthenticatedRequest, res) => {
   }
 });
 
+// Clear/reset all generated emails for this campaign
+router.post('/:id/clear-emails', async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = Number(req.params.id);
+    const userId = req.user!.id;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, userId }
+    });
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
+    if (campaign.status === 'SENDING') {
+      return res.status(400).json({ error: 'Cannot clear emails while campaign is sending.' });
+    }
+
+    await prisma.contact.updateMany({
+      where: {
+        campaignId: id,
+        status: { not: 'SENT' }
+      },
+      data: {
+        emailSubject: null,
+        emailBody: null,
+        status: 'PENDING'
+      }
+    });
+
+    await logger.info('API', `Cleared generated emails for campaign "${campaign.name}"`);
+    res.json({ success: true, message: 'All generated email drafts have been cleared.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to clear emails' });
+  }
+});
+
 export default router;
