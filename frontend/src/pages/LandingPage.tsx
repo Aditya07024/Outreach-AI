@@ -164,7 +164,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated }) => 
             A
           </div>
           <span className="text-sm font-bold tracking-tight bg-gradient-to-r from-neutral-100 to-neutral-400 bg-clip-text text-transparent">
-            Outreach Ai
+            Outreach AI
           </span>
         </div>
 

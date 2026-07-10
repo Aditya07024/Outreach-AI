@@ -35,11 +35,21 @@ model GmailCredentials {
   connectedAt  DateTime @default(now())
 }
 
+model User {
+  id        Int        @id @default(autoincrement())
+  role      String     @default("paid_user")
+  createdAt DateTime   @default(now())
+  resumes   Resume[]
+  campaigns Campaign[]
+}
+
 model Resume {
   id         Int        @id @default(autoincrement())
   name       String
   filePath   String
   uploadedAt DateTime   @default(now())
+  userId     Int?
+  user       User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaigns  Campaign[]
 }
 
@@ -50,6 +60,8 @@ model Campaign {
   status          String         @default("DRAFT") // DRAFT, SENDING, PAUSED, COMPLETED
   resumeId        Int?
   resume          Resume?        @relation(fields: [resumeId], references: [id])
+  userId          Int?
+  user            User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
   templateType    String         @default("AI_GENERATED") // AI_GENERATED, SAVED_TEMPLATE, MANUAL
   templateSubject String?
   templateBody    String?

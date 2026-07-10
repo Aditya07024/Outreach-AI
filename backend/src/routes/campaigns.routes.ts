@@ -3,6 +3,7 @@ import prisma from '../utils/prisma';
 import { SendingEngine } from '../services/sending.engine';
 import { AIService } from '../services/ai.service';
 import { logger } from '../utils/logger';
+import { AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -32,9 +33,11 @@ function replacePlaceholders(text: string | null, contact: any, settings: any): 
 }
 
 // Get all campaigns with contact metrics
-router.get('/', async (req, res) => {
+router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
+    const userId = req.user!.id;
     const campaigns = await prisma.campaign.findMany({
+      where: { userId },
       orderBy: { createdAt: 'desc' },
       include: {
         resume: true,
@@ -101,8 +104,9 @@ router.get('/', async (req, res) => {
 });
 
 // Create campaign
-router.post('/', async (req, res) => {
+router.post('/', async (req: AuthenticatedRequest, res) => {
   try {
+    const userId = req.user!.id;
     const { name, description, resumeId, templateType, templateSubject, templateBody } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Campaign name is required.' });
@@ -113,6 +117,7 @@ router.post('/', async (req, res) => {
         name,
         description,
         resumeId: resumeId ? Number(resumeId) : null,
+        userId,
         templateType: templateType || 'AI_GENERATED',
         templateSubject: templateSubject || null,
         templateBody: templateBody || null,
@@ -127,11 +132,12 @@ router.post('/', async (req, res) => {
 });
 
 // Get campaign detail with contacts
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
-    const campaign = await prisma.campaign.findUnique({
-      where: { id },
+    const userId = req.user!.id;
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, userId },
       include: {
         resume: true,
         contacts: {
@@ -151,10 +157,19 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update campaign
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
+    const userId = req.user!.id;
     const { name, description, resumeId, status, templateType, templateSubject, templateBody } = req.body;
+
+    const existing = await prisma.campaign.findFirst({
+      where: { id, userId }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
 
     const campaign = await prisma.campaign.update({
       where: { id },
@@ -176,16 +191,21 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete campaign
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
-    const campaign = await prisma.campaign.findUnique({ where: { id } });
-    if (!campaign) {
-      return res.status(404).json({ error: 'Campaign not found' });
+    const userId = req.user!.id;
+
+    const existing = await prisma.campaign.findFirst({
+      where: { id, userId }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
     }
 
     await prisma.campaign.delete({ where: { id } });
-    await logger.info('API', `Deleted campaign: "${campaign.name}"`);
+    await logger.info('API', `Deleted campaign: "${existing.name}"`);
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to delete campaign' });
@@ -193,9 +213,19 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Start campaign sending
-router.post('/:id/start', async (req, res) => {
+router.post('/:id/start', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
+    const userId = req.user!.id;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, userId }
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
     await SendingEngine.startCampaign(id);
     res.json({ success: true });
   } catch (error: any) {
@@ -204,9 +234,19 @@ router.post('/:id/start', async (req, res) => {
 });
 
 // Pause campaign sending
-router.post('/:id/pause', async (req, res) => {
+router.post('/:id/pause', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
+    const userId = req.user!.id;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, userId }
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
     await SendingEngine.pauseCampaign(id);
     res.json({ success: true });
   } catch (error: any) {
@@ -215,9 +255,19 @@ router.post('/:id/pause', async (req, res) => {
 });
 
 // Cancel campaign (resets to draft)
-router.post('/:id/cancel', async (req, res) => {
+router.post('/:id/cancel', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
+    const userId = req.user!.id;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, userId }
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
     await SendingEngine.cancelCampaign(id);
     res.json({ success: true });
   } catch (error: any) {
@@ -226,9 +276,19 @@ router.post('/:id/cancel', async (req, res) => {
 });
 
 // Retry campaign failures
-router.post('/:id/retry', async (req, res) => {
+router.post('/:id/retry', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
+    const userId = req.user!.id;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, userId }
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
     await SendingEngine.retryFailures(id);
     res.json({ success: true });
   } catch (error: any) {
@@ -237,12 +297,17 @@ router.post('/:id/retry', async (req, res) => {
 });
 
 // AI Batch Generation endpoint
-router.post('/:id/generate', async (req, res) => {
+router.post('/:id/generate', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
-    const campaign = await prisma.campaign.findUnique({ where: { id } });
+    const userId = req.user!.id;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, userId }
+    });
+
     if (!campaign) {
-      return res.status(404).json({ error: 'Campaign not found' });
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
     }
 
     // Find all contacts that need email generation
@@ -264,7 +329,8 @@ router.post('/:id/generate', async (req, res) => {
     (async () => {
       await logger.info('EMAIL_GENERATION', `Starting generation for campaign "${campaign.name}" (${contacts.length} contacts) with method: ${campaign.templateType}`);
       
-      const settings = await prisma.settings.findUnique({ where: { id: 1 } }) || {
+      const campaignOwnerId = campaign.userId || userId;
+      const settings = await prisma.settings.findUnique({ where: { id: campaignOwnerId } }) || {
         name: 'Candidate',
         github: '',
         portfolio: '',

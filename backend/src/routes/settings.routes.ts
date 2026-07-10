@@ -1,20 +1,22 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma';
 import { logger } from '../utils/logger';
+import { AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
 // Get settings
-router.get('/', async (req, res) => {
+router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
+    const userId = req.user!.id;
     let settings = await prisma.settings.findUnique({
-      where: { id: 1 },
+      where: { id: userId },
     });
 
     // Auto-create settings if not found
     if (!settings) {
       settings = await prisma.settings.create({
-        data: { id: 1 },
+        data: { id: userId },
       });
     }
 
@@ -25,12 +27,13 @@ router.get('/', async (req, res) => {
 });
 
 // Update settings
-router.post('/', async (req, res) => {
+router.post('/', async (req: AuthenticatedRequest, res) => {
   try {
+    const userId = req.user!.id;
     const data = req.body;
 
     const updated = await prisma.settings.upsert({
-      where: { id: 1 },
+      where: { id: userId },
       update: {
         name: data.name ?? '',
         phone: data.phone ?? '',
@@ -47,7 +50,7 @@ router.post('/', async (req, res) => {
         technicalFilter: data.technicalFilter ?? true,
       },
       create: {
-        id: 1,
+        id: userId,
         name: data.name ?? '',
         phone: data.phone ?? '',
         portfolio: data.portfolio ?? '',

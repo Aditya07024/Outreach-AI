@@ -23,16 +23,18 @@ export class AIService {
       // 1. Load Contact and Settings
       const contact = await prisma.contact.findUnique({
         where: { id: contactId },
+        include: { campaign: true }
       });
       if (!contact) {
         throw new Error(`Contact with ID ${contactId} not found`);
       }
 
+      const userId = contact.campaign?.userId || 1;
       const settings = await prisma.settings.findUnique({
-        where: { id: 1 },
+        where: { id: userId },
       });
       if (!settings) {
-        throw new Error('Default system settings not found');
+        throw new Error(`Settings not found for user ID ${userId}`);
       }
 
       // Check if Grok API key is configured

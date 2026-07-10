@@ -13,12 +13,13 @@ export class GmailService {
   );
 
   /**
-   * Get OAuth authorization URL
+   * Get OAuth authorization URL, encoding userId in the state query parameter
    */
-  static getAuthUrl(): string {
+  static getAuthUrl(userId: number): string {
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline', // crucial to get refresh token
       prompt: 'consent',      // force consent screen to guarantee refresh token
+      state: String(userId),  // pass user ID as state parameter
       scope: [
         'https://www.googleapis.com/auth/gmail.send',
         'https://www.googleapis.com/auth/userinfo.email',
@@ -27,9 +28,9 @@ export class GmailService {
   }
 
   /**
-   * Complete Google Sign-In and save credentials
+   * Complete Google Sign-In and save credentials under the user's ID
    */
-  static async handleCallback(code: string): Promise<string> {
+  static async handleCallback(code: string, userId: number): Promise<string> {
     try {
       const { tokens } = await this.oauth2Client.getToken(code);
       this.oauth2Client.setCredentials(tokens);
@@ -46,9 +47,9 @@ export class GmailService {
       const encryptedAccessToken = encrypt(tokens.access_token || '');
       const encryptedRefreshToken = tokens.refresh_token ? encrypt(tokens.refresh_token) : null;
 
-      // Update or create Gmail credentials
+      // Update or create Gmail credentials for this specific user
       await prisma.gmailCredentials.upsert({
-        where: { id: 1 },
+        where: { id: userId },
         update: {
           email,
           accessToken: encryptedAccessToken,
@@ -58,7 +59,7 @@ export class GmailService {
           scope: tokens.scope,
         },
         create: {
-          id: 1,
+          id: userId,
           email,
           accessToken: encryptedAccessToken,
           refreshToken: encryptedRefreshToken,
@@ -68,32 +69,34 @@ export class GmailService {
         },
       });
 
-      await logger.info('OAUTH', `Connected Gmail account: ${email}`);
+      await logger.info('OAUTH', `Connected Gmail account for user ${userId}: ${email}`);
       return email;
     } catch (error: any) {
-      await logger.error('OAUTH', 'Failed to handle Google OAuth callback', error);
+      await logger.error('OAUTH', `Failed to handle Google OAuth callback for user ${userId}`, error);
       throw error;
     }
   }
 
   /**
-   * Disconnect Gmail connection
+   * Disconnect Gmail connection for a user
    */
-  static async disconnect(): Promise<void> {
+  static async disconnect(userId: number): Promise<void> {
     try {
-      await prisma.gmailCredentials.deleteMany();
-      await logger.info('OAUTH', 'Disconnected Gmail account');
+      await prisma.gmailCredentials.delete({
+        where: { id: userId }
+      });
+      await logger.info('OAUTH', `Disconnected Gmail account for user ${userId}`);
     } catch (error: any) {
-      await logger.error('OAUTH', 'Failed to disconnect Gmail credentials', error);
+      await logger.error('OAUTH', `Failed to disconnect Gmail credentials for user ${userId}`, error);
       throw error;
     }
   }
 
   /**
-   * Get connection status details
+   * Get connection status details for a user
    */
-  static async getConnectionStatus(): Promise<{ connected: boolean; email?: string }> {
-    const creds = await prisma.gmailCredentials.findUnique({ where: { id: 1 } });
+  static async getConnectionStatus(userId: number): Promise<{ connected: boolean; email?: string }> {
+    const creds = await prisma.gmailCredentials.findUnique({ where: { id: userId } });
     if (!creds) {
       return { connected: false };
     }
@@ -103,8 +106,8 @@ export class GmailService {
   /**
    * Get an authorized Gmail client instance, refreshing tokens if expired
    */
-  static async getClient(): Promise<any> {
-    const dbCreds = await prisma.gmailCredentials.findUnique({ where: { id: 1 } });
+  static async getClient(userId: number): Promise<any> {
+    const dbCreds = await prisma.gmailCredentials.findUnique({ where: { id: userId } });
     if (!dbCreds) {
       throw new Error('Gmail account not connected. Please authenticate via settings first.');
     }
@@ -132,20 +135,20 @@ export class GmailService {
 
     if (isExpired && refreshToken) {
       try {
-        await logger.info('OAUTH', 'Gmail access token expired. Refreshing token...');
+        await logger.info('OAUTH', `Gmail access token expired for user ${userId}. Refreshing token...`);
         const { credentials } = await client.refreshAccessToken();
         client.setCredentials(credentials);
 
         // Update DB with new tokens
         await prisma.gmailCredentials.update({
-          where: { id: 1 },
+          where: { id: userId },
           data: {
             accessToken: encrypt(credentials.access_token || ''),
             expiryDate: credentials.expiry_date ? BigInt(credentials.expiry_date) : null,
           },
         });
       } catch (err: any) {
-        await logger.error('OAUTH', 'Failed to refresh Gmail access token', err);
+        await logger.error('OAUTH', `Failed to refresh Gmail access token for user ${userId}`, err);
         throw new Error('Gmail session has expired. Please disconnect and reconnect Gmail.');
       }
     } else if (isExpired && !refreshToken) {
@@ -159,6 +162,7 @@ export class GmailService {
    * Send an email with optional PDF resume attachment
    */
   static async sendEmail(
+    userId: number,
     to: string,
     subject: string,
     body: string,
@@ -166,7 +170,7 @@ export class GmailService {
     attachmentName?: string
   ): Promise<string> {
     try {
-      const gmail = await this.getClient();
+      const gmail = await this.getClient(userId);
       const rawMime = this.buildMimeMessage(to, subject, body, attachmentPath, attachmentName);
       
       // Base64URL encode the MIME message
@@ -185,7 +189,7 @@ export class GmailService {
 
       return response.data.id;
     } catch (error: any) {
-      await logger.error('EMAIL_SENDING', `Failed to send email to ${to}`, error);
+      await logger.error('EMAIL_SENDING', `Failed to send email to ${to} for user ${userId}`, error);
       throw error;
     }
   }

@@ -104,6 +104,7 @@ export class SendingEngine {
 
       try {
         messageId = await GmailService.sendEmail(
+          campaign.userId || 1, // Scope email send to campaign owner
           contact.email,
           contact.emailSubject,
           contact.emailBody,
@@ -212,7 +213,7 @@ export class SendingEngine {
     const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
     if (!campaign) throw new Error('Campaign not found');
 
-    const status = await GmailService.getConnectionStatus();
+    const status = await GmailService.getConnectionStatus(campaign.userId || 1);
     if (!status.connected) {
       throw new Error('Please connect your Gmail account before starting the campaign.');
     }

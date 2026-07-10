@@ -6,6 +6,7 @@ import csvParser from 'csv-parser';
 import prisma from '../utils/prisma';
 import { logger } from '../utils/logger';
 import { AIService } from '../services/ai.service';
+import { AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/temp/' });
@@ -74,9 +75,10 @@ async function getDuplicateStatus(email: string, company: string | null, campaig
 }
 
 // Import CSV
-router.post('/import-csv', upload.single('file'), async (req, res) => {
+router.post('/import-csv', upload.single('file'), async (req: AuthenticatedRequest, res) => {
   const file = req.file;
   const campaignId = Number(req.body.campaignId);
+  const userId = req.user!.id;
 
   if (!file) {
     return res.status(400).json({ error: 'No CSV file uploaded' });
@@ -86,7 +88,16 @@ router.post('/import-csv', upload.single('file'), async (req, res) => {
   }
 
   try {
-    const settings = await prisma.settings.findUnique({ where: { id: 1 } }) || { technicalFilter: true };
+    // Verify campaign ownership
+    const campaign = await prisma.campaign.findFirst({
+      where: { id: campaignId, userId }
+    });
+    if (!campaign) {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
+    const settings = await prisma.settings.findUnique({ where: { id: userId } }) || { technicalFilter: true };
     const results: any[] = [];
 
     // Parse CSV
@@ -187,14 +198,24 @@ router.post('/import-csv', upload.single('file'), async (req, res) => {
 });
 
 // Import Pasted Text Email List
-router.post('/import-paste', async (req, res) => {
+router.post('/import-paste', async (req: AuthenticatedRequest, res) => {
   const { emailsText, campaignId } = req.body;
+  const userId = req.user!.id;
+
   if (!emailsText || !campaignId) {
     return res.status(400).json({ error: 'Emails list and Campaign ID are required.' });
   }
 
   try {
     const campaignIdNum = Number(campaignId);
+
+    // Verify campaign ownership
+    const campaign = await prisma.campaign.findFirst({
+      where: { id: campaignIdNum, userId }
+    });
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
     
     // Split by commas, semicolons, newlines, spaces
     const rawEmails = emailsText.split(/[\n,\t; ]+/);
@@ -246,8 +267,9 @@ router.post('/import-paste', async (req, res) => {
 });
 
 // Import Single Manual Contact
-router.post('/import-manual', async (req, res) => {
+router.post('/import-manual', async (req: AuthenticatedRequest, res) => {
   const { campaignId, email, firstName, lastName, title, company, phone, linkedin, country } = req.body;
+  const userId = req.user!.id;
 
   if (!campaignId || !email) {
     return res.status(400).json({ error: 'Campaign ID and Email are required.' });
@@ -255,6 +277,15 @@ router.post('/import-manual', async (req, res) => {
 
   try {
     const campaignIdNum = Number(campaignId);
+
+    // Verify campaign ownership
+    const campaign = await prisma.campaign.findFirst({
+      where: { id: campaignIdNum, userId }
+    });
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
     const isTechnical = checkIsTechnical(title || '');
     const dupStatus = await getDuplicateStatus(email, company || null, campaignIdNum);
 
@@ -287,10 +318,22 @@ router.post('/import-manual', async (req, res) => {
 });
 
 // Edit specific contact (used in email custom review)
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
+    const userId = req.user!.id;
     const { firstName, lastName, company, role, emailSubject, emailBody, status } = req.body;
+
+    const existing = await prisma.contact.findFirst({
+      where: {
+        id,
+        campaign: { userId }
+      }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Contact not found or unauthorized' });
+    }
 
     const contact = await prisma.contact.update({
       where: { id },
@@ -312,9 +355,22 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete specific contact
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
+    const userId = req.user!.id;
+
+    const existing = await prisma.contact.findFirst({
+      where: {
+        id,
+        campaign: { userId }
+      }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Contact not found or unauthorized' });
+    }
+
     await prisma.contact.delete({ where: { id } });
     res.json({ success: true });
   } catch (error: any) {
@@ -323,9 +379,22 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Regenerate single email using AI
-router.post('/:id/regenerate', async (req, res) => {
+router.post('/:id/regenerate', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
+    const userId = req.user!.id;
+
+    const existing = await prisma.contact.findFirst({
+      where: {
+        id,
+        campaign: { userId }
+      }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Contact not found or unauthorized' });
+    }
+
     const email = await AIService.generateEmail(id);
     
     const contact = await prisma.contact.update({

@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import prisma from '../utils/prisma';
 import { logger } from '../utils/logger';
+import { AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -38,9 +39,11 @@ const upload = multer({
 });
 
 // List all resumes
-router.get('/', async (req, res) => {
+router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
+    const userId = req.user!.id;
     const resumes = await prisma.resume.findMany({
+      where: { userId },
       orderBy: { uploadedAt: 'desc' },
     });
     res.json(resumes);
@@ -50,8 +53,9 @@ router.get('/', async (req, res) => {
 });
 
 // Upload resume
-router.post('/', upload.single('resume'), async (req, res) => {
+router.post('/', upload.single('resume'), async (req: AuthenticatedRequest, res) => {
   try {
+    const userId = req.user!.id;
     if (!req.file) {
       return res.status(400).json({ error: 'Please upload a PDF file.' });
     }
@@ -61,6 +65,7 @@ router.post('/', upload.single('resume'), async (req, res) => {
       data: {
         name,
         filePath: req.file.path,
+        userId,
       },
     });
 
@@ -73,10 +78,14 @@ router.post('/', upload.single('resume'), async (req, res) => {
 });
 
 // Delete resume
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
-    const resume = await prisma.resume.findUnique({ where: { id } });
+    const userId = req.user!.id;
+    const resume = await prisma.resume.findFirst({
+      where: { id, userId },
+    });
+    
     if (!resume) {
       return res.status(404).json({ error: 'Resume not found' });
     }
@@ -89,10 +98,10 @@ router.delete('/:id', async (req, res) => {
     await prisma.resume.delete({ where: { id } });
 
     // Check if this was set as default and unset it
-    const settings = await prisma.settings.findUnique({ where: { id: 1 } });
+    const settings = await prisma.settings.findUnique({ where: { id: userId } });
     if (settings?.defaultResumeId === id) {
       await prisma.settings.update({
-        where: { id: 1 },
+        where: { id: userId },
         data: { defaultResumeId: null },
       });
     }
