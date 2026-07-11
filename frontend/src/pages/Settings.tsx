@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield } from 'lucide-react';
+import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send } from 'lucide-react';
 import { Settings as SettingsType, Resume } from '../types';
 
 interface SettingsProps {
@@ -12,6 +12,13 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Test Email Sender state variables
+  const [testTo, setTestTo] = useState('');
+  const [testSubject, setTestSubject] = useState('Outreach AI - Standalone Connection Test');
+  const [testBody, setTestBody] = useState('Hi,\n\nThis is a standalone test email sent from Outreach-AI to verify my Gmail API integration.\n\nBest regards,\nCandidate');
+  const [testResumeId, setTestResumeId] = useState<number | null>(null);
+  const [isSendingTest, setIsSendingTest] = useState(false);
 
   const { register, handleSubmit, reset, setValue } = useForm<SettingsType>();
 
@@ -93,8 +100,36 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
     }
   };
 
+  const handleSendTestEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gmailStatus?.connected) {
+      alert('Please connect your Gmail account first.');
+      return;
+    }
+    setIsSendingTest(true);
+    try {
+      const response = await fetch('/api/settings/send-test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: testTo,
+          subject: testSubject,
+          body: testBody,
+          resumeId: testResumeId
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to send test email.');
+      alert('Test email successfully sent! Check your inbox (or sent folder).');
+    } catch (err: any) {
+      alert(err.message || 'Failed to send test email.');
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8 animate-fade-in">
+    <div className="p-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
       
       <div>
         <h2 className="text-xl font-bold text-neutral-100 tracking-tight">Configuration Settings</h2>
@@ -103,7 +138,7 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left Col: OAuth & Setup status */}
         <div className="space-y-6">
@@ -158,20 +193,96 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
               <Shield className="w-4 h-4 text-neutral-400" />
               Security Information
             </h3>
-            <p className="text-[10px] text-neutral-500 leading-relaxed">
+            <p className="text-[10px] text-neutral-550 leading-relaxed">
               Google OAuth tokens are stored in the database encrypted using AES-256-CBC encryption. 
               API keys are loaded securely via backend server environment variables.
             </p>
           </div>
+
+          {/* Direct Test Email Sender */}
+          <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-5 space-y-4">
+            <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
+              <Send className="w-4 h-4 text-neutral-400" />
+              Test Email Sender
+            </h3>
+            <p className="text-[10px] text-neutral-500 leading-relaxed">
+              Send a test email directly to any address to verify email routing and attachment loading.
+            </p>
+
+            <form onSubmit={handleSendTestEmail} className="space-y-3.5 pt-1">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">Recipient Email</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. test@inbox.com"
+                  value={testTo}
+                  onChange={(e) => setTestTo(e.target.value)}
+                  className="rounded-md border border-neutral-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">Subject</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Connection Test"
+                  value={testSubject}
+                  onChange={(e) => setTestSubject(e.target.value)}
+                  className="rounded-md border border-neutral-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">Message Body</label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="Test email content..."
+                  value={testBody}
+                  onChange={(e) => setTestBody(e.target.value)}
+                  className="rounded-md border border-neutral-800 bg-zinc-950 p-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700 resize-none font-sans"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">Attach Resume PDF</label>
+                <select
+                  value={testResumeId || ''}
+                  onChange={(e) => setTestResumeId(e.target.value ? Number(e.target.value) : null)}
+                  className="rounded-md border border-neutral-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none"
+                >
+                  <option value="">No Resume Attachment</option>
+                  {resumes.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSendingTest || !gmailStatus?.connected}
+                className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-md text-xs transition-colors disabled:opacity-40"
+              >
+                {!gmailStatus?.connected 
+                  ? 'Connect Gmail First' 
+                  : isSendingTest 
+                    ? 'Sending Test Email...' 
+                    : 'Send Test Email'
+                }
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* Right Col: Forms */}
-        <div className="md:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6">
           
           <form onSubmit={handleSubmit(onSaveSettings)} className="space-y-6">
             
             {/* PROFILE DETAILS */}
-            <div className="border border-neutral-850 bg-zinc-900/5 rounded-xl p-6 space-y-4">
+            <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-6 space-y-4">
               <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-900 pb-2">
                 <Sliders className="w-4 h-4 text-neutral-400" />
                 Personal Profile Variables
@@ -262,7 +373,7 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
                   <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Default Resume</label>
                   <select
                     {...register('defaultResumeId')}
-                    className="rounded-md border border-neutral-800 bg-zinc-950 px-3 py-2 text-xs text-neutral-200 focus:outline-none"
+                    className="rounded-md border border-neutral-800 bg-zinc-950 px-3 py-2 text-xs text-neutral-205 focus:outline-none"
                   >
                     <option value="">No Default Resume</option>
                     {resumes.map((r) => (
@@ -274,7 +385,7 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
             </div>
 
             {/* SENDING CONFIGURATIONS */}
-            <div className="border border-neutral-850 bg-zinc-900/5 rounded-xl p-6 space-y-4">
+            <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-6 space-y-4">
               <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-900 pb-2">
                 <Sliders className="w-4 h-4 text-neutral-400" />
                 Queue Delays & Filters
@@ -310,14 +421,14 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
                   {...register('technicalFilter')}
                   className="rounded border-neutral-800 bg-zinc-950/40 w-4 h-4 focus:ring-0 focus:outline-none"
                 />
-                <label htmlFor="technicalFilter" className="text-xs font-medium text-neutral-300 cursor-pointer select-none">
+                <label htmlFor="technicalFilter" className="text-xs font-medium text-neutral-350 cursor-pointer select-none">
                   Enable Recruiter Title Technical Filter (only import technical recruiter contacts)
                 </label>
               </div>
             </div>
 
             {/* AI SYSTEM PROMPT */}
-            <div className="border border-neutral-850 bg-zinc-900/5 rounded-xl p-6 space-y-4">
+            <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-6 space-y-4">
               <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-900 pb-2">
                 <Cpu className="w-4 h-4 text-neutral-400" />
                 AI Writing Prompt Parameters

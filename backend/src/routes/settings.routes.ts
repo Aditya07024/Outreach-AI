@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../utils/prisma';
 import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { GmailService } from '../services/gmail.service';
 
 const router = Router();
 
@@ -72,6 +73,46 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
   } catch (error: any) {
     await logger.error('API', 'Failed to update settings', error);
     res.status(500).json({ error: error.message || 'Failed to update settings' });
+  }
+});
+
+// Send direct test email
+router.post('/send-test-email', async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { to, subject, body, resumeId } = req.body;
+
+    if (!to || !subject || !body) {
+      return res.status(400).json({ error: 'Recipient email, subject, and body are required.' });
+    }
+
+    let fileContent: string | undefined = undefined;
+    let fileName: string | undefined = undefined;
+
+    if (resumeId) {
+      const resume = await prisma.resume.findFirst({
+        where: { id: Number(resumeId), userId }
+      });
+      if (resume) {
+        fileContent = resume.fileContent || undefined;
+        fileName = `${resume.name}.pdf`;
+      }
+    }
+
+    const messageId = await GmailService.sendEmail(
+      userId,
+      to,
+      subject,
+      body,
+      fileContent,
+      fileName
+    );
+
+    await logger.info('API', `Direct test email successfully sent to ${to} (Message ID: ${messageId})`);
+    res.json({ success: true, messageId, message: 'Test email sent successfully!' });
+  } catch (error: any) {
+    await logger.error('API', `Failed to send direct test email to ${req.body?.to}`, error);
+    res.status(500).json({ error: error.message || 'Failed to send test email.' });
   }
 });
 
