@@ -68,6 +68,7 @@ export const App: React.FC = () => {
     paidUntil: string | null;
   } | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchUserProfile = async () => {
     if (!localStorage.getItem('token')) {
@@ -208,15 +209,18 @@ export const App: React.FC = () => {
                   onLogout={handleLogout} 
                   isPaid={isPaid} 
                   userRole={currentUser?.role}
+                  isOpen={sidebarOpen}
+                  onClose={() => setSidebarOpen(false)}
                 />
 
                 {/* Main Content Pane */}
-                <div className="flex-1 pl-64 flex flex-col min-h-screen">
+                <div className="flex-1 md:pl-64 flex flex-col min-h-screen">
                   
                   {/* Top Navbar */}
                   <Header 
                     title={isPaid ? currentTitle : "Subscription Plans"} 
                     gmailStatus={gmailStatus} 
+                    onMenuClick={() => setSidebarOpen(!sidebarOpen)}
                   />
 
                   {/* View Router */}
