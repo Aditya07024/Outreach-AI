@@ -187,18 +187,6 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
             </div>
           </div>
 
-          {/* Local Security rules */}
-          <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-5 space-y-2">
-            <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
-              <Shield className="w-4 h-4 text-neutral-400" />
-              Security Information
-            </h3>
-            <p className="text-[10px] text-neutral-550 leading-relaxed">
-              Google OAuth tokens are stored in the database encrypted using AES-256-CBC encryption. 
-              API keys are loaded securely via backend server environment variables.
-            </p>
-          </div>
-
           {/* Direct Test Email Sender */}
           <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-5 space-y-4">
             <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">

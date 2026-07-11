@@ -322,78 +322,97 @@ router.post('/:id/generate', async (req: AuthenticatedRequest, res) => {
       return res.json({ message: 'No pending contacts require email generation.' });
     }
 
+    // Set campaign status to GENERATING
+    await prisma.campaign.update({
+      where: { id },
+      data: { status: 'GENERATING' }
+    });
+
     // Process generation asynchronously in the background so request completes quickly
     res.json({ success: true, count: contacts.length, message: `Email generation started for ${contacts.length} contacts.` });
 
     // Background generation execution
     (async () => {
-      await logger.info('EMAIL_GENERATION', `Starting generation for campaign "${campaign.name}" (${contacts.length} contacts) with method: ${campaign.templateType}`);
-      
-      const campaignOwnerId = campaign.userId || userId;
-      const settings = await prisma.settings.findUnique({ where: { id: campaignOwnerId } }) || {
-        name: 'Candidate',
-        github: '',
-        portfolio: '',
-        phone: '',
-        linkedin: '',
-        preferredRole: 'Software Engineer',
-        location: ''
-      };
+      try {
+        await logger.info('EMAIL_GENERATION', `Starting generation for campaign "${campaign.name}" (${contacts.length} contacts) with method: ${campaign.templateType}`);
+        
+        const campaignOwnerId = campaign.userId || userId;
+        const settings = await prisma.settings.findUnique({ where: { id: campaignOwnerId } }) || {
+          name: 'Candidate',
+          github: '',
+          portfolio: '',
+          phone: '',
+          linkedin: '',
+          preferredRole: 'Software Engineer',
+          location: ''
+        };
 
-      for (const contact of contacts) {
-        // Double check campaign is not deleted or changed status
-        const currentCampaign = await prisma.campaign.findUnique({
-          where: { id },
-          select: { status: true, templateType: true, templateSubject: true, templateBody: true },
-        });
-        if (!currentCampaign) break;
+        for (const contact of contacts) {
+          // Double check campaign is not deleted or changed status
+          const currentCampaign = await prisma.campaign.findUnique({
+            where: { id },
+            select: { status: true, templateType: true, templateSubject: true, templateBody: true },
+          });
+          if (!currentCampaign || currentCampaign.status !== 'GENERATING') break;
 
-        // Set status to GENERATING
-        await prisma.contact.update({
-          where: { id: contact.id },
-          data: { status: 'GENERATING' },
-        });
+          // Set status to GENERATING
+          await prisma.contact.update({
+            where: { id: contact.id },
+            data: { status: 'GENERATING' },
+          });
 
-        try {
-          let subject = '';
-          let body = '';
+          try {
+            let subject = '';
+            let body = '';
 
-          if (currentCampaign.templateType === 'SAVED_TEMPLATE') {
-            subject = replacePlaceholders(currentCampaign.templateSubject, contact, settings);
-            body = replacePlaceholders(currentCampaign.templateBody, contact, settings);
-          } else if (currentCampaign.templateType === 'MANUAL') {
-            const defaultSubject = 'Opportunities at {company} - {role} Application';
-            const defaultBody = 'Hi {firstName},\n\nI am writing to express my interest in software engineering opportunities at {company}, specifically for the {role} role.\n\n[Custom edits...]\n\nBest regards,\n{name}\n{portfolio}\n{github}';
-            subject = replacePlaceholders(defaultSubject, contact, settings);
-            body = replacePlaceholders(defaultBody, contact, settings);
-          } else {
-            // Default: AI_GENERATED (Grok)
-            const generated = await AIService.generateEmail(contact.id);
-            subject = generated.subject;
-            body = generated.body;
+            if (currentCampaign.templateType === 'SAVED_TEMPLATE') {
+              subject = replacePlaceholders(currentCampaign.templateSubject, contact, settings);
+              body = replacePlaceholders(currentCampaign.templateBody, contact, settings);
+            } else if (currentCampaign.templateType === 'MANUAL') {
+              const defaultSubject = 'Opportunities at {company} - {role} Application';
+              const defaultBody = 'Hi {firstName},\n\nI am writing to express my interest in software engineering opportunities at {company}, specifically for the {role} role.\n\n[Custom edits...]\n\nBest regards,\n{name}\n{portfolio}\n{github}';
+              subject = replacePlaceholders(defaultSubject, contact, settings);
+              body = replacePlaceholders(defaultBody, contact, settings);
+            } else {
+              // Default: AI_GENERATED (Grok)
+              const generated = await AIService.generateEmail(contact.id);
+              subject = generated.subject;
+              body = generated.body;
+            }
+
+            await prisma.contact.update({
+              where: { id: contact.id },
+              data: {
+                emailSubject: subject,
+                emailBody: body,
+                status: 'READY_TO_SEND',
+              },
+            });
+          } catch (err: any) {
+            await prisma.contact.update({
+              where: { id: contact.id },
+              data: { status: 'FAILED' },
+            });
+            await logger.error(
+              'EMAIL_GENERATION',
+              `Generation failed for contact ${contact.email}`,
+              { contactId: contact.id, error: err.message || err }
+            );
           }
-
-          await prisma.contact.update({
-            where: { id: contact.id },
-            data: {
-              emailSubject: subject,
-              emailBody: body,
-              status: 'READY_TO_SEND',
-            },
+        }
+        await logger.info('EMAIL_GENERATION', `Completed email generation for campaign "${campaign.name}"`);
+      } catch (err: any) {
+        console.error('Error in batch generation routine:', err);
+      } finally {
+        // Reset campaign status back to DRAFT when done
+        const currentCamp = await prisma.campaign.findUnique({ where: { id }, select: { status: true } });
+        if (currentCamp && currentCamp.status === 'GENERATING') {
+          await prisma.campaign.update({
+            where: { id },
+            data: { status: 'DRAFT' },
           });
-        } catch (err: any) {
-          await prisma.contact.update({
-            where: { id: contact.id },
-            data: { status: 'FAILED' },
-          });
-          await logger.error(
-            'EMAIL_GENERATION',
-            `Generation failed for contact ${contact.email}`,
-            { contactId: contact.id, error: err.message || err }
-          );
         }
       }
-      await logger.info('EMAIL_GENERATION', `Completed email generation for campaign "${campaign.name}"`);
     })().catch((err) => console.error('Error in batch generation routine:', err));
 
   } catch (error: any) {

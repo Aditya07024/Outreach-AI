@@ -49,6 +49,20 @@ export const Campaigns: React.FC = () => {
 
   // Active generation tracking
   const [isGeneratingEmails, setIsGeneratingEmails] = useState(false);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+
+  const fetchActivityLogs = async () => {
+    try {
+      const res = await fetch('/api/logs?limit=30');
+      if (res.ok) {
+        const data = await res.json();
+        const filtered = data.filter((l: any) => l.source === 'EMAIL_GENERATION' || l.source === 'EMAIL_SENDING');
+        setActivityLogs(filtered);
+      }
+    } catch (err) {
+      console.error('Failed to load activity logs', err);
+    }
+  };
 
   const fetchCampaigns = async () => {
     try {
@@ -91,9 +105,11 @@ export const Campaigns: React.FC = () => {
   useEffect(() => {
     if (selectedCampId) {
       fetchCampaignDetails(selectedCampId);
+      fetchActivityLogs();
       
       const hasActiveProcess = 
         campaignDetails?.status === 'SENDING' || 
+        campaignDetails?.status === 'GENERATING' ||
         campaignDetails?.contacts?.some(c => c.status === 'GENERATING') ||
         isGeneratingEmails;
 
@@ -102,6 +118,7 @@ export const Campaigns: React.FC = () => {
       const timer = setInterval(() => {
         fetchCampaignDetails(selectedCampId);
         fetchCampaigns();
+        fetchActivityLogs();
       }, intervalMs);
 
       return () => clearInterval(timer);
@@ -754,7 +771,7 @@ export const Campaigns: React.FC = () => {
                 const failed = campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0;
 
                 const isSendingActive = campaignDetails.status === 'SENDING';
-                const isGeneratingActive = generating > 0 || (isGeneratingEmails && (generating > 0 || pendingAI > 0));
+                const isGeneratingActive = campaignDetails.status === 'GENERATING' || generating > 0 || (isGeneratingEmails && (generating > 0 || pendingAI > 0));
 
                 if (isGeneratingActive) {
                   const completed = total - pendingAI - generating;
@@ -818,6 +835,42 @@ export const Campaigns: React.FC = () => {
                     <span className={`text-base font-bold mt-1 block ${stat.color}`}>{stat.count}</span>
                   </div>
                 ))}
+              </div>
+
+              {/* Live Activity logs terminal */}
+              <div className="border border-neutral-800 bg-zinc-950 rounded-xl overflow-hidden shadow-inner space-y-0">
+                <div className="bg-zinc-900/60 px-4 py-2 border-b border-neutral-900 flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest flex items-center gap-1.5 font-sans">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    Live Campaign Console
+                  </span>
+                  <span className="text-[9px] text-neutral-500 font-mono font-medium">Real-time activity logs</span>
+                </div>
+                <div className="p-4 max-h-[160px] overflow-y-auto space-y-1.5 font-mono text-[10px] leading-relaxed text-neutral-400 select-text">
+                  {activityLogs.length === 0 ? (
+                    <div className="text-neutral-600 text-center py-6">No recent outreach events. Start drafting or sending to stream live activity.</div>
+                  ) : (
+                    activityLogs.map((log) => {
+                      const timeStr = new Date(log.timestamp).toLocaleTimeString();
+                      const isError = log.level === 'ERROR';
+                      const isWarn = log.level === 'WARN';
+                      return (
+                        <div key={log.id} className="flex gap-2.5 items-start">
+                          <span className="text-neutral-600 flex-shrink-0">[{timeStr}]</span>
+                          <span className={`flex-shrink-0 font-bold ${isError ? 'text-rose-500' : isWarn ? 'text-amber-500' : 'text-indigo-400'}`}>
+                            [{log.source}]
+                          </span>
+                          <span className={isError ? 'text-rose-300' : isWarn ? 'text-amber-300' : 'text-neutral-300'}>
+                            {log.message}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
               {/* Import Contacts Section */}

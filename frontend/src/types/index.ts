@@ -43,7 +43,7 @@ export interface Campaign {
   id: number;
   name: string;
   description: string | null;
-  status: 'DRAFT' | 'SENDING' | 'PAUSED' | 'COMPLETED';
+  status: 'DRAFT' | 'SENDING' | 'GENERATING' | 'PAUSED' | 'COMPLETED';
   resumeId: number | null;
   resume?: Resume | null;
   templateType?: 'AI_GENERATED' | 'SAVED_TEMPLATE' | 'MANUAL';
