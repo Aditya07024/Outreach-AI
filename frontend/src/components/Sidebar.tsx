@@ -8,15 +8,20 @@ import {
   History, 
   Terminal,
   Mail,
-  PenSquare
+  PenSquare,
+  Lock,
+  CreditCard,
+  ShieldAlert
 } from 'lucide-react';
 
 interface SidebarProps {
   gmailStatus: { connected: boolean; email?: string } | null;
   onLogout?: () => void;
+  isPaid?: boolean;
+  userRole?: string;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ gmailStatus, onLogout }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ gmailStatus, onLogout, isPaid = true, userRole }) => {
   const links = [
     { to: '/', name: 'Dashboard', icon: LayoutDashboard },
     { to: '/compose', name: 'Compose Email', icon: PenSquare },
@@ -24,9 +29,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ gmailStatus, onLogout }) => {
     { to: '/outbox', name: 'Outbox / Queue', icon: Mail },
     { to: '/resumes', name: 'Resumes', icon: FileText },
     { to: '/history', name: 'History', icon: History },
-    { to: '/logs', name: 'Logs', icon: Terminal },
+    // { to: '/logs', name: 'Logs', icon: Terminal },
     { to: '/settings', name: 'Settings', icon: Settings },
+    { to: '/subscription', name: 'Subscription', icon: CreditCard },
   ];
+
+  const activeLinks = [...links];
+  if (userRole === 'super_admin') {
+    activeLinks.push({ to: '/admin-portal', name: 'Admin Portal', icon: ShieldAlert });
+  }
 
   return (
     <aside className="w-64 border-r border-neutral-800 bg-zinc-950 flex flex-col justify-between h-screen fixed left-0 top-0 z-20">
@@ -41,22 +52,37 @@ export const Sidebar: React.FC<SidebarProps> = ({ gmailStatus, onLogout }) => {
 
         {/* Navigation Links */}
         <nav className="flex flex-col gap-1">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md transition-colors ${
-                  isActive
-                    ? 'bg-neutral-900 text-neutral-100'
-                    : 'text-neutral-400 hover:bg-neutral-900/50 hover:text-neutral-200'
-                }`
-              }
-            >
-              <link.icon className="w-4 h-4" />
-              {link.name}
-            </NavLink>
-          ))}
+          {activeLinks.map((link) => {
+            const isLinkRestricted = link.to !== '/' && link.to !== '/settings' && link.to !== '/subscription' && link.to !== '/admin-portal';
+            const isLinkDisabled = !isPaid && isLinkRestricted;
+
+            return (
+              <NavLink
+                key={link.to}
+                to={isLinkDisabled ? '#' : link.to}
+                onClick={(e) => {
+                  if (isLinkDisabled) {
+                    e.preventDefault();
+                  }
+                }}
+                className={({ isActive }) =>
+                  `flex items-center justify-between px-3 py-2 text-xs font-medium rounded-md transition-colors ${
+                    isLinkDisabled
+                      ? 'text-neutral-600 cursor-not-allowed opacity-50'
+                      : isActive
+                      ? 'bg-neutral-900 text-neutral-100'
+                      : 'text-neutral-400 hover:bg-neutral-900/50 hover:text-neutral-200'
+                  }`
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <link.icon className="w-4 h-4" />
+                  {link.name}
+                </div>
+                {isLinkDisabled && <Lock className="w-3.5 h-3.5 text-neutral-650" />}
+              </NavLink>
+            );
+          })}
         </nav>
       </div>
 

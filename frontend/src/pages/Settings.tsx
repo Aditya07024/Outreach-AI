@@ -243,7 +243,7 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
                 >
                   <option value="">No Resume Attachment</option>
                   {resumes.map((r) => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
+                    <option key={r.id} value={r.id}>{r.name}{r.description ? ` — ${r.description}` : ''}</option>
                   ))}
                 </select>
               </div>
@@ -365,7 +365,7 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
                   >
                     <option value="">No Default Resume</option>
                     {resumes.map((r) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
+                      <option key={r.id} value={r.id}>{r.name}{r.description ? ` — ${r.description}` : ''}</option>
                     ))}
                   </select>
                 </div>

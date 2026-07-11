@@ -15,6 +15,7 @@ import contactRoutes from './routes/contacts.routes';
 import historyRoutes from './routes/history.routes';
 import logsRoutes from './routes/logs.routes';
 import healthRoutes from './routes/health.routes';
+import adminRoutes from './routes/admin.routes';
 
 // Services
 import { SendingEngine } from './services/sending.engine';
@@ -38,6 +39,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Middleware
 import { requireAuth } from './middleware/auth';
+import { requirePaid } from './middleware/paid';
 
 // Ensure upload directories exist
 const uploadResumesDir = path.join(__dirname, '../uploads/resumes');
@@ -53,11 +55,12 @@ app.use('/api/health', healthRoutes);
 // Register Protected Routes
 app.use('/api/auth/google', authRoutes);
 app.use('/api/settings', requireAuth, settingsRoutes);
-app.use('/api/resumes', requireAuth, resumeRoutes);
-app.use('/api/campaigns', requireAuth, campaignRoutes);
-app.use('/api/contacts', requireAuth, contactRoutes);
-app.use('/api/history', requireAuth, historyRoutes);
-app.use('/api/logs', requireAuth, logsRoutes);
+app.use('/api/resumes', requireAuth, requirePaid, resumeRoutes);
+app.use('/api/campaigns', requireAuth, requirePaid, campaignRoutes);
+app.use('/api/contacts', requireAuth, requirePaid, contactRoutes);
+app.use('/api/history', requireAuth, requirePaid, historyRoutes);
+app.use('/api/logs', requireAuth, requirePaid, logsRoutes);
+app.use('/api/admin', requireAuth, adminRoutes);
 
 // Catch-all 404
 app.use((req, res) => {
@@ -88,6 +91,15 @@ async function startServer() {
         },
       });
       console.log('Seeded default settings row.');
+    }
+
+    // Sync the PostgreSQL autoincrement sequence for User id
+    try {
+      await prisma.$executeRawUnsafe(
+        `SELECT setval(pg_get_serial_sequence('"User"', 'id'), coalesce(max(id), 1)) FROM "User";`
+      );
+    } catch (seqError) {
+      console.warn('Could not sync User id sequence (this is normal if using a different DB provider like SQLite):', seqError);
     }
 
     // Start background queue scheduler

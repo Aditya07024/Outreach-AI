@@ -189,7 +189,7 @@ export const Compose: React.FC<ComposeProps> = ({ gmailStatus }) => {
               >
                 <option value="">No Resume Attachment</option>
                 {resumes.map((r) => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
+                  <option key={r.id} value={r.id}>{r.name}{r.description ? ` — ${r.description}` : ''}</option>
                 ))}
               </select>
             </div>

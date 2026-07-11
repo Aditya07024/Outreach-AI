@@ -69,14 +69,9 @@ router.get('/callback', async (req, res) => {
         });
       }
 
-      // If user is paid, redirect to frontend with JWT token
-      if (user.paid || user.role === 'admin') {
-        const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '365d' });
-        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/#token=${token}`);
-      } else {
-        // Otherwise, redirect to payment screen with user ID
-        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/#payment_required=true&userId=${user.id}`);
-      }
+      // Always issue JWT token and redirect to frontend (gating is handled on /me and on frontend)
+      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '365d' });
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/#token=${token}`);
     } else {
       // 2. CONNECT GMAIL ACCOUNT FLOW
       const userId = state ? Number(state) : 1;
@@ -86,6 +81,40 @@ router.get('/callback', async (req, res) => {
   } catch (error: any) {
     await logger.error('OAUTH', 'OAuth callback exchange failed', error);
     res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/#error=${encodeURIComponent(error.message || 'auth_failed')}`);
+  }
+});
+
+// Get current authenticated user profile
+router.get('/me', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Calculate dynamic paid status based on plan expiration
+    const isPaid = user.role === 'admin' || (
+      user.paid && (
+        user.plan !== 'yearly' || 
+        !user.paidUntil || 
+        user.paidUntil > new Date()
+      )
+    );
+
+    res.json({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      paid: isPaid,
+      plan: user.plan,
+      paidUntil: user.paidUntil
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to retrieve user profile' });
   }
 });
 
@@ -121,10 +150,10 @@ router.post('/login', async (req, res) => {
 
   try {
     if (password === ADMIN_PASSWORD) {
-      // Find or create User 1 (Admin)
-      let user = await prisma.user.findUnique({ where: { id: 1 } });
+      // Find or create Admin User (local admin has no email)
+      let user = await prisma.user.findFirst({ where: { role: 'admin', email: null } });
       if (!user) {
-        user = await prisma.user.create({ data: { id: 1, role: 'admin', paid: true } });
+        user = await prisma.user.create({ data: { role: 'admin', paid: true } });
       }
 
       const token = jwt.sign({ id: user.id, role: 'admin' }, JWT_SECRET, { expiresIn: '365d' });
@@ -137,23 +166,27 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// 2. Create Razorpay order
-router.post('/razorpay/order', async (req, res) => {
-  const { amount } = req.body; // In paisa, e.g. 49900 for Rs. 499
+// 2. Create Razorpay order (protected by requireAuth)
+router.post('/razorpay/order', requireAuth, async (req: AuthenticatedRequest, res) => {
+  const { plan } = req.body;
   
-  if (!amount) {
-    return res.status(400).json({ error: 'Amount is required' });
+  if (!plan || (plan !== 'yearly' && plan !== 'lifetime')) {
+    return res.status(400).json({ error: 'Valid plan (yearly or lifetime) is required.' });
   }
+
+  const amount = plan === 'yearly' ? 10000 : 30000; // Rs. 100 or Rs. 300 in paisa
+  const userId = req.user!.id;
 
   try {
     const keyId = process.env.RAZORPAY_KEY_ID || '';
     if (!keyId || keyId.includes('yourkeyid')) {
       // Mock order for easy local/deployment testing without production credentials
       return res.json({
-        id: `order_mock_${Date.now()}`,
+        id: `order_mock_${plan}_${Date.now()}`,
         amount,
         currency: 'INR',
-        mock: true
+        mock: true,
+        plan
       });
     }
 
@@ -165,44 +198,48 @@ router.post('/razorpay/order', async (req, res) => {
     const order = await razorpay.orders.create({
       amount,
       currency: 'INR',
-      receipt: `receipt_${Date.now()}`
+      receipt: `receipt_${Date.now()}`,
+      notes: {
+        plan,
+        userId: String(userId)
+      }
     });
 
     const orderData = JSON.parse(JSON.stringify(order));
     return res.json({
       ...orderData,
-      key_id: keyId
+      key_id: keyId,
+      plan
     });
   } catch (error: any) {
     return res.status(500).json({ error: error.message || 'Razorpay order creation failed' });
   }
 });
 
-// 3. Verify Razorpay payment signature
-router.post('/razorpay/verify', async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, userId } = req.body;
+// 3. Verify Razorpay payment signature (protected by requireAuth)
+router.post('/razorpay/verify', requireAuth, async (req: AuthenticatedRequest, res) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } = req.body;
+  const userId = req.user!.id;
 
   if (!razorpay_order_id || !razorpay_payment_id) {
     return res.status(400).json({ error: 'Order ID and Payment ID are required' });
   }
 
   try {
-    const handleSuccessPayment = async () => {
-      let user;
-      if (userId) {
-        user = await prisma.user.update({
-          where: { id: Number(userId) },
-          data: { paid: true }
-        });
-      } else {
-        // Fallback for custom verify
-        user = await prisma.user.create({
-          data: {
-            role: 'paid_user',
-            paid: true
-          }
-        });
-      }
+    const handleSuccessPayment = async (resolvedPlan: string) => {
+      const now = new Date();
+      const paidUntil = resolvedPlan === 'yearly'
+        ? new Date(now.getFullYear() + 1, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds())
+        : null;
+
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          paid: true,
+          plan: resolvedPlan,
+          paidUntil
+        }
+      });
       
       const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '365d' });
       return res.json({ success: true, token, role: user.role });
@@ -210,7 +247,11 @@ router.post('/razorpay/verify', async (req, res) => {
 
     // If it is a mock order
     if (razorpay_order_id.startsWith('order_mock_')) {
-      return await handleSuccessPayment();
+      let resolvedPlan = 'lifetime';
+      if (razorpay_order_id.includes('_yearly_')) {
+        resolvedPlan = 'yearly';
+      }
+      return await handleSuccessPayment(resolvedPlan);
     }
 
     // Verify real signature
@@ -220,12 +261,76 @@ router.post('/razorpay/verify', async (req, res) => {
     const digest = shasum.digest('hex');
 
     if (digest === razorpay_signature) {
-      return await handleSuccessPayment();
+      // Fetch the plan from the Razorpay order notes to prevent client-side tampering
+      let resolvedPlan = plan;
+      try {
+        const keyId = process.env.RAZORPAY_KEY_ID || '';
+        const razorpay = new Razorpay({
+          key_id: keyId,
+          key_secret: secret
+        });
+        const order = await razorpay.orders.fetch(razorpay_order_id);
+        if (order && order.notes && order.notes.plan) {
+          resolvedPlan = order.notes.plan as string;
+        }
+      } catch (fetchErr) {
+        console.error('Failed to fetch Razorpay order notes, falling back to request body plan:', fetchErr);
+      }
+
+      if (!resolvedPlan || (resolvedPlan !== 'yearly' && resolvedPlan !== 'lifetime')) {
+        resolvedPlan = 'lifetime'; // Fallback
+      }
+
+      return await handleSuccessPayment(resolvedPlan);
     } else {
       return res.status(400).json({ error: 'Invalid payment signature' });
     }
   } catch (error: any) {
     return res.status(500).json({ error: error.message || 'Payment signature verification failed' });
+  }
+});
+
+// Admin Portal Login with specific user ID and password
+router.post('/admin-login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
+
+  try {
+    if (username === 'aditya07024' && password === '1234567890') {
+      // Find or create super_admin user
+      let user = await prisma.user.findFirst({
+        where: { role: 'super_admin', email: 'aditya07024@admin.outreach.ai' }
+      });
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            email: 'aditya07024@admin.outreach.ai',
+            role: 'super_admin',
+            paid: true
+          }
+        });
+      }
+
+      const token = jwt.sign(
+        { id: user.id, role: 'super_admin' },
+        JWT_SECRET,
+        { expiresIn: '365d' }
+      );
+
+      return res.json({
+        success: true,
+        token,
+        role: 'super_admin'
+      });
+    }
+
+    return res.status(401).json({ error: 'Invalid admin credentials' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Authentication error' });
   }
 });
 

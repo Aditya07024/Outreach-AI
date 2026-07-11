@@ -10,8 +10,22 @@ import {
   Settings as SettingsIcon
 } from 'lucide-react';
 import { Campaign, EmailHistory, Log } from '../types';
+import { PricingPage } from './PricingPage';
 
-export const Dashboard: React.FC = () => {
+interface DashboardProps {
+  isPaid: boolean;
+  user: {
+    id: number;
+    email: string | null;
+    role: string;
+    paid: boolean;
+    plan: string | null;
+    paidUntil: string | null;
+  } | null;
+  onPaymentSuccess: (token: string) => void;
+}
+
+export const Dashboard: React.FC<DashboardProps> = ({ isPaid, user, onPaymentSuccess }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [history, setHistory] = useState<EmailHistory[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
@@ -19,19 +33,21 @@ export const Dashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch Campaigns
-      const campRes = await fetch('/api/campaigns');
-      const campData = await campRes.json();
+      // Fetch Campaigns, History, and Logs in parallel
+      const [campRes, histRes, logsRes] = await Promise.all([
+        fetch('/api/campaigns'),
+        fetch('/api/history'),
+        fetch('/api/logs?limit=8')
+      ]);
+
+      const [campData, histData, logsData] = await Promise.all([
+        campRes.json(),
+        histRes.json(),
+        logsRes.json()
+      ]);
+
       setCampaigns(campData);
-
-      // Fetch History
-      const histRes = await fetch('/api/history');
-      const histData = await histRes.json();
       setHistory(histData);
-
-      // Fetch Logs
-      const logsRes = await fetch('/api/logs?limit=8');
-      const logsData = await logsRes.json();
       setLogs(logsData);
     } catch (err) {
       console.error('Failed to load dashboard data', err);
@@ -41,11 +57,19 @@ export const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!isPaid) {
+      setIsLoading(false);
+      return;
+    }
     fetchDashboardData();
-    // Poll updates every 15 seconds to show active progress
-    const interval = setInterval(fetchDashboardData, 15000);
+    // Poll updates every 30 seconds to show active progress without hammering the database
+    const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isPaid]);
+
+  if (!isPaid) {
+    return <PricingPage user={user!} onPaymentSuccess={onPaymentSuccess} />;
+  }
 
   // Compute aggregated stats
   const totalContacts = campaigns.reduce((acc, c) => acc + (c.metrics?.total || 0), 0);
@@ -155,47 +179,7 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Recent Activity Log Feed */}
-        <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-6 flex flex-col">
-          <div className="mb-4">
-            <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">Recent Activity Logs</h3>
-            <p className="text-[10px] text-neutral-500 mt-0.5">Real-time status updates and execution events</p>
-          </div>
-
-          <div className="flex-1 flex flex-col gap-3 min-h-[200px]">
-            {logs.length === 0 ? (
-              <div className="text-center py-6 text-xs text-neutral-500">
-                No activity logs available.
-              </div>
-            ) : (
-              logs.map((log) => (
-                <div 
-                  key={log.id} 
-                  className="flex items-start gap-3 text-xs leading-relaxed py-1.5 border-b border-neutral-900/80 last:border-0"
-                >
-                  <div className="flex-shrink-0 mt-0.5">
-                    {log.level === 'ERROR' ? (
-                      <span className="w-2 h-2 rounded-full bg-rose-500 block" />
-                    ) : log.level === 'WARN' ? (
-                      <span className="w-2 h-2 rounded-full bg-amber-500 block" />
-                    ) : (
-                      <span className="w-2 h-2 rounded-full bg-neutral-500 block" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-neutral-300 font-medium truncate">{log.message}</p>
-                    <div className="flex gap-2 items-center text-[10px] text-neutral-500 mt-0.5">
-                      <span className="font-bold uppercase tracking-wider text-[9px] bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800/80">
-                        {log.source}
-                      </span>
-                      <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+    
 
       </div>
     </div>
