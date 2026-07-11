@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import logo from '../assets/logo.png';
 import { 
   LayoutDashboard, 
   Send, 
@@ -44,10 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ gmailStatus, onLogout, isPaid 
       <div className="p-6 flex flex-col gap-6">
         {/* App Title */}
         <div className="flex items-center gap-2 px-2">
-          <div className="w-6 h-6 rounded bg-neutral-100 flex items-center justify-center text-zinc-950 font-bold text-sm">
-            A
-          </div>
-          <span className="font-semibold text-neutral-200 text-sm tracking-wide">Outreach AI</span>
+          <img src={logo} alt="Outreach AI Logo" className="h-8 object-contain rounded-md" />
         </div>
 
         {/* Navigation Links */}

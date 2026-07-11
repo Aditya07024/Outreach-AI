@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import logo from '../assets/logo.png';
 import { 
   Sparkles, 
   Mail, 
@@ -204,12 +205,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* Header */}
       <header className="max-w-7xl mx-auto w-full px-6 py-6 flex justify-between items-center z-10">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-zinc-950 font-black text-base shadow-lg">
-            A
-          </div>
-          <span className="text-sm font-bold tracking-tight bg-gradient-to-r from-neutral-100 to-neutral-400 bg-clip-text text-transparent">
-            Outreach AI
-          </span>
+          <img src={logo} alt="Outreach AI Logo" className="h-10 object-contain rounded-md" />
         </div>
 
         <button
