@@ -329,6 +329,70 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </a>
             </div>
 
+            {/* Interactive Outbox Queue Simulator */}
+            <div className="mt-8 border border-[#c0c1ff]/10 bg-zinc-900/20 backdrop-blur-md rounded-xl p-4 shadow-2xl relative overflow-hidden group hover:border-[#c0c1ff]/30 transition-all duration-300 max-w-xl animate-fade-in-up animation-delay-500">
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
+              
+              {/* Window controls */}
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-900/60 mb-3.5">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-rose-500/80" />
+                  <div className="w-2 h-2 rounded-full bg-amber-500/80" />
+                  <div className="w-2 h-2 rounded-full bg-emerald-500/80" />
+                </div>
+                <div className="flex items-center gap-1.5 text-[9px] text-neutral-500 font-mono font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  active-outbox-feed
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {/* Item 1 */}
+                <div className="p-2.5 bg-black/45 border border-zinc-805 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-1.5 rounded bg-purple-500/10 text-purple-400">
+                      <Mail className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-bold text-neutral-350 truncate">Recruiter at Stripe</div>
+                      <div className="text-[9px] text-neutral-550 truncate">Subject: Product Design Role</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[9px] px-2 py-0.5 rounded-full bg-purple-950/30 border border-purple-800/30 text-purple-400 font-medium">
+                    <span className="w-1 h-1 rounded-full bg-purple-400 animate-pulse" />
+                    Drafting with AI
+                  </div>
+                </div>
+
+                {/* Item 2 */}
+                <div className="p-2.5 bg-black/45 border border-zinc-805 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-1.5 rounded bg-cyan-500/10 text-cyan-400">
+                      <Mail className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-bold text-neutral-350 truncate">Hiring Manager at Vercel</div>
+                      <div className="text-[9px] text-neutral-550 truncate">Subject: Frontend Engineer Application</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[9px] px-2 py-0.5 rounded-full bg-cyan-950/30 border border-cyan-800/30 text-cyan-400 font-medium">
+                    Ready to Send
+                  </div>
+                </div>
+              </div>
+
+              {/* Delay progress bar */}
+              <div className="mt-3.5 pt-3 border-t border-neutral-900/60 flex items-center justify-between text-[9px] text-neutral-500">
+                <div className="flex items-center gap-1.5 font-mono">
+                  <Clock className="w-3 h-3 text-purple-400" />
+                  Anti-Spam Safety: 42s remaining
+                </div>
+                <div className="w-24 h-1 bg-zinc-950 rounded-full overflow-hidden border border-neutral-850/60">
+                  <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full w-2/3 animate-pulse" />
+                </div>
+              </div>
+            </div>
+
             {/* Micro proof text */}
             <div className="flex items-center gap-4 pt-6 text-[#c7c4d7]/60 text-xs animate-fade-in-up animation-delay-500">
               <div className="flex -space-x-2">
