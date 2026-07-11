@@ -162,4 +162,94 @@ If only the email address is available, write a professional, high-converting, s
       body,
     };
   }
+
+  /**
+   * Drafts an email directly for custom compose (on-the-fly)
+   */
+  static async draftAIEmail(
+    userId: number,
+    company: string,
+    role: string,
+    additionalContext?: string
+  ): Promise<EmailGenerationResult> {
+    try {
+      const settings = await prisma.settings.findUnique({
+        where: { id: userId },
+      });
+      if (!settings) {
+        throw new Error(`Settings not found for user ID ${userId}`);
+      }
+
+      const apiKey = process.env.GROK_API_KEY || '';
+      if (!apiKey || apiKey.includes('your_grok_api_key') || apiKey === 'xai-your-grok-api-key-here') {
+        return {
+          subject: `Opportunities at ${company || 'your team'} - ${role || settings.preferredRole || 'Software Engineer'}`,
+          body: `Hi,\n\nI am writing to express my interest in software engineering opportunities at ${company || 'your team'}, specifically for a ${role || settings.preferredRole || 'Software Engineer'} position.\n\nI have attached my resume for your review.\n\nBest regards,\n${settings.name}`
+        };
+      }
+
+      const openai = this.getOpenAIClient(apiKey);
+
+      const systemPrompt = `You are a professional assistant generating highly personalized cold emails for job outreach.
+Your task is to write a compelling, custom email to a hiring contact and output it strictly in JSON format.
+
+Your output must be a valid JSON object matching this structure:
+{
+  "subject": "Unique, eye-catching subject line",
+  "body": "Natural, human-like email body"
+}
+
+Writing Guidelines:
+- Style: Professional, confident, and warm. Avoid corporate cliches like "I hope this email finds you well" or robotic openings. Write as a real software engineer.
+- Word count: The email body must be between 120 and 180 words.
+- Variation: Create different phrasing and sentence structures each time. Never reuse exact templates.
+- Relevance: Mention the company and role if available. Explain why their engineering team is a great fit.
+- Integration: Weave in details from the Candidate Profile naturally.
+
+Candidate Profile:
+- Name: ${settings.name}
+- Phone: ${settings.phone}
+- Portfolio: ${settings.portfolio}
+- GitHub: ${settings.github}
+- LinkedIn: ${settings.linkedin}
+- Preferred Role: ${settings.preferredRole}
+- Location: ${settings.location}
+
+Writing Prompt Instructions:
+${settings.customPrompt}`;
+
+      const userPrompt = `Generate a cold email outreach with the following details:
+- Company Name: ${company || 'your team'}
+- Target Role: ${role || 'Software Engineer'}
+${additionalContext ? `- Custom Guidelines/Context: ${additionalContext}` : ''}`;
+
+      const model = process.env.GROK_MODEL || 'grok-2-1212';
+      const response = await openai.chat.completions.create({
+        model: model,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.85,
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('Grok returned an empty response');
+      }
+
+      const parsed: EmailGenerationResult = JSON.parse(content);
+      return {
+        subject: parsed.subject.trim(),
+        body: parsed.body.trim(),
+      };
+    } catch (error: any) {
+      console.error('draftAIEmail error:', error);
+      return {
+        subject: `Opportunities at ${company || 'your team'} - ${role || 'Software Engineer'}`,
+        body: `Hi,\n\nI am writing to express my interest in software engineering opportunities at ${company || 'your team'}, specifically for a ${role || 'Software Engineer'} position.\n\nI have attached my resume for your review.\n\nBest regards`
+      };
+    }
+  }
 }

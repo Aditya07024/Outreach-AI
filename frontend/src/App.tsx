@@ -15,6 +15,7 @@ import { Resumes } from './pages/Resumes';
 import { History } from './pages/History';
 import { Logs } from './pages/Logs';
 import { Settings } from './pages/Settings';
+import { Compose } from './pages/Compose';
 
 // Global fetch interceptor to append authorization token & handle 401s
 const originalFetch = window.fetch;
@@ -149,6 +150,14 @@ export const App: React.FC = () => {
                 element={
                   <PageWrapper title="Dashboard" setTitle={setCurrentTitle}>
                     <Dashboard />
+                  </PageWrapper>
+                } 
+              />
+              <Route 
+                path="/compose" 
+                element={
+                  <PageWrapper title="Compose Email" setTitle={setCurrentTitle}>
+                    <Compose gmailStatus={gmailStatus} />
                   </PageWrapper>
                 } 
               />

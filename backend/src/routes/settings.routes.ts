@@ -3,6 +3,7 @@ import prisma from '../utils/prisma';
 import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { GmailService } from '../services/gmail.service';
+import { AIService } from '../services/ai.service';
 
 const router = Router();
 
@@ -113,6 +114,19 @@ router.post('/send-test-email', async (req: AuthenticatedRequest, res) => {
   } catch (error: any) {
     await logger.error('API', `Failed to send direct test email to ${req.body?.to}`, error);
     res.status(500).json({ error: error.message || 'Failed to send test email.' });
+  }
+});
+
+// AI Draft Generator for compose page
+router.post('/draft-ai-email', async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { company, role, context } = req.body;
+    
+    const draft = await AIService.draftAIEmail(userId, company || '', role || '', context || '');
+    res.json(draft);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to draft AI email' });
   }
 });
 

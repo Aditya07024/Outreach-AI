@@ -7,7 +7,8 @@ import {
   Settings, 
   History, 
   Terminal,
-  Mail
+  Mail,
+  PenSquare
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -18,6 +19,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ gmailStatus, onLogout }) => {
   const links = [
     { to: '/', name: 'Dashboard', icon: LayoutDashboard },
+    { to: '/compose', name: 'Compose Email', icon: PenSquare },
     { to: '/campaigns', name: 'Campaigns', icon: Send },
     { to: '/outbox', name: 'Outbox / Queue', icon: Mail },
     { to: '/resumes', name: 'Resumes', icon: FileText },
