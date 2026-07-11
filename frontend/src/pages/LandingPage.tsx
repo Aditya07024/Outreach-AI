@@ -254,10 +254,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <header className="w-full max-w-[1000px] mx-auto bg-white/95 backdrop-blur-md rounded-full px-6 py-2 flex items-center justify-between shadow-lg shadow-black/5 border border-white/20 relative z-50">
               <div className="flex items-center gap-2">
                 <img alt="Outreach AI Logo" className="h-6 w-6 object-contain" src={logo} />
-                <span className="text-sm font-black text-neutral-900 tracking-tight">Outreach AI</span>
+                <span className="text-base font-black text-neutral-900 tracking-tight">Outreach AI</span>
               </div>
               
-              <div className="hidden md:flex gap-8 text-xs font-bold text-neutral-500">
+              <div className="hidden md:flex gap-8 text-sm font-bold text-neutral-500">
                 <a className="hover:text-black transition-colors" href="#features">Features</a>
                 <a className="hover:text-black transition-colors" href="#how-it-works">How it works</a>
                 <a className="hover:text-black transition-colors" href="#pricing">Pricing</a>
@@ -267,7 +267,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigate('/admin-portal')}
-                  className="px-3.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold rounded-full text-[10px] transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold rounded-full text-sm transition-colors cursor-pointer"
                 >
                   Admin
                 </button>
@@ -275,7 +275,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <button 
                   onClick={handleGoogleSignIn}
                   disabled={isSubmitting}
-                  className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold px-4 py-1.5 rounded-full text-[10px] flex items-center gap-1 transition-all cursor-pointer shadow-md shadow-blue-500/10 hover:scale-95"
+                  className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold px-5 py-2 rounded-full text-sm flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-blue-500/10 hover:scale-95"
                 >
                   Login
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -288,16 +288,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               
               {/* Left Column: Title Copy & Subtitle */}
               <div className="space-y-6 lg:col-span-7 text-left text-white animate-fade-in-up">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 border border-white/30 text-white text-[10px] font-mono font-bold tracking-widest uppercase">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-sm font-mono font-bold tracking-widest uppercase">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Next-Gen Outreach</span>
                 </div>
 
-                <h1 className="text-4xl md:text-5xl lg:text-5.5xl font-black leading-tight tracking-tight text-white animate-fade-in-up animation-delay-100">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white animate-fade-in-up animation-delay-100">
                   Secret Weapon of <br/>Successful Job Seekers
                 </h1>
 
-                <p className="text-xs md:text-sm text-white/90 max-w-md leading-relaxed animate-fade-in-up animation-delay-200">
+                <p className="text-sm md:text-base text-white/90 max-w-md leading-relaxed animate-fade-in-up animation-delay-200">
                   Land your dream role with precision-engineered email outreach. Our AI drafts recruiter pitch emails using your resume details, reviews drafts in a queue, and sends safely with anti-spam protection delays.
                 </p>
 
@@ -305,13 +305,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <button
                     onClick={handleGoogleSignIn}
                     disabled={isSubmitting}
-                    className="bg-black hover:bg-neutral-900 text-white font-bold px-7 py-3 rounded-full hover:scale-95 transition-all text-xs cursor-pointer shadow-xl shadow-black/20"
+                    className="bg-black hover:bg-neutral-900 text-white font-bold px-8 py-3.5 rounded-full hover:scale-95 transition-all text-sm cursor-pointer shadow-xl shadow-black/20"
                   >
                     Get Started
                   </button>
                   <a
                     href="#how-it-works"
-                    className="text-white hover:text-white/80 font-bold text-xs flex items-center gap-1 transition-all"
+                    className="text-white hover:text-white/80 font-bold text-sm flex items-center gap-1.5 transition-all"
                   >
                     Request a Demo <ArrowUpRight className="w-3.5 h-3.5" />
                   </a>
@@ -329,7 +329,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                       <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                     </div>
-                    <div className="text-[9px] text-neutral-400 font-mono">outreach-ai.dashboard</div>
+                    <div className="text-xs text-neutral-400 font-mono">outreach-ai.dashboard</div>
                     <div className="w-8" />
                   </div>
                   
@@ -338,23 +338,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <div className="col-span-3 border-r border-neutral-100 pr-2.5 space-y-4">
                       <div className="flex items-center gap-1">
                         <img alt="logo" className="w-3.5 h-3.5 object-contain" src={logo} />
-                        <span className="text-[9px] font-bold text-neutral-900 tracking-tight">Outreach</span>
+                        <span className="text-xs font-bold text-neutral-900 tracking-tight">Outreach</span>
                       </div>
                       
                       <div className="space-y-1.5">
-                        <div className="px-2 py-1 rounded bg-blue-50 text-blue-600 text-[8px] font-bold flex items-center gap-1">
+                        <div className="px-2 py-1 rounded bg-blue-50 text-blue-600 text-xs font-bold flex items-center gap-1">
                           <Layers className="w-2.5 h-2.5" />
                           Overview
                         </div>
-                        <div className="px-2 py-1 rounded text-neutral-500 hover:bg-neutral-50 text-[8px] font-semibold flex items-center gap-1">
+                        <div className="px-2 py-1 rounded text-neutral-500 hover:bg-neutral-50 text-xs font-semibold flex items-center gap-1">
                           <Mail className="w-2.5 h-2.5" />
                           Campaigns
                         </div>
-                        <div className="px-2 py-1 rounded text-neutral-500 hover:bg-neutral-50 text-[8px] font-semibold flex items-center gap-1">
+                        <div className="px-2 py-1 rounded text-neutral-500 hover:bg-neutral-50 text-xs font-semibold flex items-center gap-1">
                           <Clock className="w-2.5 h-2.5" />
                           Queue
                         </div>
-                        <div className="px-2 py-1 rounded text-neutral-500 hover:bg-neutral-50 text-[8px] font-semibold flex items-center gap-1">
+                        <div className="px-2 py-1 rounded text-neutral-500 hover:bg-neutral-50 text-xs font-semibold flex items-center gap-1">
                           <KeyRound className="w-2.5 h-2.5" />
                           Settings
                         </div>
@@ -364,32 +364,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     {/* Main body stats */}
                     <div className="col-span-9 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-neutral-900">Outbox Queue Overview</span>
-                        <span className="text-[8px] bg-emerald-100 text-emerald-850 px-1.5 py-0.5 rounded-full font-bold">Active</span>
+                        <span className="text-sm font-bold text-neutral-900">Outbox Queue Overview</span>
+                        <span className="text-xs bg-emerald-100 text-emerald-850 px-1.5 py-0.5 rounded-full font-bold">Active</span>
                       </div>
                       
                       {/* Stats Row */}
                       <div className="grid grid-cols-3 gap-1.5">
                         <div className="bg-neutral-50 p-1.5 rounded-lg border border-neutral-100 space-y-0.5">
-                          <span className="text-[7px] text-neutral-400 block font-bold uppercase">Drafts</span>
-                          <span className="text-[11px] font-extrabold text-neutral-800 block">230</span>
-                          <span className="text-[6px] text-emerald-600 font-bold block">+8.2%</span>
+                          <span className="text-sm text-neutral-400 block font-bold uppercase">Drafts</span>
+                          <span className="text-sm font-extrabold text-neutral-800 block">230</span>
+                          <span className="text-sm text-emerald-600 font-bold block">+8.2%</span>
                         </div>
                         <div className="bg-neutral-50 p-1.5 rounded-lg border border-neutral-100 space-y-0.5">
-                          <span className="text-[7px] text-neutral-400 block font-bold uppercase">Sent</span>
-                          <span className="text-[11px] font-extrabold text-neutral-800 block">2,648</span>
-                          <span className="text-[6px] text-emerald-600 font-bold block">+6.2%</span>
+                          <span className="text-sm text-neutral-400 block font-bold uppercase">Sent</span>
+                          <span className="text-sm font-extrabold text-neutral-800 block">2,648</span>
+                          <span className="text-sm text-emerald-600 font-bold block">+6.2%</span>
                         </div>
                         <div className="bg-neutral-50 p-1.5 rounded-lg border border-neutral-100 space-y-0.5">
-                          <span className="text-[7px] text-neutral-400 block font-bold uppercase">Delays</span>
-                          <span className="text-[11px] font-extrabold text-neutral-800 block">99.8%</span>
-                          <span className="text-[6px] text-emerald-600 font-bold block">Safe</span>
+                          <span className="text-sm text-neutral-400 block font-bold uppercase">Delays</span>
+                          <span className="text-sm font-extrabold text-neutral-800 block">99.8%</span>
+                          <span className="text-sm text-emerald-600 font-bold block">Safe</span>
                         </div>
                       </div>
                       
                       {/* Mini chart */}
                       <div className="border border-neutral-100 p-2 rounded-lg space-y-1">
-                        <div className="text-[8px] font-bold text-neutral-905">Campaign response rates</div>
+                        <div className="text-xs font-bold text-neutral-905">Campaign response rates</div>
                         <div className="flex items-end justify-between h-10 pt-1">
                           <div className="w-1.5 bg-blue-500 rounded-t h-3" />
                           <div className="w-1.5 bg-blue-300 rounded-t h-5" />
@@ -409,7 +409,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <div className="w-full bg-white/95 border border-neutral-100 rounded-xl p-5 shadow-xl space-y-4">
                     
                     {errorMsg && (
-                      <div className="flex gap-2 p-2.5 bg-rose-50 border border-rose-100 rounded-lg text-rose-700 text-[10px] items-center">
+                      <div className="flex gap-2 p-2.5 bg-rose-50 border border-rose-100 rounded-lg text-rose-700 text-sm items-center">
                         <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 text-rose-500" />
                         <span>{errorMsg}</span>
                       </div>
@@ -420,36 +420,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <div className="space-y-4 text-center">
                         <div className="space-y-1">
                           <h3 className="text-xs font-bold text-neutral-905">Unlock Outreach Platform</h3>
-                          <p className="text-[10px] text-neutral-500 font-medium">Choose a subscription option to launch your cold emails pipeline.</p>
+                          <p className="text-sm text-neutral-500 font-medium">Choose a subscription option to launch your cold emails pipeline.</p>
                         </div>
 
                         <div className="space-y-2">
                           <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-lg flex justify-between items-center hover:border-blue-500 transition-colors">
                             <div className="text-left space-y-0.5">
-                              <h4 className="text-[10px] font-bold text-neutral-805">Yearly Plan</h4>
-                              <span className="text-[9px] text-neutral-500">₹100/year</span>
+                              <h4 className="text-sm font-bold text-neutral-805">Yearly Plan</h4>
+                              <span className="text-xs text-neutral-500">₹100/year</span>
                             </div>
                             <button
                               onClick={() => handleStartPurchase('yearly')}
                               disabled={isSubmitting}
-                              className="px-3 py-1 bg-neutral-900 hover:bg-black text-white text-[9px] font-bold rounded cursor-pointer"
+                              className="px-3 py-1 bg-neutral-900 hover:bg-black text-white text-xs font-bold rounded cursor-pointer"
                             >
                               Select
                             </button>
                           </div>
 
                           <div className="p-3 bg-blue-50/50 border border-blue-200 rounded-lg flex justify-between items-center hover:border-blue-500 transition-colors relative">
-                            <div className="absolute top-0 right-2 translate-y-[-50%] px-1 py-0.5 rounded bg-blue-600 text-white text-[6px] font-bold uppercase tracking-wide">
+                            <div className="absolute top-0 right-2 translate-y-[-50%] px-1 py-0.5 rounded bg-blue-600 text-white text-sm font-bold uppercase tracking-wide">
                               Best Value
                             </div>
                             <div className="text-left space-y-0.5">
-                              <h4 className="text-[10px] font-bold text-neutral-805">Lifetime Plan</h4>
-                              <span className="text-[9px] text-blue-600 font-bold">₹300 once</span>
+                              <h4 className="text-sm font-bold text-neutral-805">Lifetime Plan</h4>
+                              <span className="text-xs text-blue-600 font-bold">₹300 once</span>
                             </div>
                             <button
                               onClick={() => handleStartPurchase('lifetime')}
                               disabled={isSubmitting}
-                              className="px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 text-[9px] font-bold rounded cursor-pointer shadow-md shadow-blue-500/10"
+                              className="px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 text-xs font-bold rounded cursor-pointer shadow-md shadow-blue-500/10"
                             >
                               Unlock
                             </button>
@@ -458,7 +458,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                         <button
                           onClick={onClearPaymentRequired}
-                          className="w-full py-1.5 border border-neutral-200 text-neutral-500 hover:text-neutral-700 text-[10px] font-bold rounded-lg cursor-pointer"
+                          className="w-full py-1.5 border border-neutral-200 text-neutral-500 hover:text-neutral-700 text-sm font-bold rounded-lg cursor-pointer"
                         >
                           Cancel / Sign Out
                         </button>
@@ -468,7 +468,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <form onSubmit={handleAdminLogin} className="space-y-3 text-center">
                         <div className="space-y-1">
                           <h3 className="text-xs font-bold text-neutral-900">Admin Authentication</h3>
-                          <p className="text-[10px] text-neutral-500 font-medium">Enter passcode to view administrative dashboard.</p>
+                          <p className="text-sm text-neutral-500 font-medium">Enter passcode to view administrative dashboard.</p>
                         </div>
                         <input
                           type="password"
@@ -482,14 +482,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           <button
                             type="button"
                             onClick={() => setShowAdminLogin(false)}
-                            className="w-1/2 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold rounded-lg text-[10px] cursor-pointer"
+                            className="w-1/2 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold rounded-lg text-sm cursor-pointer"
                           >
                             Cancel
                           </button>
                           <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-1/2 py-1.5 bg-blue-600 hover:bg-blue-750 text-white font-bold rounded-lg text-[10px] cursor-pointer"
+                            className="w-1/2 py-1.5 bg-blue-600 hover:bg-blue-750 text-white font-bold rounded-lg text-sm cursor-pointer"
                           >
                             {isSubmitting ? 'Verifying...' : 'Verify'}
                           </button>
@@ -499,12 +499,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       // Google Sign-In Card
                       <div className="space-y-4 text-center">
                         <div className="space-y-1">
-                          <div className="flex items-center justify-center gap-1.5 py-0.5 px-2.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[8px] font-mono w-fit mx-auto">
+                          <div className="flex items-center justify-center gap-1.5 py-0.5 px-2.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-mono w-fit mx-auto">
                             <Lock className="w-2.5 h-2.5 text-blue-500" />
                             <span>OAuth 2.0 Secure</span>
                           </div>
                           <h3 className="text-xs font-bold text-neutral-900 tracking-tight">Access Dashboard</h3>
-                          <p className="text-[10px] text-neutral-500 leading-normal">
+                          <p className="text-sm text-neutral-500 leading-normal">
                             Sign in with Google to set up campaigns, upload resumes, and automate cold emails.
                           </p>
                         </div>
@@ -512,7 +512,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <button
                           onClick={handleGoogleSignIn}
                           disabled={isSubmitting}
-                          className="w-full py-2.5 bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-200 hover:border-neutral-300 text-[10px] font-bold rounded-xl transition-all duration-300 shadow-sm flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+                          className="w-full py-2.5 bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-200 hover:border-neutral-300 text-sm font-bold rounded-xl transition-all duration-300 shadow-sm flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
                         >
                           <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24">
                             <path
@@ -535,7 +535,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           {isSubmitting ? 'Connecting...' : 'Continue with Google'}
                         </button>
 
-                        <div className="pt-3 border-t border-neutral-100 text-left space-y-1.5 text-[8px] text-neutral-450 leading-relaxed">
+                        <div className="pt-3 border-t border-neutral-100 text-left space-y-1.5 text-xs text-neutral-450 leading-relaxed">
                           <div className="flex items-center gap-1.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
                             <span><strong>Zero Password Storage</strong>: authenticated directly via official Google OAuth handshake.</span>
@@ -560,7 +560,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* Social Proof Partners Banner */}
       <section className="py-12 border-b border-neutral-100 bg-[#f8faff] z-10 relative">
         <div className="max-w-[1000px] mx-auto px-6">
-          <p className="text-[10px] font-mono tracking-[0.2em] text-neutral-400 text-center uppercase mb-8">
+          <p className="text-sm font-mono tracking-[0.2em] text-neutral-400 text-center uppercase mb-8">
             Our users have secured interviews at
           </p>
           <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500 text-xs font-black tracking-tighter text-neutral-500">
@@ -576,11 +576,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* Feature Bento Grid Section */}
       <section className="py-24 px-6 max-w-[1000px] mx-auto z-10 relative" id="features">
         <div className="text-center mb-16 space-y-3">
-          <span className="text-[10px] font-mono tracking-widest text-[#2563eb] uppercase font-bold">Capabilities</span>
+          <span className="text-sm font-mono tracking-widest text-[#2563eb] uppercase font-bold">Capabilities</span>
           <h2 className="text-3xl font-black tracking-tight text-neutral-900">
             Find out why we're best-in-class
           </h2>
-          <p className="text-xs text-neutral-500 max-w-xl mx-auto leading-relaxed">
+          <p className="text-sm text-neutral-500 max-w-xl mx-auto leading-relaxed">
             Skip the generic templates. Use AI that understands your career narrative and the roles you're chasing.
           </p>
         </div>
@@ -592,7 +592,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="space-y-4 z-10">
               <Mail className="w-8 h-8 text-blue-500" />
               <h3 className="text-base font-bold text-neutral-900">Smart AI Email Drafting</h3>
-              <p className="text-xs text-neutral-500 max-w-md leading-relaxed">
+              <p className="text-sm text-neutral-500 max-w-md leading-relaxed">
                 Every email is unique. Our engine analyzes the job description and your profile to craft a narrative that resonates with recruiters.
               </p>
             </div>
@@ -616,7 +616,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <FileText className="w-8 h-8 text-cyan-500" />
             <div className="space-y-2">
               <h3 className="text-base font-bold text-neutral-900">Resume Parsing</h3>
-              <p className="text-xs text-neutral-500 leading-relaxed">
+              <p className="text-sm text-neutral-500 leading-relaxed">
                 Upload PDF files. We extract your core skills, expected salaries, target positions, and achievements to prime the AI.
               </p>
             </div>
@@ -627,7 +627,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <ShieldCheck className="w-8 h-8 text-blue-500" />
             <div className="space-y-2">
               <h3 className="text-base font-bold text-neutral-900">Gmail Integration</h3>
-              <p className="text-xs text-neutral-500 leading-relaxed">
+              <p className="text-sm text-neutral-500 leading-relaxed">
                 Secure, official API Google OAuth connection. Review, edit, compile drafts and send directly from Outreach AI.
               </p>
             </div>
@@ -639,12 +639,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="space-y-4 flex-1">
                 <Layers className="w-8 h-8 text-amber-500" />
                 <h3 className="text-base font-bold text-neutral-900">CSV Bulk Outreach</h3>
-                <p className="text-xs text-neutral-500 leading-relaxed">
+                <p className="text-sm text-neutral-500 leading-relaxed">
                   Managing 50+ applications? Upload a CSV and let the AI generate personalized drafts for your entire list in one go.
                 </p>
               </div>
               {/* Visual simulation spreadsheet overlay */}
-              <div className="flex-1 w-full bg-white p-4 rounded-xl border border-neutral-200 font-mono text-[9px] text-neutral-500 space-y-2 shadow-sm">
+              <div className="flex-1 w-full bg-white p-4 rounded-xl border border-neutral-200 font-mono text-xs text-neutral-500 space-y-2 shadow-sm">
                 <div className="grid grid-cols-4 border-b border-neutral-100 pb-1.5">
                   <span>Company</span><span>Role</span><span>Contact</span><span>Status</span>
                 </div>
@@ -664,10 +664,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="max-w-[1000px] mx-auto px-6">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
             <div className="space-y-2">
-              <span className="text-[10px] font-mono tracking-widest text-blue-600 uppercase font-bold">Process</span>
+              <span className="text-sm font-mono tracking-widest text-blue-600 uppercase font-bold">Process</span>
               <h2 className="text-3xl font-black tracking-tight text-neutral-900">Zero to Sent in 4 Minutes</h2>
             </div>
-            <p className="text-xs text-neutral-500 max-w-xs leading-relaxed">
+            <p className="text-sm text-neutral-500 max-w-xs leading-relaxed">
               Stop staring at a blank screen. Let our intelligent workflow handle the heavy lifting of job applications.
             </p>
           </div>
@@ -686,8 +686,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="w-12 h-12 rounded-full bg-white border border-neutral-200 flex items-center justify-center group-hover:border-blue-500 transition-colors shadow-sm">
                   <span className="text-sm font-bold text-blue-650">{item.step}</span>
                 </div>
-                <h4 className="text-xs font-bold text-neutral-900">{item.title}</h4>
-                <p className="text-[11px] text-neutral-500 leading-relaxed">{item.desc}</p>
+                <h4 className="text-sm font-bold text-neutral-900">{item.title}</h4>
+                <p className="text-sm text-neutral-500 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -704,20 +704,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left pt-4">
             <div className="p-5 rounded-2xl bg-white border border-neutral-200/60 space-y-2 shadow-sm">
-              <h5 className="text-xs font-bold text-neutral-900">Google OAuth Only</h5>
-              <p className="text-[11px] text-neutral-500 leading-relaxed">
+              <h5 className="text-sm font-bold text-neutral-900">Google OAuth Only</h5>
+              <p className="text-sm text-neutral-500 leading-relaxed">
                 We authenticate securely through Google. We never ask for or save your Gmail password.
               </p>
             </div>
             <div className="p-5 rounded-2xl bg-white border border-neutral-200/60 space-y-2 shadow-sm">
-              <h5 className="text-xs font-bold text-neutral-900">Natural Safety Delays</h5>
-              <p className="text-[11px] text-neutral-500 leading-relaxed">
+              <h5 className="text-sm font-bold text-neutral-900">Natural Safety Delays</h5>
+              <p className="text-sm text-neutral-500 leading-relaxed">
                 Outbound emails are delayed dynamically (1-3 minutes) to ensure natural pacing score.
               </p>
             </div>
             <div className="p-5 rounded-2xl bg-white border border-neutral-200/60 space-y-2 shadow-sm">
-              <h5 className="text-xs font-bold text-neutral-900">Private Data Vault</h5>
-              <p className="text-[11px] text-neutral-500 leading-relaxed">
+              <h5 className="text-sm font-bold text-neutral-900">Private Data Vault</h5>
+              <p className="text-sm text-neutral-500 leading-relaxed">
                 Your data belongs to you. We never train public large language models on your resumes.
               </p>
             </div>
@@ -728,11 +728,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* Pricing Options Section */}
       <section className="py-24 px-6 max-w-[1000px] mx-auto z-10 relative" id="pricing">
         <div className="text-center mb-16 space-y-3">
-          <span className="text-[10px] font-mono tracking-widest text-[#2563eb] uppercase font-bold">Licensing</span>
+          <span className="text-sm font-mono tracking-widest text-[#2563eb] uppercase font-bold">Licensing</span>
           <h2 className="text-3xl font-black tracking-tight text-neutral-900">
             Simple, Growth-Focused Pricing
           </h2>
-          <p className="text-xs text-neutral-500 max-w-xl mx-auto leading-relaxed">
+          <p className="text-sm text-neutral-500 max-w-xl mx-auto leading-relaxed">
             Scale your search at the pace you need with our simple licensing.
           </p>
         </div>
@@ -741,20 +741,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* Option 1: Yearly */}
           <div className="rounded-2xl p-6 bg-white border border-neutral-200/80 hover:border-neutral-300 transition-all duration-300 flex flex-col justify-between min-h-[280px] hover:scale-[1.02] hover:shadow-lg">
             <div className="space-y-4">
-              <span className="text-[9px] font-mono tracking-widest text-neutral-400 uppercase block font-bold">Yearly Access</span>
+              <span className="text-sm font-mono tracking-widest text-neutral-400 uppercase block font-bold">Yearly Access</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-black text-neutral-900">₹100</span>
-                <span className="text-xs text-neutral-400 font-semibold">/year</span>
+                <span className="text-sm text-neutral-400 font-semibold">/year</span>
               </div>
-              <ul className="space-y-3 pt-2 text-xs text-neutral-500">
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-500" /> Unlimited AI Drafts</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-500" /> Gmail OAuth Integration</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-500" /> Review Queue panel</li>
+              <ul className="space-y-3 pt-2 text-sm text-neutral-500">
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-500" /> Unlimited AI Drafts</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-500" /> Gmail OAuth Integration</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-500" /> Review Queue panel</li>
               </ul>
             </div>
             <button 
               onClick={() => handleStartPurchase('yearly')}
-              className="mt-6 w-full py-2.5 rounded-xl border border-neutral-200 hover:bg-neutral-50 text-xs font-bold text-neutral-700 transition-colors cursor-pointer"
+              className="mt-6 w-full py-3 rounded-xl border border-neutral-200 hover:bg-neutral-50 text-sm font-bold text-neutral-700 transition-colors cursor-pointer"
             >
               Start Yearly Access
             </button>
@@ -762,24 +762,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Option 2: Lifetime */}
           <div className="rounded-2xl p-6 bg-blue-50/50 border border-blue-300 hover:border-blue-400 transition-all duration-300 flex flex-col justify-between min-h-[280px] relative hover:scale-[1.02] hover:shadow-lg">
-            <div className="absolute top-0 right-4 translate-y-[-50%] bg-blue-600 text-white font-bold text-[8px] font-mono px-3 py-1 rounded-full uppercase tracking-wider">
+            <div className="absolute top-0 right-4 translate-y-[-50%] bg-blue-600 text-white font-bold text-sm font-mono px-3 py-1 rounded-full uppercase tracking-wider">
               POPULAR
             </div>
             <div className="space-y-4">
-              <span className="text-[9px] font-mono tracking-widest text-blue-600 uppercase block font-bold">Lifetime License</span>
+              <span className="text-sm font-mono tracking-widest text-blue-600 uppercase block font-bold">Lifetime License</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-black text-neutral-900">₹300</span>
-                <span className="text-xs text-neutral-555 font-semibold">/once</span>
+                <span className="text-sm text-neutral-555 font-semibold">/once</span>
               </div>
-              <ul className="space-y-3 pt-2 text-xs text-neutral-600">
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-600" /> Permanent ownership license</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-600" /> CSV bulk applications upload</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-600" /> Lifetime releases & updates</li>
+              <ul className="space-y-3 pt-2 text-sm text-neutral-600">
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> Permanent ownership license</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> CSV bulk applications upload</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> Lifetime releases & updates</li>
               </ul>
             </div>
             <button 
               onClick={() => handleStartPurchase('lifetime')}
-              className="mt-6 w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-all cursor-pointer shadow-md shadow-blue-500/10"
+              className="mt-6 w-full py-3 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all cursor-pointer shadow-md shadow-blue-500/10"
             >
               Go Lifetime License
             </button>
@@ -815,7 +815,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               >
                 <button
                   onClick={() => toggleFaq(idx)}
-                  className="w-full px-5 py-4 flex justify-between items-center text-left text-xs font-bold text-neutral-800 transition-colors hover:text-black cursor-pointer"
+                  className="w-full px-5 py-4 flex justify-between items-center text-left text-sm font-bold text-neutral-800 transition-colors hover:text-black cursor-pointer"
                 >
                   <span>{faq.q}</span>
                   <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-300 ${isOpen ? 'rotate-180 text-blue-650' : ''}`} />
@@ -826,7 +826,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     isOpen ? 'max-h-40 border-t border-neutral-200/60' : 'max-h-0'
                   }`}
                 >
-                  <p className="px-5 py-4 text-xs text-neutral-505 leading-relaxed bg-white">
+                  <p className="px-5 py-4 text-sm text-neutral-505 leading-relaxed bg-white">
                     {faq.a}
                   </p>
                 </div>
@@ -849,7 +849,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button 
             onClick={handleGoogleSignIn}
             disabled={isSubmitting}
-            className="bg-black text-white hover:bg-neutral-900 font-bold px-8 py-3.5 rounded-full hover:scale-95 transition-all shadow-xl shadow-black/10 inline-flex items-center gap-2 cursor-pointer text-xs"
+            className="bg-black text-white hover:bg-neutral-900 font-bold px-8 py-3.5 rounded-full hover:scale-95 transition-all shadow-xl shadow-black/10 inline-flex items-center gap-2 cursor-pointer text-sm"
           >
             Sign in with Google
           </button>
@@ -868,7 +868,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <p className="text-xs text-neutral-500 leading-relaxed">
               No Razorpay keys are detected in settings. Triggering a simulated sandbox licensing order:
             </p>
-            <div className="bg-[#f8faff] border border-neutral-200 p-3.5 rounded-xl text-[10px] text-neutral-550 font-mono space-y-1">
+            <div className="bg-[#f8faff] border border-neutral-200 p-3.5 rounded-xl text-sm text-neutral-550 font-mono space-y-1">
               <div>Order ID: <span className="text-neutral-800">{mockOrderId}</span></div>
               <div>Plan Selected: <span className="text-blue-600 uppercase font-bold">{selectedPlan}</span></div>
               <div>Total Cost: <span className="text-emerald-600">₹{selectedPlan === 'yearly' ? '100.00' : '300.00'}</span></div>
@@ -904,7 +904,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <p className="text-xs text-neutral-505 leading-relaxed">
               Precision-engineered for growth. Amplifying human potential with intelligent communication.
             </p>
-            <p className="text-[10px] text-neutral-400">© 2026 Outreach AI. All rights reserved.</p>
+            <p className="text-sm text-neutral-400">© 2026 Outreach AI. All rights reserved.</p>
           </div>
           
           <div className="space-y-3">

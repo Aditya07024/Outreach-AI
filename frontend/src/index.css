@@ -4,7 +4,7 @@
 
 @layer base {
   html {
-    font-size: 110%;
+    font-size: 100%;
     scroll-behavior: smooth;
   }
 
