@@ -1,6 +1,7 @@
 import prisma from '../utils/prisma';
 import { GmailService } from './gmail.service';
 import { logger } from '../utils/logger';
+import fs from 'fs';
 
 export class SendingEngine {
   private static isRunning = false;
@@ -102,13 +103,22 @@ export class SendingEngine {
       let messageId: string | null = null;
       let sendError: string | null = null;
 
+      let attachmentBase64 = campaign.resume?.fileContent || undefined;
+      if (!attachmentBase64 && campaign.resume?.filePath && fs.existsSync(campaign.resume.filePath)) {
+        try {
+          attachmentBase64 = fs.readFileSync(campaign.resume.filePath).toString('base64');
+        } catch (err) {
+          console.error('Failed to read fallback local resume path:', err);
+        }
+      }
+
       try {
         messageId = await GmailService.sendEmail(
           campaign.userId || 1, // Scope email send to campaign owner
           contact.email,
           contact.emailSubject,
           contact.emailBody,
-          campaign.resume?.fileContent || undefined,
+          attachmentBase64,
           campaign.resume?.name ? `${campaign.resume.name}.pdf` : undefined
         );
       } catch (err: any) {

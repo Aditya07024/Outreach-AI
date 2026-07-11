@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { GmailService } from '../services/gmail.service';
 import { AIService } from '../services/ai.service';
+import fs from 'fs';
 
 const router = Router();
 
@@ -96,6 +97,13 @@ router.post('/send-test-email', async (req: AuthenticatedRequest, res) => {
       });
       if (resume) {
         fileContent = resume.fileContent || undefined;
+        if (!fileContent && resume.filePath && fs.existsSync(resume.filePath)) {
+          try {
+            fileContent = fs.readFileSync(resume.filePath).toString('base64');
+          } catch (err) {
+            console.error('Failed to read legacy local resume path:', err);
+          }
+        }
         fileName = `${resume.name}.pdf`;
       }
     }
