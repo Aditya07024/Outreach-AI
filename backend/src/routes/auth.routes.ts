@@ -12,19 +12,46 @@ const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'aditya07';
 
+// Helper to encode state object to base64
+function encodeState(data: any): string {
+  return Buffer.from(JSON.stringify(data)).toString('base64');
+}
+
+// Helper to decode base64 state string
+function decodeState(stateStr: string): any {
+  try {
+    const jsonStr = Buffer.from(stateStr, 'base64').toString('utf8');
+    return JSON.parse(jsonStr);
+  } catch (err) {
+    // Fallback for legacy state format
+    if (stateStr === 'login') {
+      return { action: 'login' };
+    }
+    const num = Number(stateStr);
+    if (!isNaN(num)) {
+      return { userId: num };
+    }
+    return {};
+  }
+}
+
 // Retrieve Gmail authentication URL
 router.get('/url', (req, res) => {
   try {
     const action = req.query.action as string;
+    const origin = (req.query.origin as string) || (process.env.FRONTEND_URL || 'http://localhost:5173');
+    
     if (action === 'login') {
-      const url = GmailService.getAuthUrl('login');
+      const state = encodeState({ action: 'login', origin });
+      const url = GmailService.getAuthUrl(state);
       return res.json({ url });
     }
     
     // Connect Gmail inside settings requires requireAuth
     requireAuth(req as any, res as any, () => {
       const userId = (req as any).user!.id;
-      const url = GmailService.getAuthUrl(userId);
+      const state = encodeState({ userId, origin });
+      const url = GmailService.getAuthUrl(state);
       res.json({ url });
     });
   } catch (error: any) {
@@ -35,15 +62,18 @@ router.get('/url', (req, res) => {
 // OAuth Callback from Google redirect (public callback)
 router.get('/callback', async (req, res) => {
   const code = req.query.code as string;
-  const state = req.query.state as string; // 'login' or numeric userId
+  const state = req.query.state as string;
 
   if (!code) {
     await logger.error('OAUTH', 'Google OAuth callback received without a code parameter');
     return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/#error=no_code`);
   }
 
+  const stateData = decodeState(state);
+  const redirectOrigin = stateData.origin || process.env.FRONTEND_URL || 'http://localhost:5173';
+
   try {
-    if (state === 'login') {
+    if (stateData.action === 'login') {
       // 1. SIGN IN / SIGN UP FLOW
       const { email } = await GmailService.getEmailFromCode(code);
       
@@ -71,16 +101,16 @@ router.get('/callback', async (req, res) => {
 
       // Always issue JWT token and redirect to frontend (gating is handled on /me and on frontend)
       const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '365d' });
-      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/#token=${token}`);
+      return res.redirect(`${redirectOrigin}/#token=${token}`);
     } else {
       // 2. CONNECT GMAIL ACCOUNT FLOW
-      const userId = state ? Number(state) : 1;
+      const userId = stateData.userId || 1;
       const email = await GmailService.handleCallback(code, userId);
-      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/settings?connected=true&email=${encodeURIComponent(email)}`);
+      res.redirect(`${redirectOrigin}/settings?connected=true&email=${encodeURIComponent(email)}`);
     }
   } catch (error: any) {
     await logger.error('OAUTH', 'OAuth callback exchange failed', error);
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/#error=${encodeURIComponent(error.message || 'auth_failed')}`);
+    res.redirect(`${redirectOrigin}/#error=${encodeURIComponent(error.message || 'auth_failed')}`);
   }
 });
 

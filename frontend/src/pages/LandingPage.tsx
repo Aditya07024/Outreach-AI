@@ -54,7 +54,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     setErrorMsg(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/auth/google/url?action=login');
+      const origin = window.location.origin;
+      const res = await fetch(`/api/auth/google/url?action=login&origin=${encodeURIComponent(origin)}`);
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;

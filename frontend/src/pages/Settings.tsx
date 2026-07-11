@@ -76,7 +76,8 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
 
   const handleConnectGmail = async () => {
     try {
-      const res = await fetch('/api/auth/google/url');
+      const origin = window.location.origin;
+      const res = await fetch(`/api/auth/google/url?origin=${encodeURIComponent(origin)}`);
       const { url } = await res.json();
       if (url) {
         window.location.href = url; // Redirect to Google Sign-In
