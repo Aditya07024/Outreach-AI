@@ -348,11 +348,11 @@ export const Campaigns: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       {!selectedCampId ? (
         // CAMPAIGNS LIST VIEW
         <>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
               <h2 className="text-xl font-bold text-neutral-100 tracking-tight">Campaigns</h2>
               <p className="text-xs text-neutral-400 mt-1">Manage and track your job outreach campaigns.</p>
@@ -539,28 +539,28 @@ export const Campaigns: React.FC = () => {
           {campaignDetails ? (
             <div className="space-y-6">
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-neutral-900 pb-4">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-neutral-900 pb-4">
+                <div className="flex items-center gap-3 min-w-0">
                   <button 
                     onClick={() => {
                       setSelectedCampId(null);
                       setShowSettingsEdit(false);
                     }}
-                    className="p-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 rounded-md transition-colors"
+                    className="p-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 rounded-md transition-colors flex-shrink-0"
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
-                  <div>
-                    <h2 className="text-base font-bold text-neutral-100 tracking-tight">{campaignDetails.name}</h2>
-                    <span className="text-[10px] text-neutral-550 flex items-center gap-2 mt-0.5">
+                  <div className="min-w-0">
+                    <h2 className="text-base font-bold text-neutral-100 tracking-tight truncate">{campaignDetails.name}</h2>
+                    <span className="text-[10px] text-neutral-550 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                       <span>Resume: <strong className="text-neutral-450 font-medium">{campaignDetails.resume?.name || 'None'}</strong></span>
-                      <span>•</span>
+                      <span className="hidden sm:inline">•</span>
                       <span>Mode: <strong className="text-neutral-450 font-medium">{campaignDetails.templateType === 'AI_GENERATED' ? 'AI (Grok)' : campaignDetails.templateType === 'SAVED_TEMPLATE' ? 'Saved Template' : 'Manual'}</strong></span>
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {/* Edit Settings Toggle */}
                   <button
                     onClick={() => setShowSettingsEdit(!showSettingsEdit)}
