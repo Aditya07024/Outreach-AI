@@ -232,14 +232,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </h1>
 
           <p className="text-sm md:text-base text-neutral-400 leading-relaxed max-w-xl">
-            Outreach AI connects securely to your personal Gmail account via official Google OAuth. Generate highly tailored recruiters pitch emails with Grok AI, review drafts in an interactive queue, and send with randomized Anti-Spam protection delays.
+            Outreach AI helps you land more interviews by sending personalized job application emails directly from your own Gmail. Write custom messages with AI based on your resume, review drafts, and send them safely with smart delays.
           </p>
 
           <div className="space-y-3 pt-4">
             {[
-              { title: 'Personal Gmail API Auth', desc: 'Secure Google OAuth 2.0. We never ask for or save your email passwords.', icon: ShieldCheck },
-              { title: 'Grok AI Dynamic Letter Drafting', desc: 'Custom placeholder variables compiled dynamically based on resume context.', icon: Mail },
-              { title: 'Controlled Anti-Spam Sending', desc: 'Sends emails sequentially with customizable, human-like random delays.', icon: Send }
+              { title: 'Secure Gmail Integration', desc: 'Connects directly with your Google account. We never see or save your password.', icon: ShieldCheck },
+              { title: 'Smart AI Email Drafting', desc: 'Drafts personalized emails for each job using your resume details automatically.', icon: Mail },
+              { title: 'Safe, Natural Sending', desc: 'Sends emails one by one with random pauses to avoid spam filters.', icon: Send }
             ].map((bullet, idx) => (
               <div key={idx} className="flex gap-3">
                 <div className="mt-0.5 p-1 rounded-md bg-neutral-900 border border-neutral-850 h-fit">
