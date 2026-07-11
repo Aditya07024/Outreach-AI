@@ -210,13 +210,51 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#0c1324] text-[#dce1fb] flex flex-col justify-between overflow-x-hidden relative selection:bg-purple-500/30">
+    <div className="min-h-screen bg-black text-[#dce1fb] flex flex-col justify-between overflow-x-hidden relative selection:bg-purple-500/30 bg-[radial-gradient(#1f1f23_1px,transparent_1px)] [background-size:24px_24px]">
       
-      {/* Background radial highlight matches Stitch */}
-      <div className="absolute inset-0 z-0 bg-radial-gradient from-purple-900/10 via-transparent to-transparent pointer-events-none" />
+      {/* Inline styles for custom premium animations */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes pulseGlow {
+          0%, 100% {
+            opacity: 0.15;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.25;
+            transform: scale(1.08);
+          }
+        }
+        .animate-fade-in-up {
+          opacity: 0;
+          animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-pulse-glow {
+          animation: pulseGlow 8s ease-in-out infinite;
+        }
+        .animation-delay-100 { animation-delay: 100ms; }
+        .animation-delay-200 { animation-delay: 200ms; }
+        .animation-delay-300 { animation-delay: 300ms; }
+        .animation-delay-400 { animation-delay: 400ms; }
+        .animation-delay-500 { animation-delay: 500ms; }
+      `}} />
+
+      {/* Dynamic Background Atmospheric Lighting */}
+      <div className="absolute top-[-5%] left-[-5%] w-[55%] h-[55%] rounded-full bg-purple-900/10 blur-[130px] pointer-events-none animate-pulse-glow" />
+      <div className="absolute top-[20%] right-[-5%] w-[45%] h-[45%] rounded-full bg-cyan-900/10 blur-[130px] pointer-events-none animate-pulse-glow animation-delay-300" />
+      <div className="absolute bottom-[10%] left-[5%] w-[40%] h-[40%] rounded-full bg-indigo-900/10 blur-[120px] pointer-events-none animate-pulse-glow animation-delay-200" />
 
       {/* Header NavBar */}
-      <header className="fixed top-0 w-full z-50 bg-[#0c1324]/80 backdrop-blur-xl border-b border-[#464554]/20 shadow-sm">
+      <header className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-xl border-b border-[#464554]/10 shadow-sm">
         <nav className="flex justify-between items-center h-16 px-6 max-w-[1200px] mx-auto">
           <div className="flex items-center gap-3">
             <img alt="Outreach AI Logo" className="h-8 w-8 object-contain" src={logo} />
@@ -242,7 +280,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button 
               onClick={handleGoogleSignIn}
               disabled={isSubmitting}
-              className="bg-[#c0c1ff] text-[#1000a9] font-bold px-4 py-2 rounded-full hover:scale-95 transition-all duration-150 shadow-lg shadow-purple-500/10 flex items-center gap-1.5 text-xs cursor-pointer"
+              className="bg-[#c0c1ff] text-[#1000a9] font-bold px-4 py-2 rounded-full hover:scale-95 transition-all duration-150 shadow-lg shadow-purple-500/10 flex items-center gap-1.5 text-xs cursor-pointer hover:shadow-purple-500/30"
             >
               <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24">
                 <path
@@ -260,110 +298,143 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section className="relative pt-32 pb-20 px-6 max-w-[1200px] mx-auto min-h-screen flex items-center z-10">
         <div className="grid lg:grid-cols-12 gap-12 items-center w-full">
           
-          {/* Left Column: Heading, description, and Sign In action block */}
-          <div className="space-y-6 lg:col-span-7 z-10 text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8083ff]/10 border border-[#c0c1ff]/20">
+          {/* Left Column: Heading, description, and call to action scrolls */}
+          <div className="space-y-6 lg:col-span-7 z-10 text-left animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8083ff]/10 border border-[#c0c1ff]/20 animate-fade-in-up animation-delay-100">
               <Sparkles className="w-3.5 h-3.5 text-[#c0c1ff]" />
               <span className="text-[10px] font-mono font-bold tracking-widest text-[#c0c1ff] uppercase">Next-Gen Outreach</span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight bg-gradient-to-r from-[#c0c1ff] to-[#5de6ff] bg-clip-text text-transparent">
-              Your Job Search, <br/>Amplified by AI.
+            <h1 className="text-4xl md:text-5xl lg:text-6.5xl font-black leading-tight animate-fade-in-up animation-delay-200">
+              Automate <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent font-black">Cold Emails</span> with a Personal Touch.
             </h1>
 
-            <p className="text-sm md:text-base text-[#c7c4d7] max-w-lg leading-relaxed">
-              Land your dream role with precision-engineered email outreach. Our AI crafts personalized, high-converting drafts tailored to every job description in seconds.
+            <p className="text-sm md:text-base text-[#c7c4d7] max-w-lg leading-relaxed animate-fade-in-up animation-delay-300">
+              Land your dream role with precision-engineered email outreach. Our AI drafts personalized recruiter pitch emails using your resume details, reviews drafts in a queue, and sends safely with human-like safety delays.
             </p>
 
-            {/* Error Message banner */}
-            {errorMsg && (
-              <div className="flex gap-2 p-3 bg-rose-950/20 border border-rose-900/30 rounded-xl text-rose-350 text-xs items-center max-w-md">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-450" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
+            <div className="flex flex-wrap gap-4 items-center animate-fade-in-up animation-delay-400">
+              <a
+                href="#how-it-works"
+                className="px-6 py-3.5 bg-zinc-900/40 border border-zinc-800 hover:bg-[#191f31] text-[#dce1fb] font-semibold rounded-2xl transition-all flex items-center gap-2 text-sm hover:scale-95"
+              >
+                <PlayCircle className="w-4.5 h-4.5 text-purple-400" />
+                See How It Works
+              </a>
+              <a
+                href="#pricing"
+                className="px-6 py-3.5 bg-transparent border border-neutral-800 hover:border-neutral-700 text-[#c7c4d7] hover:text-white font-semibold rounded-2xl transition-all flex items-center gap-1.5 text-sm"
+              >
+                View Plans
+              </a>
+            </div>
 
-            {/* Active authentication / payment select panel block (integrated directly inside hero for perfect flow) */}
-            <div className="pt-2 max-w-md">
+            {/* Micro proof text */}
+            <div className="flex items-center gap-4 pt-6 text-[#c7c4d7]/60 text-xs animate-fade-in-up animation-delay-500">
+              <div className="flex -space-x-2">
+                <div className="w-8 h-8 rounded-full border-2 border-black bg-[#2e3447] flex items-center justify-center text-[10px] font-bold">JD</div>
+                <div className="w-8 h-8 rounded-full border-2 border-black bg-[#2e3447] flex items-center justify-center text-[10px] font-bold">MK</div>
+                <div className="w-8 h-8 rounded-full border-2 border-black bg-[#2e3447] flex items-center justify-center text-[10px] font-bold">AL</div>
+              </div>
+              <p className="font-mono text-[11px]">Joined by 10k+ professionals this month</p>
+            </div>
+          </div>
+
+          {/* Right Column: Active Google Sign-In / Gating panel block */}
+          <div className="lg:col-span-5 relative z-10 animate-fade-in-up animation-delay-300">
+            <div className="w-full border border-[#c0c1ff]/10 bg-zinc-900/30 backdrop-blur-xl rounded-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.6)] space-y-6 relative overflow-hidden group hover:border-[#c0c1ff]/20 transition-all duration-300">
+              
+              {/* top accent line */}
+              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500" />
+              
+              {errorMsg && (
+                <div className="flex gap-2 p-3 bg-rose-950/20 border border-rose-900/30 rounded-xl text-rose-350 text-xs items-center">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-450" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
               {!showAdminLogin ? (
                 initialPaymentRequiredUserId ? (
-                  // Payment Select Card
-                  <div className="p-5 rounded-2xl bg-[#0f172a]/60 backdrop-blur-md border border-[#c0c1ff]/10 space-y-4">
+                  // Payment Gating Card
+                  <div className="space-y-4">
                     <div className="space-y-1">
                       <h3 className="text-sm font-bold text-[#dce1fb]">Unlock Outreach Platform</h3>
                       <p className="text-[11px] text-[#c7c4d7]">Choose a subscription option to launch your cold emails pipeline.</p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                      <div className="p-3 bg-[#0c1324]/80 border border-[#464554]/40 rounded-xl flex flex-col justify-between hover:border-[#c0c1ff]/40 transition-colors">
-                        <div>
+                    <div className="space-y-3">
+                      <div className="p-3.5 bg-black/60 border border-zinc-800 hover:border-[#c0c1ff]/40 rounded-xl flex justify-between items-center transition-all hover:scale-[1.02] duration-300">
+                        <div className="space-y-0.5">
                           <span className="text-[8px] text-neutral-500 font-bold uppercase tracking-wider block">Plan Option 1</span>
                           <h4 className="text-xs font-bold text-neutral-200">Yearly Plan</h4>
+                          <p className="text-[10px] text-neutral-450">₹100/yr</p>
                         </div>
-                        <div className="mt-3 flex items-baseline justify-between">
-                          <span className="text-xs font-bold text-neutral-100">₹100<span className="text-[9px] text-neutral-500 font-normal">/yr</span></span>
-                          <button
-                            onClick={() => handleStartPurchase('yearly')}
-                            disabled={isSubmitting}
-                            className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-[#dce1fb] border border-neutral-800 text-[9px] font-bold rounded-md transition-colors cursor-pointer"
-                          >
-                            Select
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => handleStartPurchase('yearly')}
+                          disabled={isSubmitting}
+                          className="px-3.5 py-1.5 bg-zinc-900 hover:bg-[#191f31] text-[#dce1fb] border border-neutral-850 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                        >
+                          Select
+                        </button>
                       </div>
 
-                      <div className="p-3 bg-[#0c1324]/80 border border-[#c0c1ff]/20 rounded-xl flex flex-col justify-between hover:border-[#c0c1ff]/40 transition-colors relative">
+                      <div className="p-3.5 bg-[#8083ff]/5 border border-[#c0c1ff]/20 rounded-xl flex justify-between items-center transition-all hover:scale-[1.02] duration-300 relative">
                         <div className="absolute top-0 right-2 translate-y-[-50%] px-1.5 py-0.5 rounded bg-purple-950 border border-purple-800/40 text-[#c0c1ff] text-[7px] font-bold uppercase tracking-wide">
                           Best Value
                         </div>
-                        <div>
+                        <div className="space-y-0.5">
                           <span className="text-[8px] text-neutral-500 font-bold uppercase tracking-wider block">Plan Option 2</span>
                           <h4 className="text-xs font-bold text-neutral-200">Lifetime Plan</h4>
+                          <p className="text-[10px] text-[#c0c1ff]">₹300 once</p>
                         </div>
-                        <div className="mt-3 flex items-baseline justify-between">
-                          <span className="text-xs font-bold text-neutral-100">₹300<span className="text-[9px] text-neutral-500 font-normal">/once</span></span>
-                          <button
-                            onClick={() => handleStartPurchase('lifetime')}
-                            disabled={isSubmitting}
-                            className="px-2.5 py-1 bg-[#c0c1ff] hover:bg-white text-[#1000a9] text-[9px] font-bold rounded-md transition-colors cursor-pointer"
-                          >
-                            Unlock
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => handleStartPurchase('lifetime')}
+                          disabled={isSubmitting}
+                          className="px-3.5 py-1.5 bg-[#c0c1ff] hover:bg-white text-[#1000a9] text-[10px] font-bold rounded-lg transition-colors cursor-pointer shadow-lg shadow-purple-500/10"
+                        >
+                          Unlock
+                        </button>
                       </div>
                     </div>
 
                     <button
                       onClick={onClearPaymentRequired}
-                      className="w-full py-2 bg-transparent hover:bg-zinc-900/60 border border-neutral-800 text-neutral-450 hover:text-neutral-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                      className="w-full py-2.5 bg-transparent hover:bg-zinc-900/60 border border-neutral-800 text-neutral-450 hover:text-neutral-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
                     >
                       Cancel / Sign Out
                     </button>
                   </div>
                 ) : (
-                  // Google Sign-In Trigger
-                  <div className="flex flex-wrap gap-4 items-center">
+                  // Google Sign-In Card
+                  <div className="space-y-5">
+                    <div className="text-center space-y-2">
+                      <h3 className="text-base font-bold text-[#dce1fb] tracking-tight">Access Dashboard</h3>
+                      <p className="text-xs text-[#c7c4d7]">Sign in with Google to configure campaigns and view settings.</p>
+                    </div>
+
                     <button
                       onClick={handleGoogleSignIn}
                       disabled={isSubmitting}
-                      className="bg-[#c0c1ff] text-[#1000a9] font-bold px-8 py-4 rounded-2xl hover:scale-95 transition-all shadow-xl shadow-purple-500/20 flex items-center gap-2 cursor-pointer text-sm"
+                      className="w-full py-3 bg-[#c0c1ff] hover:bg-[#dce1fb] text-[#1000a9] font-bold rounded-xl text-xs transition-all duration-200 shadow-xl flex items-center justify-center gap-2.5 active:scale-[0.98] cursor-pointer hover:shadow-purple-500/20"
                     >
-                      {isSubmitting ? 'Connecting...' : 'Sign in with Google'}
-                      <ArrowRight className="w-4 h-4" />
+                      <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+                        <path
+                          fill="currentColor"
+                          d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.2-5.136 4.2a6.386 6.386 0 0 1-6.39-6.39 6.386 6.386 0 0 1 6.39-6.39c2.866 0 4.743 1.177 5.733 2.11l3.22-3.22A10.825 10.825 0 0 0 12.24 1.2a10.8 10.8 0 0 0-10.8 10.8 10.8 10.8 0 0 0 10.8 10.8c5.842 0 10.963-4.225 10.963-10.8 0-.665-.06-1.25-.19-1.715H12.24Z"
+                        />
+                      </svg>
+                      {isSubmitting ? 'Connecting...' : 'Continue with Google'}
                     </button>
-                    <a
-                      href="#how-it-works"
-                      className="px-8 py-4 bg-[#0f172a]/60 border border-[#c0c1ff]/10 hover:bg-[#191f31] text-[#dce1fb] font-semibold rounded-2xl transition-all flex items-center gap-2 text-sm"
-                    >
-                      <PlayCircle className="w-4 h-4 text-purple-400" />
-                      Watch Demo
-                    </a>
+                    <p className="text-[10px] text-neutral-500 text-center leading-relaxed">
+                      Secure connection via official Google OAuth. We never ask for or save your password.
+                    </p>
                   </div>
                 )
               ) : (
                 // Owner verification passcode form
-                <form onSubmit={handleAdminLogin} className="p-5 rounded-2xl bg-[#0f172a]/60 backdrop-blur-md border border-[#c0c1ff]/10 space-y-4">
-                  <div className="space-y-1">
+                <form onSubmit={handleAdminLogin} className="space-y-4">
+                  <div className="space-y-1 text-center">
                     <h3 className="text-sm font-bold text-[#dce1fb]">Admin Authentication</h3>
                     <p className="text-[11px] text-[#c7c4d7]">Enter passcode to view administrative dashboard indicators.</p>
                   </div>
@@ -374,14 +445,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       value={passcode}
                       onChange={(e) => setPasscode(e.target.value)}
                       placeholder="Enter owner passcode"
-                      className="w-full rounded-xl border border-neutral-800 bg-[#0c1324] px-4 py-2.5 text-xs focus:outline-none focus:border-neutral-700 text-[#dce1fb]"
+                      className="w-full rounded-xl border border-neutral-800 bg-black px-4 py-2.5 text-xs focus:outline-none focus:border-neutral-700 text-[#dce1fb]"
                     />
                   </div>
                   <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => setShowAdminLogin(false)}
-                      className="w-1/2 py-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-850 text-neutral-350 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                      className="w-1/2 py-2 bg-neutral-900 border border-neutral-850 hover:bg-neutral-800 text-[#c7c4d7] font-bold rounded-xl text-xs transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -395,42 +466,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </div>
                 </form>
               )}
-            </div>
 
-            {/* Micro proof text */}
-            <div className="flex items-center gap-4 pt-6 text-[#c7c4d7]/60 text-xs">
-              <div className="flex -space-x-2">
-                <div className="w-8 h-8 rounded-full border-2 border-[#0c1324] bg-[#2e3447] flex items-center justify-center text-[10px] font-bold">JD</div>
-                <div className="w-8 h-8 rounded-full border-2 border-[#0c1324] bg-[#2e3447] flex items-center justify-center text-[10px] font-bold">MK</div>
-                <div className="w-8 h-8 rounded-full border-2 border-[#0c1324] bg-[#2e3447] flex items-center justify-center text-[10px] font-bold">AL</div>
-              </div>
-              <p className="font-mono text-[11px]">Joined by 10k+ professionals this month</p>
             </div>
-          </div>
-
-          {/* Right Column: High-fidelity premium 3D illustration mock matches Stitch */}
-          <div className="lg:col-span-5 relative hidden lg:block z-10">
-            <div className="animate-[bounce_6s_ease-in-out_infinite]">
-              <img 
-                alt="Workspace Illustration" 
-                className="w-full h-auto rounded-2xl border border-[#c0c1ff]/10 shadow-2xl bg-[#0f172a]/30 backdrop-blur-md" 
-                src={illustration} 
-              />
-            </div>
-            {/* Ambient blur circle background element */}
-            <div className="absolute -top-10 -right-10 w-64 h-64 bg-[#c0c1ff]/10 blur-[100px] rounded-full pointer-events-none" />
+            {/* Ambient blur circle */}
+            <div className="absolute -top-10 -right-10 w-64 h-64 bg-[#c0c1ff]/5 blur-[100px] rounded-full pointer-events-none" />
           </div>
 
         </div>
       </section>
 
       {/* Social Proof Partners Banner */}
-      <section className="py-12 border-y border-[#464554]/10 bg-[#070d1f]/40 z-10 relative">
+      <section className="py-12 border-y border-[#464554]/10 bg-zinc-950/30 z-10 relative">
         <div className="max-w-[1200px] mx-auto px-6">
           <p className="text-[10px] font-mono tracking-[0.2em] text-[#c7c4d7] text-center uppercase mb-8">
             Our users have secured interviews at
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-40 grayscale hover:grayscale-0 transition-all duration-500 text-sm font-black tracking-tighter text-[#dce1fb]">
+          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-30 grayscale hover:opacity-75 hover:grayscale-0 transition-all duration-500 text-sm font-black tracking-tighter text-[#dce1fb]">
             <span>GLOBO</span>
             <span>NEXUS</span>
             <span>VELOCITY</span>
@@ -454,8 +505,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* Card 1: AI Email Drafting (2 Cols) */}
-          <div className="md:col-span-2 rounded-2xl p-6 bg-[#0f172a]/60 backdrop-blur-md border border-[#c0c1ff]/10 hover:border-[#c0c1ff]/30 transition-all duration-300 relative overflow-hidden group flex flex-col justify-between min-h-[240px]">
-            {/* Soft inner radial gradient */}
+          <div className="md:col-span-2 rounded-2xl p-6 bg-zinc-900/40 backdrop-blur-md border border-[#c0c1ff]/10 hover:border-[#c0c1ff]/30 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 relative overflow-hidden group flex flex-col justify-between min-h-[240px] hover:shadow-[0_12px_40px_rgba(139,92,246,0.05)]">
             <div className="absolute inset-0 bg-radial-gradient from-purple-500/5 to-transparent pointer-events-none" />
             <div className="space-y-4 z-10">
               <Mail className="w-8 h-8 text-[#c0c1ff]" />
@@ -466,12 +516,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
             {/* Visual simulation elements */}
             <div className="mt-8 flex gap-4 translate-y-4 group-hover:translate-y-0 transition-transform duration-500 w-full max-w-sm">
-              <div className="bg-[#191f31] rounded-xl p-3 border border-[#464554]/20 flex-1 space-y-2">
+              <div className="bg-zinc-950/70 rounded-xl p-3 border border-[#464554]/20 flex-1 space-y-2">
                 <div className="h-1.5 w-2/3 bg-purple-500/20 rounded" />
                 <div className="h-1.5 w-full bg-[#464554]/20 rounded" />
                 <div className="h-1.5 w-1/2 bg-[#464554]/20 rounded" />
               </div>
-              <div className="bg-[#191f31] rounded-xl p-3 border border-[#c0c1ff]/30 flex-1 space-y-2">
+              <div className="bg-zinc-950/70 rounded-xl p-3 border border-[#c0c1ff]/30 flex-1 space-y-2">
                 <div className="h-1.5 w-2/3 bg-[#c0c1ff]/40 rounded" />
                 <div className="h-1.5 w-full bg-[#c0c1ff]/20 rounded" />
                 <div className="h-1.5 w-4/5 bg-[#c0c1ff]/20 rounded" />
@@ -480,7 +530,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Card 2: Resume Parsing (1 Col) */}
-          <div className="rounded-2xl p-6 bg-[#0f172a]/60 backdrop-blur-md border border-[#c0c1ff]/10 hover:border-[#c0c1ff]/30 transition-all duration-300 flex flex-col justify-between min-h-[240px]">
+          <div className="rounded-2xl p-6 bg-zinc-900/40 backdrop-blur-md border border-[#c0c1ff]/10 hover:border-[#c0c1ff]/30 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 flex flex-col justify-between min-h-[240px] hover:shadow-[0_12px_40px_rgba(139,92,246,0.05)]">
             <FileText className="w-8 h-8 text-[#5de6ff]" />
             <div className="space-y-2">
               <h3 className="text-lg font-bold text-[#dce1fb]">Resume Parsing</h3>
@@ -491,7 +541,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Card 3: Gmail Integration (1 Col) */}
-          <div className="rounded-2xl p-6 bg-[#0f172a]/60 backdrop-blur-md border border-[#c0c1ff]/10 hover:border-[#c0c1ff]/30 transition-all duration-300 flex flex-col justify-between min-h-[240px]">
+          <div className="rounded-2xl p-6 bg-zinc-900/40 backdrop-blur-md border border-[#c0c1ff]/10 hover:border-[#c0c1ff]/30 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 flex flex-col justify-between min-h-[240px] hover:shadow-[0_12px_40px_rgba(139,92,246,0.05)]">
             <ShieldCheck className="w-8 h-8 text-[#c0c1ff]" />
             <div className="space-y-2">
               <h3 className="text-lg font-bold text-[#dce1fb]">Gmail Integration</h3>
@@ -502,7 +552,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Card 4: CSV Bulk Outreach (2 Cols) */}
-          <div className="md:col-span-2 rounded-2xl p-6 bg-[#0f172a]/60 backdrop-blur-md border border-[#c0c1ff]/10 hover:border-[#c0c1ff]/30 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group min-h-[240px]">
+          <div className="md:col-span-2 rounded-2xl p-6 bg-zinc-900/40 backdrop-blur-md border border-[#c0c1ff]/10 hover:border-[#c0c1ff]/30 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 flex flex-col justify-between relative overflow-hidden group min-h-[240px] hover:shadow-[0_12px_40px_rgba(139,92,246,0.05)]">
             <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between w-full h-full">
               <div className="space-y-4 flex-1">
                 <Layers className="w-8 h-8 text-[#ffb783]" />
@@ -512,7 +562,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </p>
               </div>
               {/* Visual simulation spreadsheet overlay */}
-              <div className="flex-1 w-full bg-[#151b2d] p-4 rounded-xl border border-[#464554]/20 font-mono text-[9px] text-[#c7c4d7]/40 space-y-2">
+              <div className="flex-1 w-full bg-zinc-950/70 p-4 rounded-xl border border-[#464554]/20 font-mono text-[9px] text-[#c7c4d7]/40 space-y-2">
                 <div className="grid grid-cols-4 border-b border-[#464554]/25 pb-1.5">
                   <span>Company</span><span>Role</span><span>Contact</span><span>Status</span>
                 </div>
@@ -528,10 +578,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* How it Works Section */}
-      <section className="py-24 bg-[#070d1f]/20 border-t border-[#464554]/10 relative z-10" id="how-it-works">
+      <section className="py-24 bg-zinc-950/30 border-t border-[#464554]/10 relative z-10" id="how-it-works">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
-            <div className="space-y-2">
+            <div className="space-y-2 animate-fade-in-up">
               <span className="text-[10px] font-mono tracking-widest text-[#c0c1ff] uppercase">Process</span>
               <h2 className="text-3xl font-bold tracking-tight text-[#dce1fb]">Zero to Sent in 4 Minutes</h2>
             </div>
@@ -550,7 +600,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               { step: '3', title: 'Generate Drafts', desc: 'Paste job links. Watch as AI crafts perfect outreach for each one.' },
               { step: '4', title: 'Review & Send', desc: 'Tweak if you like, then hit send. Everything stays in your Sent folder.' }
             ].map((item, idx) => (
-              <div key={idx} className="space-y-4 group relative">
+              <div key={idx} className="space-y-4 group relative hover:translate-y-[-2px] transition-transform duration-300">
                 <div className="w-12 h-12 rounded-full bg-[#191f31] border border-[#464554]/30 flex items-center justify-center group-hover:border-[#c0c1ff]/50 transition-colors">
                   <span className="text-base font-bold text-[#c0c1ff]">{item.step}</span>
                 </div>
@@ -564,26 +614,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       {/* Trust & Security details panel */}
       <section className="py-24 px-6 max-w-[1200px] mx-auto z-10 relative">
-        <div className="rounded-3xl p-8 bg-gradient-to-b from-[#151b2d] to-[#070d1f] border border-[#c0c1ff]/10 text-center space-y-8">
+        <div className="rounded-3xl p-8 bg-gradient-to-b from-zinc-900/60 to-zinc-950/80 border border-[#c0c1ff]/10 text-center space-y-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#00cbe6]/10">
             <Lock className="w-8 h-8 text-[#5de6ff]" />
           </div>
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#dce1fb]">Security is Our Foundation</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left pt-4">
-            <div className="p-5 rounded-2xl bg-[#0c1324]/50 border border-[#464554]/10 space-y-2">
+            <div className="p-5 rounded-2xl bg-zinc-900/30 border border-[#464554]/10 space-y-2">
               <h5 className="text-xs font-bold text-[#dce1fb]">Google OAuth Only</h5>
               <p className="text-[11px] text-[#c7c4d7] leading-relaxed">
                 We use official Google authentication. We never see or store your Gmail password.
               </p>
             </div>
-            <div className="p-5 rounded-2xl bg-[#0c1324]/50 border border-[#464554]/10 space-y-2">
+            <div className="p-5 rounded-2xl bg-zinc-900/30 border border-[#464554]/10 space-y-2">
               <h5 className="text-xs font-bold text-[#dce1fb]">Smart Sending Delays</h5>
               <p className="text-[11px] text-[#c7c4d7] leading-relaxed">
                 Emails are paced naturally with random delays to keep your account's sender score perfect.
               </p>
             </div>
-            <div className="p-5 rounded-2xl bg-[#0c1324]/50 border border-[#464554]/10 space-y-2">
+            <div className="p-5 rounded-2xl bg-zinc-900/30 border border-[#464554]/10 space-y-2">
               <h5 className="text-xs font-bold text-[#dce1fb]">No Data Resale</h5>
               <p className="text-[11px] text-[#c7c4d7] leading-relaxed">
                 Your resume and drafts belong to you. We never train public models on your private data.
@@ -606,14 +656,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
           {/* Option 1: Yearly */}
-          <div className="rounded-2xl p-6 bg-[#0f172a]/60 backdrop-blur-md border border-[#c0c1ff]/10 hover:border-[#c0c1ff]/30 transition-all duration-300 flex flex-col justify-between min-h-[300px]">
+          <div className="rounded-2xl p-6 bg-zinc-900/40 backdrop-blur-md border border-[#c0c1ff]/10 hover:border-[#c0c1ff]/30 transition-all duration-300 flex flex-col justify-between min-h-[300px] hover:scale-[1.02] hover:shadow-[0_12px_45px_rgba(139,92,246,0.06)]">
             <div className="space-y-4">
               <span className="text-[9px] font-mono tracking-widest text-[#c7c4d7] uppercase block">Yearly Access</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-extrabold text-[#dce1fb]">₹100</span>
                 <span className="text-xs text-[#c7c4d7]">/year</span>
               </div>
-              <ul className="space-y-3 pt-2 text-xs text-[#c7c4d7] space-y-3">
+              <ul className="space-y-3 pt-2 text-xs text-[#c7c4d7]">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#c0c1ff]" /> Unlimited AI Drafts</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#c0c1ff]" /> Gmail OAuth Integration</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#c0c1ff]" /> Review Queue panel</li>
@@ -628,7 +678,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Option 2: Lifetime */}
-          <div className="rounded-2xl p-6 bg-purple-950/20 backdrop-blur-md border border-[#c0c1ff]/30 hover:border-[#c0c1ff]/60 transition-all duration-300 flex flex-col justify-between min-h-[300px] relative">
+          <div className="rounded-2xl p-6 bg-[#8083ff]/5 backdrop-blur-md border border-[#c0c1ff]/30 hover:border-[#c0c1ff]/60 transition-all duration-300 flex flex-col justify-between min-h-[300px] relative hover:scale-[1.02] hover:shadow-[0_12px_45px_rgba(139,92,246,0.12)]">
             <div className="absolute top-0 right-4 translate-y-[-50%] bg-[#c0c1ff] text-[#1000a9] font-bold text-[8px] font-mono px-3 py-1 rounded-full">
               POPULAR
             </div>
@@ -638,7 +688,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span className="text-4xl font-extrabold text-[#c0c1ff]">₹300</span>
                 <span className="text-xs text-[#c7c4d7]">/once</span>
               </div>
-              <ul className="space-y-3 pt-2 text-xs text-[#dce1fb] space-y-3">
+              <ul className="space-y-3 pt-2 text-xs text-[#dce1fb]">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#c0c1ff]" /> Permanent ownership license</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#c0c1ff]" /> CSV bulk applications upload</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#c0c1ff]" /> Lifetime releases & updates</li>
@@ -678,7 +728,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             return (
               <div 
                 key={idx} 
-                className="rounded-2xl border border-[#464554]/20 bg-[#0f172a]/60 backdrop-blur-md overflow-hidden transition-all duration-300"
+                className="rounded-2xl border border-[#464554]/20 bg-zinc-900/40 backdrop-blur-md overflow-hidden transition-all duration-300 hover:border-[#c0c1ff]/30 hover:scale-[1.01]"
               >
                 <button
                   onClick={() => toggleFaq(idx)}
@@ -693,7 +743,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     isOpen ? 'max-h-40 border-t border-[#464554]/10' : 'max-h-0'
                   }`}
                 >
-                  <p className="px-5 py-4 text-xs text-[#c7c4d7] leading-relaxed bg-[#0c1324]/30">
+                  <p className="px-5 py-4 text-xs text-[#c7c4d7] leading-relaxed bg-zinc-950/40">
                     {faq.a}
                   </p>
                 </div>
@@ -705,7 +755,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       {/* CTA Bottom Banner */}
       <section className="py-24 px-6 max-w-[1200px] mx-auto text-center z-10 relative">
-        <div className="rounded-3xl p-12 bg-gradient-to-b from-[#151b2d] to-[#070d1f] border border-[#c0c1ff]/10 relative overflow-hidden space-y-6">
+        <div className="rounded-3xl p-12 bg-gradient-to-b from-zinc-900/60 to-zinc-950/80 border border-[#c0c1ff]/10 relative overflow-hidden space-y-6">
           <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-[#5de6ff]/5 blur-[100px] rounded-full pointer-events-none" />
           
           <h2 className="text-3xl md:text-5xl font-black leading-tight text-[#dce1fb]">
@@ -731,8 +781,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       {/* Simulated Razorpay Verification sandbox modal */}
       {showMockPaymentModal && (
-        <div className="fixed inset-0 z-50 bg-[#070d1f]/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-sm border border-neutral-800 bg-[#0f172a] rounded-2xl p-6 space-y-4 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm border border-neutral-850 bg-zinc-900 rounded-2xl p-6 space-y-4 shadow-2xl relative">
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#c0c1ff] to-[#5de6ff] rounded-t-xl" />
             <h3 className="text-sm font-semibold text-neutral-250 uppercase tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
@@ -741,7 +791,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <p className="text-xs text-neutral-450 leading-relaxed">
               No Razorpay keys are detected in settings. Triggering a simulated sandbox licensing order:
             </p>
-            <div className="bg-[#0c1324] border border-[#464554]/30 p-3.5 rounded-xl text-[10px] text-neutral-400 font-mono space-y-1">
+            <div className="bg-black border border-[#464554]/30 p-3.5 rounded-xl text-[10px] text-neutral-450 font-mono space-y-1">
               <div>Order ID: <span className="text-[#dce1fb]">{mockOrderId}</span></div>
               <div>Plan Selected: <span className="text-[#c0c1ff] uppercase font-bold">{selectedPlan}</span></div>
               <div>Total Cost: <span className="text-emerald-400">₹{selectedPlan === 'yearly' ? '100.00' : '300.00'}</span></div>
@@ -750,7 +800,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setShowMockPaymentModal(false)}
-                className="w-1/2 py-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-850 text-neutral-300 font-semibold rounded-lg text-xs transition-colors cursor-pointer"
+                className="w-1/2 py-2 bg-neutral-900 border border-neutral-850 hover:bg-neutral-800 text-neutral-300 font-semibold rounded-lg text-xs transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -767,7 +817,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       )}
 
       {/* Footer */}
-      <footer className="w-full py-12 border-t border-[#464554]/10 bg-[#070d1f]">
+      <footer className="w-full py-12 border-t border-[#464554]/10 bg-black">
         <div className="max-w-[1200px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -800,8 +850,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="space-y-3">
             <h5 className="text-xs font-bold text-[#dce1fb]">Connect</h5>
             <nav className="flex flex-col gap-1.5 text-xs text-[#c7c4d7]">
-              <a className="hover:text-[#c0c1ff] transition-colors" href="#">LinkedIn</a>
-              <a className="hover:text-[#c0c1ff] transition-colors" href="#">Twitter</a>
+              <a className="hover:text-[#c0c1ff] transition-colors flex items-center gap-1" href="https://aditya07.me" target="_blank" rel="noopener noreferrer">
+                Developer aditya07.me
+                <ArrowUpRight className="w-3 h-3" />
+              </a>
             </nav>
           </div>
         </div>
