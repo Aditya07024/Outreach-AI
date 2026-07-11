@@ -3,8 +3,13 @@
 @import "tailwindcss";
 
 @layer base {
+  html {
+    font-size: 110%;
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-zinc-950 text-neutral-100 antialiased font-sans;
+    @apply bg-white text-neutral-800 antialiased font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -14,10 +19,10 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-zinc-950;
+    @apply bg-neutral-100;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-neutral-800 rounded-full hover:bg-neutral-700 transition-colors;
+    @apply bg-neutral-300 rounded-full hover:bg-neutral-400 transition-colors;
   }
 }
 
