@@ -408,27 +408,60 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 ) : (
                   // Google Sign-In Card
                   <div className="space-y-5">
-                    <div className="text-center space-y-2">
-                      <h3 className="text-base font-bold text-[#dce1fb] tracking-tight">Access Dashboard</h3>
-                      <p className="text-xs text-[#c7c4d7]">Sign in with Google to configure campaigns and view settings.</p>
+                    <div className="text-center space-y-3">
+                      <div className="flex items-center justify-center gap-1.5 py-1 px-3 rounded-full bg-[#00cbe6]/10 border border-[#00cbe6]/20 text-[#5de6ff] text-[9px] font-mono w-fit mx-auto">
+                        <Lock className="w-3 h-3 text-[#5de6ff]" />
+                        <span>OAuth 2.0 Secure Protocol</span>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <h3 className="text-base font-bold text-[#dce1fb] tracking-tight">Access Dashboard</h3>
+                        <p className="text-xs text-[#c7c4d7] leading-relaxed">
+                          Sign in with Google to set up campaigns, upload resumes, and automate cold emails.
+                        </p>
+                      </div>
                     </div>
 
                     <button
                       onClick={handleGoogleSignIn}
                       disabled={isSubmitting}
-                      className="w-full py-3 bg-[#c0c1ff] hover:bg-[#dce1fb] text-[#1000a9] font-bold rounded-xl text-xs transition-all duration-200 shadow-xl flex items-center justify-center gap-2.5 active:scale-[0.98] cursor-pointer hover:shadow-purple-500/20"
+                      className="w-full py-3.5 bg-[#0c1324]/80 hover:bg-[#191f31] text-[#dce1fb] border border-[#c0c1ff]/20 hover:border-[#c0c1ff]/50 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] text-xs font-bold rounded-xl transition-all duration-300 shadow-xl flex items-center justify-center gap-2.5 active:scale-[0.98] cursor-pointer"
                     >
                       <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                         <path
-                          fill="currentColor"
-                          d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.2-5.136 4.2a6.386 6.386 0 0 1-6.39-6.39 6.386 6.386 0 0 1 6.39-6.39c2.866 0 4.743 1.177 5.733 2.11l3.22-3.22A10.825 10.825 0 0 0 12.24 1.2a10.8 10.8 0 0 0-10.8 10.8 10.8 10.8 0 0 0 10.8 10.8c5.842 0 10.963-4.225 10.963-10.8 0-.665-.06-1.25-.19-1.715H12.24Z"
+                          fill="#ea4335"
+                          d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582l3.51-3.51C17.827.99 15.09 0 12 0 7.34 0 3.318 2.668 1.34 6.57l3.926 3.195z"
+                        />
+                        <path
+                          fill="#4285f4"
+                          d="M24 12.24c0-.825-.075-1.62-.212-2.385H12v4.51h6.724a5.747 5.747 0 0 1-2.495 3.778v3.136h4.037C22.623 19.125 24 15.933 24 12.24z"
+                        />
+                        <path
+                          fill="#fbbc05"
+                          d="M5.266 14.235a7.1 7.1 0 0 1 0-4.47L1.34 6.57a12.022 12.022 0 0 0 0 10.86l3.926-3.195z"
+                        />
+                        <path
+                          fill="#34a853"
+                          d="M12 24c3.24 0 5.955-1.075 7.94-2.915l-4.037-3.136c-1.12.75-2.55 1.205-3.903 1.205-2.977 0-5.503-2.01-6.403-4.71H1.543v3.253C3.582 21.737 7.545 24 12 24z"
                         />
                       </svg>
                       {isSubmitting ? 'Connecting...' : 'Continue with Google'}
                     </button>
-                    <p className="text-[10px] text-neutral-500 text-center leading-relaxed">
-                      Secure connection via official Google OAuth. We never ask for or save your password.
-                    </p>
+
+                    <div className="pt-4 border-t border-[#464554]/10 space-y-2.5 text-left">
+                      <div className="flex items-start gap-2.5 text-[10px] text-[#c7c4d7] leading-relaxed">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                        <span><strong>Zero Password Storage</strong>: We authenticate securely through Google and never see your credentials.</span>
+                      </div>
+                      <div className="flex items-start gap-2.5 text-[10px] text-[#c7c4d7] leading-relaxed">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                        <span><strong>Instant Campaigns Sync</strong>: Upload recruiters list via CSV and manage drafts in your outbox.</span>
+                      </div>
+                      <div className="flex items-start gap-2.5 text-[10px] text-[#c7c4d7] leading-relaxed">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                        <span><strong>AI Resume Processing</strong>: Automatically tailor recruiter pitches with Grok AI context.</span>
+                      </div>
+                    </div>
                   </div>
                 )
               ) : (
