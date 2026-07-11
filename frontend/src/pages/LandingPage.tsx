@@ -243,9 +243,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       `}} />
 
       {/* Main Sky Blue Grid Hero Banner Wrapper */}
-      <div className="w-full bg-[#f3f8ff] pb-16">
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-6">
-          <div className="rounded-3xl bg-[#70a6ff] bg-[linear-gradient(to_right,rgba(255,255,255,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.15)_1px,transparent_1px)] [background-size:40px_40px] p-6 md:p-12 pb-24 shadow-md relative overflow-hidden">
+      <div className="w-full bg-[#f3f8ff]">
+        <div className="w-full bg-[#70a6ff] bg-[linear-gradient(to_right,rgba(255,255,255,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.15)_1px,transparent_1px)] [background-size:40px_40px] px-6 md:px-16 pt-8 pb-28 rounded-b-[48px] shadow-lg relative overflow-hidden">
             
             {/* Soft decorative background glows inside the banner */}
             <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-white/20 blur-[120px] pointer-events-none" />
@@ -557,7 +556,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           </div>
         </div>
-      </div>
 
       {/* Social Proof Partners Banner */}
       <section className="py-12 border-b border-neutral-100 bg-[#f8faff] z-10 relative">
