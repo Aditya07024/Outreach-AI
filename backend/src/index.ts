@@ -14,6 +14,7 @@ import campaignRoutes from './routes/campaigns.routes';
 import contactRoutes from './routes/contacts.routes';
 import historyRoutes from './routes/history.routes';
 import logsRoutes from './routes/logs.routes';
+import healthRoutes from './routes/health.routes';
 
 // Services
 import { SendingEngine } from './services/sending.engine';
@@ -45,7 +46,11 @@ if (!fs.existsSync(uploadResumesDir)) {
 }
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Register Routes
+// Register Public Routes
+app.use('/health', healthRoutes);
+app.use('/api/health', healthRoutes);
+
+// Register Protected Routes
 app.use('/api/auth/google', authRoutes);
 app.use('/api/settings', requireAuth, settingsRoutes);
 app.use('/api/resumes', requireAuth, resumeRoutes);
