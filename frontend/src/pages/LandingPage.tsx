@@ -294,11 +294,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
 
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white animate-fade-in-up animation-delay-100">
-                  Secret Weapon of <br/>Successful Job Seekers
+                  Automate Personalized <br/>Cold Emails with AI
                 </h1>
 
                 <p className="text-sm md:text-base text-white/90 max-w-md leading-relaxed animate-fade-in-up animation-delay-200">
-                  Land your dream role with precision-engineered email outreach. Our AI drafts recruiter pitch emails using your resume details, reviews drafts in a queue, and sends safely with anti-spam protection delays.
+                  Upload your resume, connect your Gmail, and let AI generate personalized outreach emails for recruiters. Review every draft before sending with built-in safety delays.
                 </p>
 
                 <div className="flex flex-wrap gap-3.5 items-center pt-2 animate-fade-in-up animation-delay-300">
