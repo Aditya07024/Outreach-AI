@@ -25,15 +25,26 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
   const loadSettings = async () => {
     try {
       const res = await fetch('/api/settings');
-      const data = await res.json();
-      reset(data);
+      if (res.ok) {
+        const data = await res.json();
+        reset(data);
+      }
 
       // Load resumes list
       const resRes = await fetch('/api/resumes');
-      const resumesData = await resRes.json();
-      setResumes(resumesData);
+      if (resRes.ok) {
+        const resumesData = await resRes.json();
+        if (Array.isArray(resumesData)) {
+          setResumes(resumesData);
+        } else {
+          setResumes([]);
+        }
+      } else {
+        setResumes([]);
+      }
     } catch (err) {
       console.error('Failed to load settings', err);
+      setResumes([]);
     }
   };
 
