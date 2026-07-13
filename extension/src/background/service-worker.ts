@@ -147,8 +147,12 @@ async function handleMessage(message: any): Promise<any> {
       const tab = tabs[0];
       if (!tab?.id) throw new Error('No active tab found.');
       
-      const response = await chrome.tabs.sendMessage(tab.id, { action: 'SCAN_PAGE' });
-      return response;
+      try {
+        const response = await chrome.tabs.sendMessage(tab.id, { action: 'SCAN_PAGE' });
+        return response;
+      } catch (err) {
+        throw new Error('Please refresh this tab or try scanning a different website. Note that standard security policies prevent extension execution on internal chrome:// pages.');
+      }
     }
     
     case 'SCAN_CONTACT_PAGES': {
@@ -156,8 +160,12 @@ async function handleMessage(message: any): Promise<any> {
       const tab = tabs[0];
       if (!tab?.id) throw new Error('No active tab found.');
       
-      const response = await chrome.tabs.sendMessage(tab.id, { action: 'SCAN_CONTACT_PAGES' });
-      return response;
+      try {
+        const response = await chrome.tabs.sendMessage(tab.id, { action: 'SCAN_CONTACT_PAGES' });
+        return response;
+      } catch (err) {
+        throw new Error('Please refresh this tab or try scanning a different website. Note that standard security policies prevent extension execution on internal chrome:// pages.');
+      }
     }
     
     case 'GET_PAGE_INFO': {
@@ -165,8 +173,13 @@ async function handleMessage(message: any): Promise<any> {
       const tab = tabs[0];
       if (!tab?.id) throw new Error('No active tab found.');
       
-      const response = await chrome.tabs.sendMessage(tab.id, { action: 'GET_PAGE_INFO' });
-      return response;
+      try {
+        const response = await chrome.tabs.sendMessage(tab.id, { action: 'GET_PAGE_INFO' });
+        return response;
+      } catch (err) {
+        // Return null/empty info gracefully rather than throwing
+        return { action: 'PAGE_INFO', company: null, relatedPages: { contactUrls: [], aboutUrls: [], careersUrls: [] }, url: tab.url || '' };
+      }
     }
     
     default:

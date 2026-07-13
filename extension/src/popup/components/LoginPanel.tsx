@@ -86,8 +86,8 @@ export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
             placeholder="Paste your token from the dashboard..."
             className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all"
           />
-          <p className="text-[9px] text-zinc-600 leading-relaxed">
-            Find your token in Dashboard → Settings → Developer → Copy Token
+          <p className="text-[9px] text-zinc-650 leading-relaxed">
+            Find your token in Settings → Chrome Extension Connection → Copy
           </p>
         </div>
 
