@@ -580,14 +580,11 @@ export const ScanView: React.FC = () => {
             {/* Open Dashboard link */}
             <button
               onClick={() => {
-                chrome.runtime.sendMessage({ action: 'GET_SETTINGS' }).then(res => {
-                  const dashboardUrl = (res?.apiUrl || 'http://localhost:5000').replace(/:\d+$/, ':5173');
-                  chrome.tabs.create({ url: dashboardUrl });
-                });
+                chrome.tabs.create({ url: 'https://outreachai.aditya07.me' });
               }}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 transition-all cursor-pointer"
             >
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-3.5 h-3.5" />
               Open Outreach Dashboard
             </button>
           </div>

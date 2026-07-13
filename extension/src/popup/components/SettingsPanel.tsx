@@ -12,51 +12,13 @@ interface SettingsPanelProps {
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onLogout }) => {
-  const [apiUrl, setApiUrl] = useState('');
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    chrome.runtime.sendMessage({ action: 'GET_SETTINGS' }).then(res => {
-      if (res?.apiUrl) setApiUrl(res.apiUrl);
-    });
-  }, []);
-
-  const handleSaveApiUrl = async () => {
-    await chrome.runtime.sendMessage({ action: 'SET_API_URL', apiUrl });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
   const handleOpenDashboard = () => {
-    const url = apiUrl.replace(/:\d+$/, ':5173') || 'http://localhost:5173';
-    chrome.tabs.create({ url });
+    chrome.tabs.create({ url: 'https://outreachai.aditya07.me' });
   };
 
   return (
     <div className="p-4 space-y-4 animate-fade-in">
       <h2 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Settings</h2>
-
-      {/* API URL */}
-      <div className="space-y-2">
-        <label className="flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-          <Globe className="w-3 h-3" />
-          API Server URL
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="url"
-            value={apiUrl}
-            onChange={(e) => setApiUrl(e.target.value)}
-            className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50 transition-all"
-          />
-          <button
-            onClick={handleSaveApiUrl}
-            className="px-3 py-2 rounded-lg bg-zinc-800 text-zinc-300 text-[10px] font-semibold hover:bg-zinc-700 transition-colors flex items-center gap-1 cursor-pointer"
-          >
-            {saved ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : 'Save'}
-          </button>
-        </div>
-      </div>
 
       {/* Open Dashboard */}
       <button

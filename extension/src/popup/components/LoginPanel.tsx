@@ -14,8 +14,7 @@ interface LoginPanelProps {
 
 export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
   const [token, setToken] = useState('');
-  const [apiUrl, setApiUrl] = useState('http://localhost:5000');
-  const [showApiUrl, setShowApiUrl] = useState(false);
+  const [apiUrl, setApiUrl] = useState('https://api.outreachai.aditya07.me');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,27 +90,7 @@ export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
           </p>
         </div>
 
-        {/* API URL (collapsible) */}
-        <button
-          onClick={() => setShowApiUrl(!showApiUrl)}
-          className="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-400 transition-colors cursor-pointer"
-        >
-          <Globe className="w-3 h-3" />
-          {showApiUrl ? 'Hide' : 'Configure'} API URL
-        </button>
 
-        {showApiUrl && (
-          <div className="space-y-1.5 animate-fade-in">
-            <input
-              type="url"
-              value={apiUrl}
-              onChange={(e) => setApiUrl(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="http://localhost:5000"
-              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50 transition-all"
-            />
-          </div>
-        )}
 
         {/* Error */}
         {error && (

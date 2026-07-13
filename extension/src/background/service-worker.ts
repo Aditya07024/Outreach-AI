@@ -5,8 +5,8 @@
  * and the backend API. Manages JWT token storage and refresh.
  */
 
-/** Default API base URL — user can configure this in settings */
-const DEFAULT_API_URL = 'http://localhost:5000';
+/** Locked production API server URL */
+const DEFAULT_API_URL = 'https://api.outreachai.aditya07.me';
 
 /** Storage keys */
 const STORAGE_KEYS = {
@@ -15,11 +15,10 @@ const STORAGE_KEYS = {
 } as const;
 
 /**
- * Get the configured API URL from storage.
+ * Get the configured API URL (locked to production).
  */
 async function getApiUrl(): Promise<string> {
-  const result = await chrome.storage.local.get(STORAGE_KEYS.API_URL);
-  return result[STORAGE_KEYS.API_URL] || DEFAULT_API_URL;
+  return DEFAULT_API_URL;
 }
 
 /**
