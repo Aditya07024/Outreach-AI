@@ -764,6 +764,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Extract business email addresses instantly and directly from the websites you visit. No copy-pasting, no tab-switching. The companion Chrome Extension automatically parses webpages for potential leads in the background and syncs them directly to your Outreach campaigns.
             </p>
 
+            {/* Combo synergy box */}
+            <div className="bg-[#f0f6ff] border border-blue-100 rounded-2xl p-4.5 space-y-3">
+              <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                The Ultimate Cold Outreach Combo
+              </h4>
+              <p className="text-xs text-neutral-600 leading-relaxed">
+                By combining the **Chrome Extension** (the Extractor) with the **Outreach Web App** (the Brain), you get a fully automated lead generation and emailing pipeline:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-neutral-900 block uppercase tracking-wider">1. The Extension Finds</span>
+                  <span className="text-xs text-neutral-500 block leading-relaxed">Saves contacts in the background as you browse recruiter profiles and corporate sites. No manual work.</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-neutral-900 block uppercase tracking-wider">2. The Dashboard Delivers</span>
+                  <span className="text-xs text-neutral-500 block leading-relaxed">Automatically drafts personalized cover letters matching your resume using Grok AI, and sends them via Gmail.</span>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-4 pt-2">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600">
