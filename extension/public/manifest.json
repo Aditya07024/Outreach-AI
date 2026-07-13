@@ -37,8 +37,6 @@
     "tabs"
   ],
   "host_permissions": [
-    "http://localhost:5000/*",
-    "https://*.onrender.com/*",
     "https://api.outreachai.aditya07.me/*"
   ],
   "content_security_policy": {

@@ -80,11 +80,14 @@ async function handleMessage(message: any): Promise<any> {
   switch (message.action) {
     // ─── Authentication ───
     case 'LOGIN': {
-      const { token, apiUrl } = message;
+      const { token } = message;
       if (!token) throw new Error('Token is required.');
+      
+      // Clean legacy API URLs from storage to avoid localhost conflicts
+      await chrome.storage.local.remove(STORAGE_KEYS.API_URL);
+      
       await chrome.storage.local.set({
         [STORAGE_KEYS.TOKEN]: token,
-        ...(apiUrl ? { [STORAGE_KEYS.API_URL]: apiUrl } : {}),
       });
       // Verify the token works
       const status = await apiRequest('/api/extension/status');
@@ -94,7 +97,7 @@ async function handleMessage(message: any): Promise<any> {
     }
     
     case 'LOGOUT': {
-      await chrome.storage.local.remove([STORAGE_KEYS.TOKEN, 'cached_user']);
+      await chrome.storage.local.remove([STORAGE_KEYS.TOKEN, STORAGE_KEYS.API_URL, 'cached_user']);
       return { success: true };
     }
     
@@ -121,14 +124,7 @@ async function handleMessage(message: any): Promise<any> {
     }
     
     case 'GET_SETTINGS': {
-      const apiUrl = await getApiUrl();
-      return { apiUrl };
-    }
-    
-    case 'SET_API_URL': {
-      const { apiUrl } = message;
-      await chrome.storage.local.set({ [STORAGE_KEYS.API_URL]: apiUrl });
-      return { success: true };
+      return { apiUrl: DEFAULT_API_URL };
     }
 
     // ─── Cache Management ───

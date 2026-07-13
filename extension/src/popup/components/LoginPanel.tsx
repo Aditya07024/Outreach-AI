@@ -14,7 +14,6 @@ interface LoginPanelProps {
 
 export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
   const [token, setToken] = useState('');
-  const [apiUrl, setApiUrl] = useState('https://api.outreachai.aditya07.me');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,15 +27,9 @@ export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
     setError(null);
 
     try {
-      // Set the API URL first if customized
-      if (apiUrl !== 'http://localhost:5000') {
-        await chrome.runtime.sendMessage({ action: 'SET_API_URL', apiUrl });
-      }
-
       const response = await chrome.runtime.sendMessage({
         action: 'LOGIN',
-        token: token.trim(),
-        apiUrl: apiUrl.trim(),
+        token: token.trim()
       });
 
       if (response?.error) {
@@ -47,7 +40,7 @@ export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
         setError('Unexpected response from server.');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to connect. Check your API URL.');
+      setError(err.message || 'Failed to connect to the server.');
     } finally {
       setLoading(false);
     }
