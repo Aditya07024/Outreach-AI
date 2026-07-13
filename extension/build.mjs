@@ -56,6 +56,15 @@ if (existsSync(iconsDir)) {
   cpSync(iconsDir, distIconsDir, { recursive: true });
 }
 
+// Step 5: Package extension for publication
+console.log('\n📦 [5/5] Packaging extension for Chrome Web Store...');
+try {
+  execSync('zip -r ../extension.zip *', { cwd: distDir, stdio: 'ignore' });
+  console.log(`✅ Package created: ${resolve(__dirname, 'extension.zip')}`);
+} catch (err) {
+  console.log('⚠️ Failed to create ZIP package. Ensure "zip" utility is installed.');
+}
+
 console.log('\n✅ Extension built successfully!');
 console.log(`📂 Output: ${distDir}`);
 console.log('\n📋 To load in Chrome:');
