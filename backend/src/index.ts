@@ -16,6 +16,7 @@ import historyRoutes from './routes/history.routes';
 import logsRoutes from './routes/logs.routes';
 import healthRoutes from './routes/health.routes';
 import adminRoutes from './routes/admin.routes';
+import extensionRoutes from './routes/extension.routes';
 
 // Services
 import { SendingEngine } from './services/sending.engine';
@@ -24,11 +25,20 @@ import prisma from './utils/prisma';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable CORS for frontend development server
+// Enable CORS for frontend and Chrome Extension origins
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 app.use(
   cors({
-    origin: frontendUrl,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      // Allow frontend URL
+      if (origin === frontendUrl) return callback(null, true);
+      // Allow Chrome Extension origins (chrome-extension://...)
+      if (origin.startsWith('chrome-extension://')) return callback(null, true);
+      // Block all other origins
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );
@@ -61,6 +71,7 @@ app.use('/api/contacts', requireAuth, requirePaid, contactRoutes);
 app.use('/api/history', requireAuth, requirePaid, historyRoutes);
 app.use('/api/logs', requireAuth, requirePaid, logsRoutes);
 app.use('/api/admin', requireAuth, adminRoutes);
+app.use('/api/extension', requireAuth, extensionRoutes);
 
 // Catch-all 404
 app.use((req, res) => {

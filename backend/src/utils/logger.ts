@@ -1,6 +1,6 @@
 import prisma from './prisma';
 
-export type LogSource = 'CSV_IMPORT' | 'EMAIL_GENERATION' | 'EMAIL_SENDING' | 'OAUTH' | 'API';
+export type LogSource = 'CSV_IMPORT' | 'EMAIL_GENERATION' | 'EMAIL_SENDING' | 'OAUTH' | 'API' | 'EXTENSION_SYNC';
 
 export async function logMessage(
   level: 'INFO' | 'WARN' | 'ERROR',

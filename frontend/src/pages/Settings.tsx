@@ -274,6 +274,48 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
               </button>
             </form>
           </div>
+
+          {/* Chrome Extension Connection */}
+          <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-5 space-y-4">
+            <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-neutral-400" />
+              Chrome Extension Connection
+            </h3>
+            <p className="text-[10px] text-neutral-500 leading-relaxed">
+              Use this token to connect the Chrome Extension to your account.
+            </p>
+
+            <div className="space-y-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">JWT Access Token</label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    readOnly
+                    value={localStorage.getItem('token') || ''}
+                    className="w-full rounded-md border border-neutral-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none pr-16"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(localStorage.getItem('token') || '');
+                      alert('Token copied to clipboard!');
+                    }}
+                    className="absolute right-1 top-1 bottom-1 px-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded text-[10px] font-semibold transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+              <div className="text-[9px] text-neutral-500 leading-relaxed">
+                Instructions:
+                <ol className="list-decimal pl-3 mt-1 space-y-0.5">
+                  <li>Install the Outreach AI Chrome Extension.</li>
+                  <li>Click the extension icon in your toolbar.</li>
+                  <li>Paste this JWT access token and click Connect.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Col: Forms */}

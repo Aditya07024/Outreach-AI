@@ -182,7 +182,7 @@ You can host the application on cloud platforms. This guide outlines how to depl
    - `FRONTEND_URL`: `https://YOUR-FRONTEND-NAME.vercel.app`
    - `GROK_API_KEY`: *Your xAI API Key.*
    - `GROK_MODEL`: `grok-2-1212`
-6. Click **Create Web Service**. Once deployed, copy your Render Web Service URL (e.g., `https://job-outreach-backend.onrender.com`).
+6. Click **Create Web Service**. Once deployed, copy your Render Web Service URL.
 
 ### Step 2: Deploy Frontend to Vercel
 
@@ -205,7 +205,7 @@ You can host the application on cloud platforms. This guide outlines how to depl
 6. Configure Project settings:
    - **Framework Preset**: `Vite`
    - **Root Directory**: `frontend`
-7. Click **Deploy**. Vercel will build and host your React app (e.g., `https://job-outreach-frontend.vercel.app`).
+7. Click **Deploy**. Vercel will build and host your React app.
 
 ### Step 3: Align Google Cloud Console Credentials
 Now that you have your production domains:
