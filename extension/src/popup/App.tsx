@@ -94,8 +94,8 @@ export const App: React.FC = () => {
             </button>
           )}
           <div className="flex items-center gap-1.5">
-            <img src="/logo.png" className="w-5 h-5 object-contain" alt="Logo" />
-            <span className="text-xs font-semibold text-zinc-200 tracking-tight">Outreach AI</span>
+            <img src="/logo.png" className="w-6 h-6 object-contain" alt="Logo" />
+            <span className="text-xs font-semibold text-zinc-205 tracking-tight">Outreach AI</span>
           </div>
         </div>
         

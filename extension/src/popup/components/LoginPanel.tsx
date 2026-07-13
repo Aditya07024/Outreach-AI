@@ -62,7 +62,7 @@ export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
       {/* Logo & Title */}
       <div className="flex flex-col items-center gap-3 mb-8">
         <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg shadow-violet-500/5">
-          <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo" />
+          <img src="/logo.png" className="w-10 h-10 object-contain" alt="Logo" />
         </div>
         <div className="text-center">
           <h1 className="text-base font-semibold text-zinc-100 tracking-tight">Outreach AI</h1>
