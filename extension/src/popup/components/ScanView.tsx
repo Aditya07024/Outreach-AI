@@ -155,6 +155,30 @@ export const ScanView: React.FC = () => {
     initScanAndCampaigns();
   }, [fetchCampaigns]);
 
+  // Listen for real-time background scan updates while popup is open
+  useEffect(() => {
+    if (!currentUrl) return;
+
+    const handleRuntimeMessage = (message: any) => {
+      if (message.action === 'SAVE_AUTO_SCAN' && message.payload) {
+        const { url, emails: newEmails, company: newCompany } = message.payload;
+        if (url === currentUrl && newEmails && newEmails.length > 0) {
+          setEmails(newEmails);
+          setCompany(newCompany);
+          setScanStatus('done');
+          setSelected(prev => {
+            const next = new Set(prev);
+            newEmails.forEach((e: ExtractedEmail) => next.add(e.email));
+            return next;
+          });
+        }
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(handleRuntimeMessage);
+    return () => chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
+  }, [currentUrl]);
+
   /** Scan the current page */
   const handleScanPage = async () => {
     setScanStatus('scanning');
