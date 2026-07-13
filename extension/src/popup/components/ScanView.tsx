@@ -356,49 +356,16 @@ export const ScanView: React.FC = () => {
         </div>
       )}
 
-      {/* ─── Scan Buttons ─── */}
-      <div className="px-4 py-3 border-b border-zinc-800/40">
-        <div className="flex gap-2">
-          <button
-            onClick={handleScanPage}
-            disabled={scanStatus === 'scanning'}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 text-white text-[11px] font-semibold hover:from-violet-500 hover:to-blue-500 disabled:opacity-50 transition-all shadow-lg shadow-violet-500/10 cursor-pointer disabled:cursor-not-allowed"
-          >
-            {scanStatus === 'scanning' ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <ScanLine className="w-3.5 h-3.5" />
-            )}
-            Scan Page
-          </button>
-          <button
-            onClick={handleScanContactPages}
-            disabled={scanStatus === 'scanning'}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-800 text-zinc-300 text-[11px] font-semibold hover:bg-zinc-700 disabled:opacity-50 transition-all cursor-pointer disabled:cursor-not-allowed"
-          >
-            {scanStatus === 'scanning' ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <FileSearch className="w-3.5 h-3.5" />
-            )}
-            Deep Scan
-          </button>
-          {scanStatus === 'done' && (
-            <button
-              onClick={handleScanPage}
-              className="p-2 rounded-lg bg-zinc-800/60 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all cursor-pointer"
-              title="Rescan"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
-          )}
+      {/* ─── Automated Scan Status Badge ─── */}
+      <div className="px-4 py-2 border-b border-zinc-800/40 bg-zinc-900/10 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse-ring" />
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400">Auto-Scan & Sync Active</span>
         </div>
-
-        {/* Scanned pages info */}
-        {scannedPages.length > 1 && (
-          <p className="text-[9px] text-zinc-600 mt-2">
-            Scanned {scannedPages.length} pages
-          </p>
+        {scannedPages.length > 0 && (
+          <span className="text-[9px] text-zinc-500">
+            Page verified
+          </span>
         )}
       </div>
 
@@ -422,7 +389,7 @@ export const ScanView: React.FC = () => {
           </div>
           <div className="text-center">
             <p className="text-[11px] font-medium text-zinc-300">Scanning for emails...</p>
-            <p className="text-[9px] text-zinc-600 mt-0.5">Analyzing page content, links, and structured data</p>
+            <p className="text-[9px] text-zinc-650 mt-0.5">Analyzing page content, links, and structured data</p>
           </div>
         </div>
       )}
@@ -435,7 +402,7 @@ export const ScanView: React.FC = () => {
           </div>
           <div className="text-center">
             <p className="text-[11px] font-medium text-zinc-400">Ready to scan</p>
-            <p className="text-[9px] text-zinc-600 mt-0.5">Click "Scan Page" to extract emails from this website</p>
+            <p className="text-[9px] text-zinc-650 mt-0.5">Navigate to any webpage to see automatically extracted emails</p>
           </div>
         </div>
       )}
@@ -448,7 +415,7 @@ export const ScanView: React.FC = () => {
           </div>
           <div className="text-center">
             <p className="text-[11px] font-medium text-zinc-400">No emails found</p>
-            <p className="text-[9px] text-zinc-600 mt-0.5">Try "Deep Scan" to check Contact, About, and Careers pages</p>
+            <p className="text-[9px] text-zinc-650 mt-0.5">No emails were detected on this webpage.</p>
           </div>
         </div>
       )}
@@ -459,57 +426,48 @@ export const ScanView: React.FC = () => {
           {/* Results header */}
           <div className="px-4 py-2 flex items-center justify-between border-b border-zinc-800/30">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-3 h-3 text-violet-400" />
+              <Sparkles className="w-3 h-3 text-emerald-400" />
               <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                {emails.length} Email{emails.length !== 1 ? 's' : ''} Found
+                {emails.length} Email{emails.length !== 1 ? 's' : ''} Synced
               </span>
             </div>
-            <button
-              onClick={toggleSelectAll}
-              className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
-            >
-              {selected.size === emails.length ? (
-                <CheckSquare className="w-3 h-3 text-violet-400" />
-              ) : (
-                <Square className="w-3 h-3" />
-              )}
-              {selected.size === emails.length ? 'Deselect All' : 'Select All'}
-            </button>
+            <div className="text-[9px] text-emerald-400 flex items-center gap-1 font-semibold">
+              <CheckCircle2 className="w-3 h-3" />
+              Auto-Added
+            </div>
           </div>
 
           {/* Email list */}
           <div className="max-h-[200px] overflow-y-auto">
             {emails.map((entry, idx) => (
-              <button
+              <div
                 key={entry.email}
-                onClick={() => toggleSelect(entry.email)}
-                className={`w-full flex items-center gap-2.5 px-4 py-2 text-left transition-colors cursor-pointer ${
+                className={`w-full flex items-center gap-2.5 px-4 py-2 text-left transition-colors ${
                   idx !== emails.length - 1 ? 'border-b border-zinc-800/20' : ''
-                } ${selected.has(entry.email) ? 'bg-violet-500/5' : 'hover:bg-zinc-800/30'}`}
+                } hover:bg-zinc-850/30`}
               >
-                {/* Checkbox */}
-                {selected.has(entry.email) ? (
-                  <CheckSquare className="w-3.5 h-3.5 text-violet-400 flex-shrink-0" />
-                ) : (
-                  <Square className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
-                )}
+                {/* Success Sync Icon */}
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
 
                 {/* Email info */}
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] font-medium text-zinc-200 truncate">{entry.email}</p>
-                  <p className="text-[9px] text-zinc-600 truncate">via {entry.source}</p>
+                  <p className="text-[9px] text-zinc-500 truncate">automatically synced</p>
                 </div>
 
                 {/* Classification badge */}
                 <span className={`badge badge-${entry.classification.toLowerCase()} flex-shrink-0`}>
                   {entry.classification}
                 </span>
-              </button>
+              </div>
             ))}
           </div>
 
           {/* ─── Campaign Selector & Actions ─── */}
-          <div className="px-4 py-3 border-t border-zinc-800/40 space-y-2.5">
+          <div className="px-4 py-3 border-t border-t-zinc-800/40 space-y-2.5">
+            <div className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">
+              Target Campaign
+            </div>
             {/* Campaign dropdown */}
             <div className="relative">
               <button
@@ -537,7 +495,7 @@ export const ScanView: React.FC = () => {
                       }`}
                     >
                       <span className="truncate">{campaign.name}</span>
-                      <span className="text-[9px] text-zinc-600 flex-shrink-0">{campaign.contactCount} contacts</span>
+                      <span className="text-[9px] text-zinc-500 flex-shrink-0">{campaign.contactCount} contacts</span>
                     </button>
                   ))}
                   {/* Create new */}
@@ -559,7 +517,7 @@ export const ScanView: React.FC = () => {
                         {creatingCampaign ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
                         ) : (
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3.5 h-3.5" />
                         )}
                       </button>
                     </div>
@@ -568,46 +526,13 @@ export const ScanView: React.FC = () => {
               )}
             </div>
 
-            {/* Action buttons */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleSync()}
-                disabled={selected.size === 0 || !selectedCampaignId || syncStatus === 'syncing'}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[11px] font-semibold hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/10 cursor-pointer"
-              >
-                {syncStatus === 'syncing' ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <PlusCircle className="w-3.5 h-3.5" />
-                )}
-                Add Selected ({selected.size})
-              </button>
-              <button
-                onClick={() => handleSync(emails)}
-                disabled={emails.length === 0 || !selectedCampaignId || syncStatus === 'syncing'}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-800 text-zinc-300 text-[11px] font-semibold hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-              >
-                <Send className="w-3.5 h-3.5" />
-                All
-              </button>
+            {/* Sync Feedback Message */}
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 animate-fade-in">
+              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="text-[10px] leading-relaxed">
+                All found contacts are automatically saved to your campaign.
+              </span>
             </div>
-
-            {/* Sync feedback */}
-            {syncStatus === 'success' && syncResult && (
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 animate-fade-in">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-[10px] text-emerald-400">
-                  {syncResult.imported} added{syncResult.duplicates > 0 ? `, ${syncResult.duplicates} duplicates skipped` : ''}
-                </span>
-              </div>
-            )}
-
-            {syncStatus === 'error' && syncError && (
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20 animate-fade-in">
-                <AlertCircle className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-[10px] text-red-400">{syncError}</span>
-              </div>
-            )}
 
             {/* Open Dashboard link */}
             <button
