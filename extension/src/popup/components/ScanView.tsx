@@ -26,6 +26,8 @@ import {
   AlertCircle,
   Inbox,
   Sparkles,
+  Shield,
+  Lock,
 } from 'lucide-react';
 
 interface ExtractedEmail {
@@ -67,6 +69,10 @@ export const ScanView: React.FC = () => {
 
   // Selection state
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // Domain whitelisting state
+  const [isDomainAllowed, setIsDomainAllowed] = useState<boolean | null>(null);
+  const [currentDomain, setCurrentDomain] = useState('');
 
   // Campaign state
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -125,6 +131,27 @@ export const ScanView: React.FC = () => {
         }
 
         setCurrentUrl(tab.url);
+
+        let domain = '';
+        try {
+          domain = new URL(tab.url).hostname;
+          setCurrentDomain(domain);
+        } catch (e) {
+          setScanStatus('error');
+          setScanError('Invalid tab URL.');
+          return;
+        }
+
+        const storageData = await chrome.storage.local.get('allowed_domains');
+        const allowedList = storageData.allowed_domains || [];
+        const isAllowed = allowedList.includes(domain);
+        setIsDomainAllowed(isAllowed);
+
+        if (!isAllowed) {
+          setScanStatus('idle');
+          return;
+        }
+
         setScanStatus('scanning');
 
         // 3. Try to load cached autoscan results from background storage
@@ -240,6 +267,35 @@ export const ScanView: React.FC = () => {
     }
   };
 
+  /** Allow domain and scan immediately */
+  const handleAllowDomain = async () => {
+    if (!currentDomain) return;
+    setScanStatus('scanning');
+    try {
+      const storageData = await chrome.storage.local.get('allowed_domains');
+      const allowedList = storageData.allowed_domains || [];
+      if (!allowedList.includes(currentDomain)) {
+        const nextList = [...allowedList, currentDomain];
+        await chrome.storage.local.set({ allowed_domains: nextList });
+      }
+      setIsDomainAllowed(true);
+      
+      const response = await chrome.runtime.sendMessage({ action: 'SCAN_ACTIVE_TAB' });
+      if (response?.error) {
+        throw new Error(response.error);
+      }
+      
+      setEmails(response.emails || []);
+      setCompany(response.company || null);
+      setScannedPages([response.url || currentUrl]);
+      setSelected(new Set((response.emails || []).map((e: ExtractedEmail) => e.email)));
+      setScanStatus('done');
+    } catch (err: any) {
+      setScanStatus('error');
+      setScanError(err.message || 'Failed to scan page after allowing domain.');
+    }
+  };
+
   /** Toggle individual email selection */
   const toggleSelect = (email: string) => {
     setSelected(prev => {
@@ -329,6 +385,57 @@ export const ScanView: React.FC = () => {
   };
 
   const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
+
+  if (isDomainAllowed === null) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[460px] gap-3">
+        <div className="w-7 h-7 rounded-full border-2 border-zinc-800 border-t-violet-500 animate-spin" />
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+          Verifying Permissions...
+        </span>
+      </div>
+    );
+  }
+
+  if (isDomainAllowed === false) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[460px] px-6 py-8 text-center animate-fade-in space-y-6">
+        <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg shadow-violet-500/5 relative">
+          <Shield className="w-6 h-6 text-zinc-400" />
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+            <Lock className="w-2.5 h-2.5 text-amber-400" />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <h2 className="text-sm font-bold text-zinc-200">
+            Allow scanning on {currentDomain || 'this website'}?
+          </h2>
+          <p className="text-[11px] text-zinc-500 leading-relaxed max-w-[280px] mx-auto">
+            Enable automatic email extraction and synchronization for this domain. Outreach AI will run in the background to sync business contacts. 
+          </p>
+          <p className="text-[10px] text-zinc-650 leading-relaxed font-semibold">
+            Private mail, online banking, and personal pages are never scanned.
+          </p>
+        </div>
+
+        <div className="w-full space-y-2.5">
+          <button
+            onClick={handleAllowDomain}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 text-white text-xs font-semibold hover:from-violet-500 hover:to-blue-500 transition-all shadow-lg shadow-violet-500/10 cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Allow & Scan Website
+          </button>
+          
+          <div className="flex items-center justify-center gap-1.5 text-[9px] text-zinc-600">
+            <Shield className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Secure background permission sandbox</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col">

@@ -1,7 +1,7 @@
 /**
  * Content Script Entry Point
  * 
- * Injected into every webpage. Automatically scans the webpage for emails
+ * Injected into every webpage. Automatically scans whitelisted webpages for emails
  * and company info on load, and caches them in the background service worker.
  * Also listens for scan requests from the popup.
  */
@@ -32,6 +32,13 @@ interface ScanResponse {
  */
 chrome.runtime.onMessage.addListener((message: ScanRequest, _sender, sendResponse) => {
   if (message.action === 'SCAN_PAGE') {
+    // Enable real-time observer when scanned manually/allowed
+    try {
+      if (document.body) {
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+    } catch (e) {}
+
     handleScanPage().then(sendResponse).catch(err => {
       sendResponse({ action: 'SCAN_ERROR', error: err.message });
     });
@@ -176,13 +183,6 @@ function autoScan() {
   }
 }
 
-// Start auto scanning when document becomes idle/interactive
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  autoScan();
-} else {
-  window.addEventListener('DOMContentLoaded', autoScan);
-}
-
 // Observe DOM mutations to scan for dynamically loaded emails (e.g. React/SPA routing)
 let mutationTimeout: any;
 const observer = new MutationObserver(() => {
@@ -192,14 +192,57 @@ const observer = new MutationObserver(() => {
   }, 2000); // 2 second debounce to ensure performance
 });
 
-if (document.body) {
-  observer.observe(document.body, { childList: true, subtree: true });
-} else {
-  window.addEventListener('load', () => {
-    if (document.body) {
-      observer.observe(document.body, { childList: true, subtree: true });
+/**
+ * Automatically scan page on load if domain is allowed.
+ */
+async function initAutoScan() {
+  try {
+    const domain = window.location.hostname;
+    
+    // Blacklisted domains by default (e.g. webmails, localhost, search engines)
+    if (
+      domain === 'mail.google.com' ||
+      domain === 'gmail.com' ||
+      domain.includes('google.com') ||
+      domain.includes('outlook.live.com') ||
+      domain.includes('outlook.office.com') ||
+      domain.includes('mail.yahoo.com') ||
+      domain.includes('outreach.aditya07.me') ||
+      domain === 'localhost'
+    ) {
+      console.log(`[Outreach AI] Blocklisted domain ${domain} bypassed.`);
+      return;
     }
-  });
+    
+    const result = await chrome.storage.local.get('allowed_domains');
+    const allowed = result.allowed_domains || [];
+    
+    if (allowed.includes(domain)) {
+      autoScan();
+      
+      // Start observer
+      if (document.body) {
+        observer.observe(document.body, { childList: true, subtree: true });
+      } else {
+        window.addEventListener('load', () => {
+          if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+          }
+        });
+      }
+    } else {
+      console.log(`[Outreach AI] Auto-scanning is disabled for ${domain}. Enable in extension popup.`);
+    }
+  } catch (err) {
+    console.error('[Outreach AI] Init error:', err);
+  }
 }
 
-console.log('[Outreach AI] Background auto-scan active');
+// Start auto scanning when document becomes idle/interactive
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  initAutoScan();
+} else {
+  window.addEventListener('DOMContentLoaded', initAutoScan);
+}
+
+console.log('[Outreach AI] Domain-whitelisted background auto-scan active');
