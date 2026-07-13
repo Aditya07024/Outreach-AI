@@ -1,8 +1,9 @@
 /**
  * Content Script Entry Point
  * 
- * Injected into every webpage. Listens for messages from the popup/background
- * and runs email extraction + company detection on demand.
+ * Injected into every webpage. Automatically scans the webpage for emails
+ * and company info on load, and caches them in the background service worker.
+ * Also listens for scan requests from the popup.
  */
 
 import { extractEmails, extractEmailsFromHTML, detectRelatedPages, type ExtractedEmail } from './extractor';
@@ -147,5 +148,58 @@ async function handleScanContactPages(): Promise<ScanResponse> {
   };
 }
 
-// Log that content script is loaded (debug only)
-console.log('[Outreach AI] Content script loaded');
+/**
+ * Automatically scan page and send results to the background cache.
+ */
+function autoScan() {
+  try {
+    const emails = extractEmails();
+    const company = detectCompany();
+    const relatedPages = detectRelatedPages();
+    
+    // Only send if we found emails or detected a company name
+    if (emails.length > 0 || (company && company.name)) {
+      chrome.runtime.sendMessage({
+        action: 'SAVE_AUTO_SCAN',
+        payload: {
+          url: window.location.href,
+          emails,
+          company,
+          relatedPages
+        }
+      }).catch(() => {
+        // Suppress errors when message channel is not ready
+      });
+    }
+  } catch (err) {
+    console.error('[Outreach AI] Auto-scan error:', err);
+  }
+}
+
+// Start auto scanning when document becomes idle/interactive
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  autoScan();
+} else {
+  window.addEventListener('DOMContentLoaded', autoScan);
+}
+
+// Observe DOM mutations to scan for dynamically loaded emails (e.g. React/SPA routing)
+let mutationTimeout: any;
+const observer = new MutationObserver(() => {
+  clearTimeout(mutationTimeout);
+  mutationTimeout = setTimeout(() => {
+    autoScan();
+  }, 2000); // 2 second debounce to ensure performance
+});
+
+if (document.body) {
+  observer.observe(document.body, { childList: true, subtree: true });
+} else {
+  window.addEventListener('load', () => {
+    if (document.body) {
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  });
+}
+
+console.log('[Outreach AI] Background auto-scan active');

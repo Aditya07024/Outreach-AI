@@ -118,6 +118,29 @@ async function handleMessage(message: any): Promise<any> {
       await chrome.storage.local.set({ [STORAGE_KEYS.API_URL]: apiUrl });
       return { success: true };
     }
+
+    // ─── Cache Management ───
+    case 'SAVE_AUTO_SCAN': {
+      const { url, emails, company, relatedPages } = message.payload;
+      const key = `autoscan_${url}`;
+      await chrome.storage.local.set({
+        [key]: {
+          url,
+          emails,
+          company,
+          relatedPages,
+          timestamp: Date.now()
+        }
+      });
+      return { success: true };
+    }
+
+    case 'GET_CACHED_SCAN': {
+      const { url } = message;
+      const key = `autoscan_${url}`;
+      const result = await chrome.storage.local.get(key);
+      return result[key] || null;
+    }
     
     // ─── Campaigns ───
     case 'GET_CAMPAIGNS': {

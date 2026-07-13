@@ -97,7 +97,62 @@ export const ScanView: React.FC = () => {
   }, [selectedCampaignId]);
 
   useEffect(() => {
-    fetchCampaigns();
+    const initScanAndCampaigns = async () => {
+      // 1. Fetch campaigns first
+      await fetchCampaigns();
+
+      // 2. Fetch active tab URL
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const tab = tabs[0];
+        if (!tab?.url) {
+          setScanStatus('idle');
+          return;
+        }
+
+        // Standard chrome page check
+        if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
+          setScanStatus('error');
+          setScanError('Extensions cannot scan internal chrome:// pages. Navigate to a regular website to see automatically extracted emails.');
+          return;
+        }
+
+        setCurrentUrl(tab.url);
+        setScanStatus('scanning');
+
+        // 3. Try to load cached autoscan results from background storage
+        const cached = await chrome.runtime.sendMessage({
+          action: 'GET_CACHED_SCAN',
+          url: tab.url,
+        });
+
+        if (cached && cached.emails && cached.emails.length > 0) {
+          setEmails(cached.emails);
+          setCompany(cached.company);
+          setScannedPages([tab.url]);
+          setSelected(new Set(cached.emails.map((e: ExtractedEmail) => e.email)));
+          setScanStatus('done');
+        } else {
+          // If no cache is found, run the active tab scan automatically
+          const response = await chrome.runtime.sendMessage({ action: 'SCAN_ACTIVE_TAB' });
+
+          if (response?.error) {
+            throw new Error(response.error);
+          }
+
+          setEmails(response.emails || []);
+          setCompany(response.company || null);
+          setScannedPages([tab.url]);
+          setSelected(new Set((response.emails || []).map((e: ExtractedEmail) => e.email)));
+          setScanStatus('done');
+        }
+      } catch (err: any) {
+        setScanStatus('error');
+        setScanError(err.message || 'Failed to automatically scan page.');
+      }
+    };
+
+    initScanAndCampaigns();
   }, [fetchCampaigns]);
 
   /** Scan the current page */
