@@ -86,15 +86,22 @@ export const ScanView: React.FC = () => {
       const response = await chrome.runtime.sendMessage({ action: 'GET_CAMPAIGNS' });
       if (Array.isArray(response)) {
         setCampaigns(response);
-        // Auto-select the first campaign if none selected
-        if (!selectedCampaignId && response.length > 0) {
+        
+        // Load selected campaign ID from storage
+        const storageData = await chrome.storage.local.get('selected_campaign_id');
+        const savedId = storageData.selected_campaign_id;
+        
+        if (savedId && response.some(c => c.id === savedId)) {
+          setSelectedCampaignId(savedId);
+        } else if (response.length > 0) {
           setSelectedCampaignId(response[0].id);
+          await chrome.storage.local.set({ selected_campaign_id: response[0].id });
         }
       }
     } catch (err) {
       console.error('Failed to fetch campaigns:', err);
     }
-  }, [selectedCampaignId]);
+  }, []);
 
   useEffect(() => {
     const initScanAndCampaigns = async () => {
@@ -267,6 +274,7 @@ export const ScanView: React.FC = () => {
       if (result?.id) {
         setCampaigns(prev => [result, ...prev]);
         setSelectedCampaignId(result.id);
+        await chrome.storage.local.set({ selected_campaign_id: result.id });
         setNewCampaignName('');
         setShowCampaignDropdown(false);
       }
@@ -519,8 +527,9 @@ export const ScanView: React.FC = () => {
                   {campaigns.map(campaign => (
                     <button
                       key={campaign.id}
-                      onClick={() => {
+                      onClick={async () => {
                         setSelectedCampaignId(campaign.id);
+                        await chrome.storage.local.set({ selected_campaign_id: campaign.id });
                         setShowCampaignDropdown(false);
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2 text-left text-[11px] hover:bg-zinc-800/60 transition-colors cursor-pointer ${
@@ -531,7 +540,6 @@ export const ScanView: React.FC = () => {
                       <span className="text-[9px] text-zinc-600 flex-shrink-0">{campaign.contactCount} contacts</span>
                     </button>
                   ))}
-
                   {/* Create new */}
                   <div className="border-t border-zinc-800 p-2">
                     <div className="flex gap-1.5">
@@ -604,7 +612,7 @@ export const ScanView: React.FC = () => {
             {/* Open Dashboard link */}
             <button
               onClick={() => {
-                chrome.tabs.create({ url: 'https://outreachai.aditya07.me' });
+                chrome.tabs.create({ url: 'https://outreach.aditya07.me/' });
               }}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 transition-all cursor-pointer"
             >

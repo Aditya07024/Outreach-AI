@@ -13,7 +13,7 @@ interface SettingsPanelProps {
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onLogout }) => {
   const handleOpenDashboard = () => {
-    chrome.tabs.create({ url: 'https://outreachai.aditya07.me' });
+    chrome.tabs.create({ url: 'https://outreach.aditya07.me/' });
   };
 
   return (

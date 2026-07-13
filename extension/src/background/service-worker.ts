@@ -131,6 +131,37 @@ async function handleMessage(message: any): Promise<any> {
           timestamp: Date.now()
         }
       });
+
+      // Automatically sync to selected campaign if authenticated and a campaign is selected
+      const token = await getToken();
+      const storageData = await chrome.storage.local.get('selected_campaign_id');
+      const campaignId = storageData.selected_campaign_id;
+
+      if (token && campaignId && emails && emails.length > 0) {
+        try {
+          const contactsPayload = emails.map((e: any) => ({
+            email: e.email,
+            classification: e.classification,
+            company: company?.name,
+            sourceUrl: url,
+          }));
+
+          await apiRequest('/api/extension/sync', {
+            method: 'POST',
+            body: JSON.stringify({
+              campaignId,
+              contacts: contactsPayload,
+              companyName: company?.name,
+              companyDomain: company?.domain,
+              sourceUrl: url,
+            }),
+          });
+          console.log(`[Outreach AI] Background auto-synced ${emails.length} contacts to campaign ${campaignId}`);
+        } catch (err) {
+          console.error('[Outreach AI] Background auto-sync failed:', err);
+        }
+      }
+
       return { success: true };
     }
 
