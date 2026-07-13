@@ -204,7 +204,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-white text-neutral-800 flex flex-col justify-between overflow-x-hidden relative selection:bg-blue-500/20 bg-[radial-gradient(#e5e7eb_1.5px,transparent_1.5px)] [background-size:24px_24px]">
+    <div 
+      className="min-h-screen bg-white text-neutral-800 flex flex-col justify-between overflow-x-hidden relative selection:bg-blue-500/20 bg-[radial-gradient(#e5e7eb_1.5px,transparent_1.5px)] [background-size:24px_24px]"
+      style={{ zoom: 1.1 }}
+    >
       
       {/* Inline styles for custom premium animations */}
       <style dangerouslySetInnerHTML={{ __html: `

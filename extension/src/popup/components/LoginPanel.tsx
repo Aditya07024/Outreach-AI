@@ -58,7 +58,7 @@ export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[570px] px-6 py-8 animate-fade-in">
+    <div className="flex flex-col items-center justify-center min-h-[520px] px-6 py-8 animate-fade-in">
       {/* Logo & Title */}
       <div className="flex flex-col items-center gap-3 mb-8">
         <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg shadow-violet-500/5">

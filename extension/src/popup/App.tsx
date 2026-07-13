@@ -65,7 +65,7 @@ export const App: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[570px] gap-3">
+      <div className="flex flex-col items-center justify-center h-[520px] gap-3">
         <div className="w-7 h-7 rounded-full border-2 border-zinc-800 border-t-violet-500 animate-spin" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
           Connecting...
@@ -81,7 +81,7 @@ export const App: React.FC = () => {
 
   // Authenticated — show main app
   return (
-    <div className="flex flex-col h-full min-h-[570px] animate-fade-in">
+    <div className="flex flex-col h-full min-h-[520px] animate-fade-in">
       {/* ─── Top Bar ─── */}
       <header className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/60 gradient-header">
         <div className="flex items-center gap-2">

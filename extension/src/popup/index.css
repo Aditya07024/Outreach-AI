@@ -4,9 +4,9 @@
 /* ── Extension popup base styles ── */
 
 html, body, #root {
-  width: 460px;
-  min-height: 570px;
-  max-height: 660px;
+  width: 420px;
+  min-height: 520px;
+  max-height: 600px;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
@@ -16,7 +16,6 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
   background: #09090b;
   color: #f5f5f5;
-  zoom: 1.1;
 }
 
 /* Custom scrollbar */
