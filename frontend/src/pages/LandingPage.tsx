@@ -694,6 +694,111 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
+      {/* Chrome Extension Companion Section */}
+      <section className="py-24 px-6 max-w-[1000px] mx-auto z-10 relative border-t border-neutral-100" id="chrome-extension">
+        <div className="grid lg:grid-cols-12 gap-12 items-center">
+          {/* Left Column: Image/Mockup of the Extension */}
+          <div className="lg:col-span-5 order-last lg:order-first">
+            <div className="w-full max-w-[320px] mx-auto bg-zinc-950 rounded-2xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-zinc-800/80 font-sans text-zinc-200 space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-zinc-900">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-md bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                    <img alt="logo" className="w-3.5 h-3.5 object-contain" src={logo} />
+                  </div>
+                  <span className="text-xs font-bold text-zinc-100 tracking-tight">Outreach AI</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[8px] text-emerald-400 font-bold uppercase tracking-wider">Syncing</span>
+                </div>
+              </div>
+
+              {/* Status Header */}
+              <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between">
+                <span className="text-[10px] font-bold text-emerald-400">AUTO-SYNC ACTIVE</span>
+                <span className="text-[8px] text-zinc-555">verifying...</span>
+              </div>
+
+              {/* Mock Synced List */}
+              <div className="space-y-2">
+                <div className="text-[9px] font-semibold text-zinc-500 uppercase tracking-wider">Synced Contacts</div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between p-2 rounded bg-zinc-900/50 border border-zinc-900">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      <span className="text-[10px] truncate max-w-[120px] text-zinc-200">hr@tesla.com</span>
+                    </div>
+                    <span className="text-[8px] px-1 py-0.5 bg-blue-900/30 text-blue-400 rounded">Recruiter</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded bg-zinc-900/50 border border-zinc-900">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      <span className="text-[10px] truncate max-w-[120px] text-zinc-200">recruiting@google.com</span>
+                    </div>
+                    <span className="text-[8px] px-1 py-0.5 bg-blue-900/30 text-blue-400 rounded">Recruiter</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Target Campaign Notice */}
+              <div className="p-2.5 bg-zinc-900/80 border border-zinc-900 rounded-lg space-y-1">
+                <div className="text-[9px] text-zinc-500">TARGET CAMPAIGN</div>
+                <div className="text-[11px] font-bold text-zinc-200">US Software Engineers</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Copy/Details */}
+          <div className="lg:col-span-7 space-y-6 text-left">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-mono font-bold tracking-widest uppercase">
+              <span>Companion Tool</span>
+            </div>
+
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 leading-tight">
+              Zero-Click Leads Extractor <br/>
+              Chrome Extension
+            </h2>
+
+            <p className="text-sm text-neutral-500 leading-relaxed">
+              Extract business email addresses instantly and directly from the websites you visit. No copy-pasting, no tab-switching. The companion Chrome Extension automatically parses webpages for potential leads in the background and syncs them directly to your Outreach campaigns.
+            </p>
+
+            <div className="space-y-4 pt-2">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600">
+                  <Check className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-neutral-900">Background Auto-Scan & Sync</h4>
+                  <p className="text-xs text-neutral-500 mt-0.5">Simply browse recruiter profiles or company sites. Emails are captured and synced instantly behind the scenes.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600">
+                  <Check className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-neutral-900">Secure JWT Access</h4>
+                  <p className="text-xs text-neutral-500 mt-0.5">Authenticate securely using your personal access token. No Google passwords or sensitive data required.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600">
+                  <Check className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-neutral-900">Custom Campaign Mapping</h4>
+                  <p className="text-xs text-neutral-500 mt-0.5">Map auto-scanned contacts to specific email outreach campaigns directly from the active tab.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Trust & Security details panel */}
       <section className="py-24 px-6 max-w-[1000px] mx-auto z-10 relative">
         <div className="rounded-3xl p-8 bg-[#f8faff] border border-neutral-200/60 text-center space-y-8 shadow-sm">

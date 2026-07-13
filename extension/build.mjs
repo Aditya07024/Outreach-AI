@@ -45,6 +45,10 @@ if (existsSync(resolve(publicDir, 'manifest.json'))) {
   cpSync(resolve(publicDir, 'manifest.json'), resolve(distDir, 'manifest.json'));
 }
 
+if (existsSync(resolve(publicDir, 'logo.png'))) {
+  cpSync(resolve(publicDir, 'logo.png'), resolve(distDir, 'logo.png'));
+}
+
 const iconsDir = resolve(publicDir, 'icons');
 const distIconsDir = resolve(distDir, 'icons');
 if (existsSync(iconsDir)) {
