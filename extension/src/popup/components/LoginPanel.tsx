@@ -58,7 +58,7 @@ export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[520px] px-6 py-8 animate-fade-in">
+    <div className="flex flex-col items-center justify-center min-h-[570px] px-6 py-8 animate-fade-in">
       {/* Logo & Title */}
       <div className="flex flex-col items-center gap-3 mb-8">
         <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg shadow-violet-500/5">
@@ -86,7 +86,7 @@ export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
             className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all"
           />
           <p className="text-[9px] text-zinc-650 leading-relaxed">
-            Find your token in Settings → Chrome Extension Connection → Copy
+            To find your token visit Outreach.aditya07.me → Settings → Chrome Extension Connection → Copy
           </p>
         </div>
 
