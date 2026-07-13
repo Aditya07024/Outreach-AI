@@ -88,11 +88,13 @@ async function handleMessage(message: any): Promise<any> {
       });
       // Verify the token works
       const status = await apiRequest('/api/extension/status');
+      // Store cached user info on successful login
+      await chrome.storage.local.set({ cached_user: status.user });
       return { success: true, user: status.user };
     }
     
     case 'LOGOUT': {
-      await chrome.storage.local.remove([STORAGE_KEYS.TOKEN]);
+      await chrome.storage.local.remove([STORAGE_KEYS.TOKEN, 'cached_user']);
       return { success: true };
     }
     
@@ -101,8 +103,19 @@ async function handleMessage(message: any): Promise<any> {
       if (!token) return { authenticated: false };
       try {
         const status = await apiRequest('/api/extension/status');
+        await chrome.storage.local.set({ cached_user: status.user });
         return { authenticated: true, user: status.user };
-      } catch {
+      } catch (err) {
+        // If we still have the token in local storage, keep user logged in.
+        // The token is only removed during explicit logout or on a definitive 401 response in apiRequest.
+        const tokenExists = await getToken();
+        if (tokenExists) {
+          const storageData = await chrome.storage.local.get('cached_user');
+          return { 
+            authenticated: true, 
+            user: storageData.cached_user || { id: 0, email: 'Offline Mode', role: 'user', paid: true } 
+          };
+        }
         return { authenticated: false };
       }
     }
