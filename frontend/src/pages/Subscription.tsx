@@ -118,7 +118,7 @@ export const Subscription: React.FC<SubscriptionProps> = ({ user, onPaymentSucce
           {!isPaid && (
             <div className="pt-4 border-t border-neutral-900 flex flex-col sm:flex-row justify-between items-center gap-4">
               <p className="text-[11px] text-neutral-450 text-center sm:text-left">
-                Unlock all features including cold emailing, Grok AI generators, campaigns, and resumes.
+                Unlock all features including career outreach, Grok AI generators, campaigns, and resumes.
               </p>
               <button
                 onClick={() => navigate('/')}

@@ -36,37 +36,67 @@ export const PrivacyPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-sm font-bold text-neutral-200">2. How We Use Information</h2>
+            <h2 className="text-sm font-bold text-neutral-200">2. Google User Data</h2>
             <p>
-              We use your connected Gmail account strictly to send job applications to the recruiters and companies you specify. We do not read, store, or parse any of your personal emails other than those generated and recorded through your campaigns on this platform.
+              Outreach AI accesses Google user data only after the user explicitly grants permission through Google OAuth. We request only the Gmail Send permission (https://www.googleapis.com/auth/gmail.send) to send emails that the user explicitly creates, reviews, or authorizes. We do not read, access, modify, or delete the user's Gmail inbox or messages.
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-sm font-bold text-neutral-200">3. Data Encryption and Storage</h2>
+            <h2 className="text-sm font-bold text-neutral-200">3. How We Use Information</h2>
             <p>
-              Your Gmail API access tokens and refresh tokens are stored securely in our database using industry-standard AES-256 encryption. Only you have access to authorize or disconnect these credentials, which can be fully deleted at any time from your settings tab.
+              We use your connected Gmail account solely to send emails that you explicitly create, review, and authorize through Outreach AI. We do not read your inbox, analyze existing emails, or access Gmail content beyond what is necessary to send emails using the Gmail Send API.
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-sm font-bold text-neutral-200">4. Third-Party Services</h2>
+            <h2 className="text-sm font-bold text-neutral-200">4. Data Encryption, Security and Storage</h2>
             <p>
-              We share candidate profile logs and recruiter details with xAI (Grok) strictly to draft personalized cover letters. We do not sell, distribute, or rent your personal information, candidate resumes, or recruiter contact details to any third-party advertising services.
+              Your Gmail API access tokens and refresh tokens are stored securely in our database. We employ robust security measures to protect your data, including the following:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 mt-2 text-neutral-350">
+              <li>OAuth tokens are encrypted using AES-256.</li>
+              <li>All communication uses HTTPS/TLS.</li>
+              <li>Access to stored credentials is restricted.</li>
+              <li>We follow the principle of least privilege.</li>
+            </ul>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-sm font-bold text-neutral-200">5. Third-Party Services and AI</h2>
+            <p>
+              If AI-powered email generation is used, only the minimum information required to generate personalized email drafts is shared with our AI provider. Google user data obtained through Gmail APIs is never used to train generalized AI or machine learning models. We do not sell, distribute, or rent your personal information, candidate resumes, or recruiter contact details to any third-party advertising services.
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-sm font-bold text-neutral-200">5. Your Controls and Choices</h2>
+            <h2 className="text-sm font-bold text-neutral-200">6. Google API Services User Data</h2>
             <p>
-              You can disconnect your Google account, delete all uploaded resumes, remove campaigns, or clear your history at any time. If you decide to cancel or terminate your account, all credentials and outreach records will be permanently deleted from our live databases.
+              Outreach AI's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-sm font-bold text-neutral-200">6. Policy Updates</h2>
+            <h2 className="text-sm font-bold text-neutral-200">7. Your Controls and Data Retention</h2>
+            <p>
+              You can disconnect your Google account, delete all uploaded resumes, remove campaigns, or clear your history at any time. When a user disconnects their Google account or deletes their account, OAuth credentials are permanently removed from our production systems. Campaign and application data are deleted according to our retention policy unless required by law.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-sm font-bold text-neutral-200">8. Policy Updates</h2>
             <p>
               We may update this privacy policy from time to time to align with Google API guidelines or security standards. We will notify you of any changes by updating the revision date at the top of this policy.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-sm font-bold text-neutral-200">9. Contact Us</h2>
+            <p>
+              If you have any questions or concerns about this Privacy Policy or your data, please contact us:
+            </p>
+            <p className="mt-1">
+              Support Email: <a href="mailto:support@outreachai.in" className="text-purple-400 hover:underline">support@outreachai.in</a>
             </p>
           </section>
         </div>

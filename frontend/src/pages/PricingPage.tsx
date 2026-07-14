@@ -202,7 +202,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
             <div className="space-y-3 pt-2 border-t border-neutral-900">
               {[
                 'Full access to AI Campaigns & Contacts',
-                'Tailor cold emails using Grok AI',
+                'Tailor career outreach using Grok AI',
                 'Gmail API connection & secure OAuth',
                 'Built-in reputation safety delays',
                 'Cancel renewal at any time'
@@ -278,7 +278,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
       <div className="border border-neutral-900 bg-zinc-950/40 rounded-xl p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center sm:text-left">
         {[
           { title: 'Secure Checkouts', desc: 'Encrypted via Razorpay gateway.', icon: ShieldCheck },
-          { title: 'Grok-2 AI Included', desc: 'Direct access to advanced cold templates.', icon: Sparkles },
+          { title: 'Grok-2 AI Included', desc: 'Direct access to advanced outreach templates.', icon: Sparkles },
           { title: 'Anti-Spam Safety', desc: 'Custom intervals preserve sender score.', icon: Send }
         ].map((item, idx) => (
           <div key={idx} className="space-y-1">

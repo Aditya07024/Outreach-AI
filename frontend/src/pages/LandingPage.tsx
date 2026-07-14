@@ -298,7 +298,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
 
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white animate-fade-in-up animation-delay-100">
-                  Automate Personalized <br/>Cold Emails with AI
+                  Automate Personalized <br/>Career Outreach with AI
                 </h1>
 
                 <p className="text-sm md:text-base text-white/90 max-w-md leading-relaxed animate-fade-in-up animation-delay-200">
@@ -424,7 +424,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <div className="space-y-4 text-center">
                         <div className="space-y-1">
                           <h3 className="text-xs font-bold text-neutral-905">Unlock Outreach Platform</h3>
-                          <p className="text-sm text-neutral-500 font-medium">Choose a subscription option to launch your cold emails pipeline.</p>
+                          <p className="text-sm text-neutral-500 font-medium">Choose a subscription option to launch your career outreach campaign.</p>
                         </div>
 
                         <div className="space-y-2">
@@ -509,7 +509,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           </div>
                           <h3 className="text-xs font-bold text-neutral-900 tracking-tight">Access Dashboard</h3>
                           <p className="text-sm text-neutral-500 leading-normal">
-                            Sign in with Google to set up campaigns, upload resumes, and automate cold emails.
+                            Sign in with Google to set up campaigns, upload resumes, and manage professional career outreach.
                           </p>
                         </div>
 
@@ -637,14 +637,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
 
-          {/* Card 4: CSV Bulk Outreach (2 Cols) */}
+          {/* Card 4: CSV Campaign Outreach (2 Cols) */}
           <div className="md:col-span-2 rounded-2xl p-6 bg-[#f8faff] border border-neutral-200/60 hover:border-blue-400/40 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 flex flex-col justify-between relative overflow-hidden group min-h-[240px] hover:shadow-xl hover:shadow-blue-500/5">
             <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between w-full h-full">
               <div className="space-y-4 flex-1">
                 <Layers className="w-8 h-8 text-amber-500" />
-                <h3 className="text-base font-bold text-neutral-900">CSV Bulk Outreach</h3>
+                <h3 className="text-base font-bold text-neutral-900">CSV Campaign Outreach</h3>
                 <p className="text-sm text-neutral-500 leading-relaxed">
-                  Managing 50+ applications? Upload a CSV and let the AI generate personalized drafts for your entire list in one go.
+                  Managing multiple applications? Upload a CSV of recruiter contacts and let the AI draft personalized outreach for your review.
                 </p>
               </div>
               {/* Visual simulation spreadsheet overlay */}
@@ -772,10 +772,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="bg-[#f0f6ff] border border-blue-100 rounded-2xl p-4.5 space-y-3">
               <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
-                The Ultimate Cold Outreach Combo
+                The Ultimate Career Outreach Combo
               </h4>
               <p className="text-xs text-neutral-600 leading-relaxed">
-                By combining the **Chrome Extension** (the Extractor) with the **Outreach Web App** (the Brain), you get a fully automated lead generation and emailing pipeline:
+                By combining the **Chrome Extension** (the Extractor) with the **Outreach Web App** (the Brain), you get an integrated recruiter contact and career outreach pipeline:
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div className="space-y-1">
@@ -903,7 +903,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
               <ul className="space-y-3 pt-2 text-sm text-neutral-600">
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> Permanent ownership license</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> CSV bulk applications upload</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> CSV outreach campaign upload</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> Lifetime releases & updates</li>
               </ul>
             </div>

@@ -428,7 +428,7 @@ const PageWrapper: React.FC<PageWrapperProps> = ({ title, description, setTitle,
       }
       metaDescription.setAttribute(
         'content', 
-        description || "Automate personalized cold emails, build campaigns, and scale your job search with Outreach AI."
+        description || "Automate personalized career outreach, build campaigns, and scale your job search with Outreach AI."
       );
     } catch (err) {
       console.warn('Failed to update meta description', err);

@@ -24,7 +24,7 @@ interface FAQItem {
 const FAQS: FAQItem[] = [
   {
     question: "How does the AI personalization work?",
-    answer: "Our engine parses your candidate profile (portfolio, GitHub, LinkedIn links) and uploaded resumes alongside target job descriptions or recruiter roles. It highlights matching skillsets and dynamically drafts unique, custom cold emails to maximize open and reply rates.",
+    answer: "Our engine parses your candidate profile (portfolio, GitHub, LinkedIn links) and uploaded resumes alongside target job descriptions or recruiter roles. It highlights matching skillsets and dynamically drafts unique, custom job applications to maximize open and reply rates.",
     category: "ai"
   },
   {

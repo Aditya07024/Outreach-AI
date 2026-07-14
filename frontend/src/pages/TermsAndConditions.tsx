@@ -38,7 +38,7 @@ export const TermsAndConditions: React.FC = () => {
           <section className="space-y-2">
             <h2 className="text-sm font-bold text-neutral-200">2. Acceptable Use Policy</h2>
             <p>
-              You are solely responsible for all emails sent through your connected Gmail account. You agree not to use the service to distribute spam, marketing blasts, unsolicited commercial ads, or any harassing, abusive, or unlawful outreach.
+              You are solely responsible for all emails sent through your connected Gmail account. Users are responsible for ensuring that emails sent through Outreach AI comply with applicable laws, Google's policies, and recipient consent requirements where applicable. You agree not to use the service to distribute spam, marketing blasts, unsolicited commercial ads, or any harassing, abusive, or unlawful messages.
             </p>
           </section>
 
