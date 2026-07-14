@@ -36,15 +36,16 @@ model GmailCredentials {
 }
 
 model User {
-  id        Int        @id @default(autoincrement())
-  email     String?    @unique
-  role      String     @default("paid_user")
-  paid      Boolean    @default(false)
-  plan      String?
-  paidUntil DateTime?
-  createdAt DateTime   @default(now())
-  resumes   Resume[]
-  campaigns Campaign[]
+  id           Int        @id @default(autoincrement())
+  email        String?    @unique
+  role         String     @default("paid_user")
+  paid         Boolean    @default(false)
+  plan         String?
+  paidUntil    DateTime?
+  createdAt    DateTime   @default(now())
+  lastActiveAt DateTime?
+  resumes      Resume[]
+  campaigns    Campaign[]
 }
 
 model Resume {

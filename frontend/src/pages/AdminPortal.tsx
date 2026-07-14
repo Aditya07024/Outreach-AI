@@ -22,6 +22,7 @@ interface UserDetail {
   plan: string | null;
   paidUntil: string | null;
   createdAt: string;
+  lastActiveAt: string | null;
   campaignsCount: number;
   emailsSent: number;
 }
@@ -133,6 +134,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       }
 
       alert('Payment requirement bypassed successfully.');
+      fetchAdminData();
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+  const handleCancelSubscription = async (userId: number, userEmail: string | null) => {
+    const confirmCancel = window.confirm(`Are you sure you want to cancel the subscription plan for user ID: ${userId} (${userEmail || 'Local'})?`);
+    if (!confirmCancel) return;
+
+    try {
+      const res = await fetch(`/api/admin/cancel/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to cancel subscription');
+      }
+
+      alert('Subscription plan cancelled successfully.');
       fetchAdminData();
     } catch (err: any) {
       alert(`Error: ${err.message}`);
@@ -327,6 +350,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <th className="p-3.5 font-bold">Role</th>
                   <th className="p-3.5 font-bold">Subscription Status</th>
                   <th className="p-3.5 font-bold">Expiration Date</th>
+                  <th className="p-3.5 font-bold">Joined At</th>
+                  <th className="p-3.5 font-bold">Last Active</th>
                   <th className="p-3.5 font-bold text-center">Campaigns</th>
                   <th className="p-3.5 font-bold text-center">Emails Sent</th>
                   <th className="p-3.5 font-bold text-right">Actions</th>
@@ -357,6 +382,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           : 'N/A'
                         }
                       </td>
+                      <td className="p-3.5 text-neutral-450">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="p-3.5 text-neutral-450 font-mono text-[10px]">
+                        {u.lastActiveAt ? new Date(u.lastActiveAt).toLocaleString() : 'Never'}
+                      </td>
                       <td className="p-3.5 text-center text-neutral-300 font-semibold">{u.campaignsCount}</td>
                       <td className="p-3.5 text-center text-neutral-300 font-semibold">{u.emailsSent}</td>
                       <td className="p-3.5 text-right">
@@ -369,10 +400,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             Bypass Pay
                           </button>
                         ) : (
-                          <span className="text-[10px] text-neutral-600 font-medium flex items-center justify-end gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-neutral-700" />
-                            Paid
-                          </span>
+                          <div className="flex justify-end items-center gap-2">
+                            <span className="text-[10px] text-neutral-600 font-medium flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-neutral-700" />
+                              Paid
+                            </span>
+                            {u.role !== 'super_admin' && u.role !== 'admin' && (
+                              <button
+                                onClick={() => handleCancelSubscription(u.id, u.email)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 border border-rose-900/30 hover:border-rose-800/60 bg-rose-950/10 hover:bg-rose-950/20 text-rose-400 rounded text-[10px] font-bold transition-all shadow shadow-rose-950/40"
+                              >
+                                <Lock className="w-3 h-3" />
+                                Cancel
+                              </button>
+                            )}
+                          </div>
                         )}
                       </td>
                     </tr>

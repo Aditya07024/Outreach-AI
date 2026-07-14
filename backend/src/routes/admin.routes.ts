@@ -44,6 +44,7 @@ router.get('/users', requireSuperAdmin, async (req: AuthenticatedRequest, res) =
           plan: u.plan,
           paidUntil: u.paidUntil,
           createdAt: u.createdAt,
+          lastActiveAt: u.lastActiveAt,
           campaignsCount,
           emailsSent
         };
@@ -99,6 +100,35 @@ router.post('/bypass/:id', requireSuperAdmin, async (req: AuthenticatedRequest, 
     res.json({ success: true, user: updatedUser });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to bypass payment' });
+  }
+});
+
+// Revoke/cancel subscription for a user
+router.post('/cancel/:id', requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = Number(req.params.id);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        paid: false,
+        plan: null,
+        paidUntil: null
+      }
+    });
+
+    await logger.info('API', `Admin cancelled/revoked subscription for user ${userId} (${user.email || 'local'})`);
+    res.json({ success: true, user: updatedUser });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to cancel subscription' });
   }
 });
 
