@@ -44,7 +44,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan })
       });
-      const order = await res.json();
+      const text = await res.text();
+      let order: any = {};
+      try {
+        order = JSON.parse(text);
+      } catch (jsonErr) {
+        throw new Error(`Invalid JSON response: ${text.substring(0, 100)}`);
+      }
 
       if (!res.ok) throw new Error(order.error || 'Failed to create payment order');
 
@@ -76,7 +82,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
                 plan
               })
             });
-            const verifyData = await verifyRes.json();
+            const verifyText = await verifyRes.text();
+            let verifyData: any = {};
+            try {
+              verifyData = JSON.parse(verifyText);
+            } catch (jsonErr) {
+              throw new Error('Failed to verify payment (invalid response from server).');
+            }
             if (verifyData.success) {
               onPaymentSuccess(verifyData.token);
             } else {
@@ -117,14 +129,20 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
           plan: selectedPlan
         })
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch (jsonErr) {
+        throw new Error('Verification response is not valid JSON');
+      }
       if (data.success) {
         onPaymentSuccess(data.token);
       } else {
         setErrorMsg('Simulated verification failed.');
       }
-    } catch (err) {
-      setErrorMsg('Failed to process simulated license.');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to process simulated license.');
     } finally {
       setIsSubmitting(false);
       setShowMockPaymentModal(false);

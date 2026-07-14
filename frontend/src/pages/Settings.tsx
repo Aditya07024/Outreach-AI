@@ -58,10 +58,18 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
       alert(`Gmail successfully connected to: ${params.get('email')}`);
       onRefreshGmailStatus();
       // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+      try {
+        window.history.replaceState({}, '', window.location.pathname);
+      } catch (err) {
+        console.warn('replaceState failed', err);
+      }
     } else if (params.get('error')) {
       alert(`Google Authentication Failed: ${params.get('error')}`);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      try {
+        window.history.replaceState({}, '', window.location.pathname);
+      } catch (err) {
+        console.warn('replaceState failed', err);
+      }
     }
   }, []);
 

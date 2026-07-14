@@ -80,8 +80,13 @@ export const App: React.FC = () => {
       setLoadingUser(true);
       const response = await fetch('/api/auth/google/me');
       if (response.ok) {
-        const data = await response.json();
-        setCurrentUser(data);
+        const text = await response.text();
+        try {
+          const data = JSON.parse(text);
+          setCurrentUser(data);
+        } catch (jsonErr) {
+          console.warn('Failed to parse user profile JSON. Response was:', text, jsonErr);
+        }
       } else if (response.status === 401) {
         handleLogout();
       }
@@ -97,8 +102,13 @@ export const App: React.FC = () => {
     try {
       const response = await fetch('/api/auth/google/status');
       if (!response.ok) return;
-      const data = await response.json();
-      setGmailStatus(data);
+      const text = await response.text();
+      try {
+        const data = JSON.parse(text);
+        setGmailStatus(data);
+      } catch (jsonErr) {
+        console.warn('Failed to parse Gmail status JSON. Response was:', text, jsonErr);
+      }
     } catch (err) {
       console.error('Failed to retrieve Gmail OAuth connection status', err);
     }
@@ -136,7 +146,11 @@ export const App: React.FC = () => {
         if (isHash) {
           window.location.hash = '';
         } else {
-          window.history.replaceState({}, document.title, window.location.pathname);
+          try {
+            window.history.replaceState({}, '', window.location.pathname);
+          } catch (err) {
+            console.warn('replaceState failed', err);
+          }
         }
         setIsAuthenticated(true);
       } else if (paymentRequired === 'true' && userId) {
@@ -144,14 +158,22 @@ export const App: React.FC = () => {
         if (isHash) {
           window.location.hash = '';
         } else {
-          window.history.replaceState({}, document.title, window.location.pathname);
+          try {
+            window.history.replaceState({}, '', window.location.pathname);
+          } catch (err) {
+            console.warn('replaceState failed', err);
+          }
         }
       } else if (error) {
         alert(`Authentication Failed: ${error}`);
         if (isHash) {
           window.location.hash = '';
         } else {
-          window.history.replaceState({}, document.title, window.location.pathname);
+          try {
+            window.history.replaceState({}, '', window.location.pathname);
+          } catch (err) {
+            console.warn('replaceState failed', err);
+          }
         }
       }
     }
@@ -396,17 +418,21 @@ const PageWrapper: React.FC<PageWrapperProps> = ({ title, description, setTitle,
     setTitle(title);
     document.title = `${title} | Outreach AI`;
     
-    // Update dynamic meta description for SEO
-    let metaDescription = document.querySelector('meta[name="description"]');
-    if (!metaDescription) {
-      metaDescription = document.createElement('meta');
-      metaDescription.setAttribute('name', 'description');
-      document.head.appendChild(metaDescription);
+    try {
+      // Update dynamic meta description for SEO
+      let metaDescription = document.querySelector('meta[name="description"]');
+      if (!metaDescription) {
+        metaDescription = document.createElement('meta');
+        metaDescription.setAttribute('name', 'description');
+        document.head.appendChild(metaDescription);
+      }
+      metaDescription.setAttribute(
+        'content', 
+        description || "Automate personalized cold emails, build campaigns, and scale your job search with Outreach AI."
+      );
+    } catch (err) {
+      console.warn('Failed to update meta description', err);
     }
-    metaDescription.setAttribute(
-      'content', 
-      description || "Automate personalized cold emails, build campaigns, and scale your job search with Outreach AI."
-    );
   }, [title, description, setTitle]);
 
   return <>{children}</>;
