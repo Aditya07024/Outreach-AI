@@ -96,7 +96,7 @@ export const PrivacyPolicy: React.FC = () => {
               If you have any questions or concerns about this Privacy Policy or your data, please contact us:
             </p>
             <p className="mt-1">
-              Support Email: <a href="mailto:support@outreachai.in" className="text-purple-400 hover:underline">support@outreachai.in</a>
+              Support Email: <a href="mailto:adityakumar07024@gmila.com" className="text-purple-400 hover:underline">adityakumar07024@gmila.com</a>
             </p>
           </section>
         </div>
