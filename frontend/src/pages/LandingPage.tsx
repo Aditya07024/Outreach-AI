@@ -431,7 +431,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-lg flex justify-between items-center hover:border-blue-500 transition-colors">
                             <div className="text-left space-y-0.5">
                               <h4 className="text-sm font-bold text-neutral-805">Yearly Plan</h4>
-                              <span className="text-xs text-neutral-500">₹100/year</span>
+                              <span className="text-xs text-neutral-500">₹1000/year</span>
                             </div>
                             <button
                               onClick={() => handleStartPurchase('yearly')}
@@ -448,7 +448,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             </div>
                             <div className="text-left space-y-0.5">
                               <h4 className="text-sm font-bold text-neutral-805">Lifetime Plan</h4>
-                              <span className="text-xs text-blue-600 font-bold">₹300 once</span>
+                              <span className="text-xs text-blue-600 font-bold">₹3000 once</span>
                             </div>
                             <button
                               onClick={() => handleStartPurchase('lifetime')}
@@ -873,7 +873,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="space-y-4">
               <span className="text-sm font-mono tracking-widest text-neutral-400 uppercase block font-bold">Yearly Access</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-neutral-900">₹100</span>
+                <span className="text-3xl font-black text-neutral-900">₹1000</span>
                 <span className="text-sm text-neutral-400 font-semibold">/year</span>
               </div>
               <ul className="space-y-3 pt-2 text-sm text-neutral-500">
@@ -898,7 +898,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="space-y-4">
               <span className="text-sm font-mono tracking-widest text-blue-600 uppercase block font-bold">Lifetime License</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-neutral-900">₹300</span>
+                <span className="text-3xl font-black text-neutral-900">₹3000</span>
                 <span className="text-sm text-neutral-555 font-semibold">/once</span>
               </div>
               <ul className="space-y-3 pt-2 text-sm text-neutral-600">
@@ -1001,7 +1001,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="bg-[#f8faff] border border-neutral-200 p-3.5 rounded-xl text-sm text-neutral-550 font-mono space-y-1">
               <div>Order ID: <span className="text-neutral-800">{mockOrderId}</span></div>
               <div>Plan Selected: <span className="text-blue-600 uppercase font-bold">{selectedPlan}</span></div>
-              <div>Total Cost: <span className="text-emerald-600">₹{selectedPlan === 'yearly' ? '100.00' : '300.00'}</span></div>
+              <div>Total Cost: <span className="text-emerald-600">₹{selectedPlan === 'yearly' ? '1000.00' : '3000.00'}</span></div>
               <div>Gateway: <span className="text-blue-500 font-bold">Simulated Razorpay</span></div>
             </div>
             <div className="flex gap-3 pt-2">

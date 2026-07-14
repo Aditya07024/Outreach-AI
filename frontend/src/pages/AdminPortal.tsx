@@ -273,8 +273,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <span className="text-2xl font-black text-neutral-100">₹{stats.totalIncome}</span>
             </div>
             <div className="text-[10px] text-neutral-500 border-t border-neutral-900/60 pt-2 flex justify-between">
-              <span>Yearly: {stats.yearlyCount} (₹{stats.yearlyCount * 100})</span>
-              <span>Lifetime: {stats.lifetimeCount} (₹{stats.lifetimeCount * 300})</span>
+              <span>Yearly: {stats.yearlyCount} (₹{stats.yearlyCount * 1000})</span>
+              <span>Lifetime: {stats.lifetimeCount} (₹{stats.lifetimeCount * 3000})</span>
             </div>
           </div>
 
@@ -405,10 +405,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                               <CheckCircle2 className="w-3.5 h-3.5 text-neutral-700" />
                               Paid
                             </span>
-                            {u.role !== 'super_admin' && u.role !== 'admin' && (
+                            {u.role !== 'super_admin' && u.id !== currentUser?.id && (
                               <button
                                 onClick={() => handleCancelSubscription(u.id, u.email)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 border border-rose-900/30 hover:border-rose-800/60 bg-rose-950/10 hover:bg-rose-950/20 text-rose-400 rounded text-[10px] font-bold transition-all shadow shadow-rose-950/40"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 border border-rose-900/30 hover:border-rose-800/60 bg-rose-950/10 hover:bg-rose-950/20 text-rose-450 rounded text-[10px] font-bold transition-all shadow shadow-rose-950/40"
                               >
                                 <Lock className="w-3 h-3" />
                                 Cancel

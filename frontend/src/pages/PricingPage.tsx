@@ -195,7 +195,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
 
             <div className="flex items-baseline gap-1 py-2">
               <span className="text-neutral-400 text-sm font-semibold">₹</span>
-              <span className="text-4xl font-black text-neutral-100">100</span>
+              <span className="text-4xl font-black text-neutral-100">1,000</span>
               <span className="text-neutral-500 text-xs">/ year</span>
             </div>
 
@@ -243,7 +243,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
 
             <div className="flex items-baseline gap-1 py-2">
               <span className="text-neutral-400 text-sm font-semibold">₹</span>
-              <span className="text-4xl font-black text-neutral-100">300</span>
+              <span className="text-4xl font-black text-neutral-100">3,000</span>
               <span className="text-neutral-500 text-xs">/ one-time</span>
             </div>
 
@@ -306,7 +306,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
             <div className="bg-zinc-950 border border-neutral-850 p-3 rounded-lg text-[10px] text-neutral-450 font-mono space-y-1">
               <div>Order ID: <span className="text-neutral-200">{mockOrderId}</span></div>
               <div>Plan: <span className="text-purple-400 uppercase font-bold">{selectedPlan}</span></div>
-              <div>Price: <span className="text-emerald-400">₹{selectedPlan === 'yearly' ? '100.00' : '300.00'}</span></div>
+              <div>Price: <span className="text-emerald-400">₹{selectedPlan === 'yearly' ? '1000.00' : '3000.00'}</span></div>
               <div>Gateway: <span className="text-amber-400">Simulated Sandbox</span></div>
             </div>
             <div className="flex gap-3 pt-2">

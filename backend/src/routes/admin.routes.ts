@@ -2,6 +2,7 @@ import { Router, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { logger } from '../utils/logger';
+import { GmailService } from '../services/gmail.service';
 
 const router = Router();
 
@@ -57,7 +58,7 @@ router.get('/users', requireSuperAdmin, async (req: AuthenticatedRequest, res) =
     
     const yearlyCount = users.filter(u => u.paid && u.plan === 'yearly').length;
     const lifetimeCount = users.filter(u => u.paid && u.plan === 'lifetime').length;
-    const totalIncome = (yearlyCount * 100) + (lifetimeCount * 300);
+    const totalIncome = (yearlyCount * 1000) + (lifetimeCount * 3000);
 
     res.json({
       users: enrichedUsers,
@@ -121,9 +122,20 @@ router.post('/cancel/:id', requireSuperAdmin, async (req: AuthenticatedRequest, 
       data: {
         paid: false,
         plan: null,
-        paidUntil: null
+        paidUntil: null,
+        role: 'paid_user'
       }
     });
+
+    // Also disconnect their Gmail account if connected
+    try {
+      await GmailService.disconnect(userId);
+    } catch (gmailErr: any) {
+      // Ignore Prisma P2025 "Record to delete does not exist" if Gmail was not connected
+      if (gmailErr.code !== 'P2025' && gmailErr.code !== 'NotFound') {
+        await logger.warn('API', `Could not disconnect Gmail credentials for user ${userId} during revocation: ${gmailErr.message}`);
+      }
+    }
 
     await logger.info('API', `Admin cancelled/revoked subscription for user ${userId} (${user.email || 'local'})`);
     res.json({ success: true, user: updatedUser });
