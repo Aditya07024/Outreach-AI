@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma';
+import { AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
 // Retrieve logs, with optional filter and limit
-router.get('/', async (req, res) => {
+router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
     const limit = req.query.limit ? Number(req.query.limit) : 100;
     const source = req.query.source as string || undefined;
@@ -16,6 +17,11 @@ router.get('/', async (req, res) => {
     }
     if (level) {
       whereClause.level = level;
+    }
+
+    // Standard users should only see their own logs
+    if (req.user!.role !== 'super_admin' && req.user!.role !== 'admin') {
+      whereClause.userId = req.user!.id;
     }
 
     const logs = await prisma.log.findMany({
@@ -31,9 +37,15 @@ router.get('/', async (req, res) => {
 });
 
 // Clear all logs
-router.post('/clear', async (req, res) => {
+router.post('/clear', async (req: AuthenticatedRequest, res) => {
   try {
-    await prisma.log.deleteMany();
+    const whereClause: any = {};
+    if (req.user!.role !== 'super_admin' && req.user!.role !== 'admin') {
+      whereClause.userId = req.user!.id;
+    }
+    await prisma.log.deleteMany({
+      where: whereClause
+    });
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to clear logs' });

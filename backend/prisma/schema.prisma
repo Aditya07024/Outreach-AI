@@ -46,6 +46,7 @@ model User {
   lastActiveAt DateTime?
   resumes      Resume[]
   campaigns    Campaign[]
+  logs         Log[]
 }
 
 model Resume {
@@ -124,4 +125,6 @@ model Log {
   message   String
   details   String?  // JSON context
   timestamp DateTime @default(now())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -45,10 +45,11 @@ export class SendingEngine {
   private static async processQueue(): Promise<void> {
     if (this.isRunning) return; // Prevent concurrent overlap
     this.isRunning = true;
+    let campaign: any = null;
 
     try {
       // Find the first campaign currently in SENDING state
-      const campaign = await prisma.campaign.findFirst({
+      campaign = await prisma.campaign.findFirst({
         where: { status: 'SENDING' },
         include: {
           resume: true,
@@ -77,7 +78,7 @@ export class SendingEngine {
           where: { id: campaign.id },
           data: { status: 'COMPLETED' },
         });
-        await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" completed. No more pending contacts.`);
+        await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" completed. No more pending contacts.`, null, campaign.userId || undefined);
         this.isRunning = false;
         return;
       }
@@ -91,14 +92,15 @@ export class SendingEngine {
         await logger.error(
           'EMAIL_SENDING',
           `Cannot send to ${contact.email}. Subject or Body is empty. Run email generation first.`,
-          { contactId: contact.id }
+          { contactId: contact.id },
+          campaign.userId || undefined
         );
         this.isRunning = false;
         return;
       }
 
       // 3. Send the email
-      await logger.info('EMAIL_SENDING', `Sending email to ${contact.firstName || ''} (${contact.email}) for campaign "${campaign.name}"`);
+      await logger.info('EMAIL_SENDING', `Sending email to ${contact.firstName || ''} (${contact.email}) for campaign "${campaign.name}"`, null, campaign.userId || undefined);
       
       let messageId: string | null = null;
       let sendError: string | null = null;
@@ -149,7 +151,9 @@ export class SendingEngine {
 
         await logger.info(
           'EMAIL_SENDING',
-          `Email sent successfully to ${contact.email}. Message ID: ${messageId}`
+          `Email sent successfully to ${contact.email}. Message ID: ${messageId}`,
+          null,
+          campaign.userId || undefined
         );
       } else {
         // Failure
@@ -173,7 +177,9 @@ export class SendingEngine {
 
         await logger.error(
           'EMAIL_SENDING',
-          `Email failed for ${contact.email}. Error: ${sendError}`
+          `Email failed for ${contact.email}. Error: ${sendError}`,
+          null,
+          campaign.userId || undefined
         );
 
         // If it's a Gmail authentication/session failure, auto-pause the campaign to avoid repeat errors
@@ -184,7 +190,9 @@ export class SendingEngine {
           });
           await logger.warn(
             'EMAIL_SENDING',
-            `Campaign "${campaign.name}" auto-paused due to Google authentication error.`
+            `Campaign "${campaign.name}" auto-paused due to Google authentication error.`,
+            null,
+            campaign.userId || undefined
           );
         }
       }
@@ -197,7 +205,9 @@ export class SendingEngine {
 
       await logger.info(
         'EMAIL_SENDING',
-        `Queue waiting for ${randomDelaySeconds} seconds before next send...`
+        `Queue waiting for ${randomDelaySeconds} seconds before next send...`,
+        null,
+        campaign.userId || undefined
       );
 
       // Wait for the random delay in a non-blocking timeout
@@ -209,7 +219,7 @@ export class SendingEngine {
 
     } catch (error: any) {
       console.error('Critical error in sending loop:', error);
-      await logger.error('EMAIL_SENDING', 'Critical error in sending queue loop', error);
+      await logger.error('EMAIL_SENDING', 'Critical error in sending queue loop', error, campaign?.userId || undefined);
     } finally {
       this.isRunning = false;
       this.activeTimeout = null;
@@ -247,7 +257,7 @@ export class SendingEngine {
       data: { status: 'SENDING' },
     });
     
-    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" started/resumed.`);
+    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" started/resumed.`, null, campaign.userId || undefined);
     
     // Trigger tick immediately without waiting for interval
     this.processQueue().catch((err) => {
@@ -267,7 +277,7 @@ export class SendingEngine {
       data: { status: 'PAUSED' },
     });
 
-    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" paused.`);
+    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" paused.`, null, campaign.userId || undefined);
   }
 
   /**
@@ -282,7 +292,7 @@ export class SendingEngine {
       data: { status: 'DRAFT' }, // Roll back to DRAFT or similar
     });
 
-    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" cancelled/reset to draft.`);
+    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" cancelled/reset to draft.`, null, campaign.userId || undefined);
   }
 
   /**
@@ -304,7 +314,9 @@ export class SendingEngine {
 
     await logger.info(
       'EMAIL_SENDING',
-      `Reset ${result.count} failed contacts in "${campaign.name}" to retry sending.`
+      `Reset ${result.count} failed contacts in "${campaign.name}" to retry sending.`,
+      null,
+      campaign.userId || undefined
     );
   }
 }

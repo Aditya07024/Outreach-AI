@@ -6,7 +6,8 @@ export async function logMessage(
   level: 'INFO' | 'WARN' | 'ERROR',
   source: LogSource,
   message: string,
-  details?: any
+  details?: any,
+  userId?: number
 ) {
   const detailsStr = details ? (typeof details === 'string' ? details : JSON.stringify(details, null, 2)) : null;
 
@@ -18,13 +19,14 @@ export async function logMessage(
   }
 
   try {
-    // Save to SQLite db asynchronously
+    // Save to PostgreSQL db asynchronously
     await prisma.log.create({
       data: {
         level,
         source,
         message,
         details: detailsStr,
+        userId: userId || null,
       },
     });
   } catch (err) {
@@ -33,7 +35,7 @@ export async function logMessage(
 }
 
 export const logger = {
-  info: (source: LogSource, message: string, details?: any) => logMessage('INFO', source, message, details),
-  warn: (source: LogSource, message: string, details?: any) => logMessage('WARN', source, message, details),
-  error: (source: LogSource, message: string, details?: any) => logMessage('ERROR', source, message, details),
+  info: (source: LogSource, message: string, details?: any, userId?: number) => logMessage('INFO', source, message, details, userId),
+  warn: (source: LogSource, message: string, details?: any, userId?: number) => logMessage('WARN', source, message, details, userId),
+  error: (source: LogSource, message: string, details?: any, userId?: number) => logMessage('ERROR', source, message, details, userId),
 };
