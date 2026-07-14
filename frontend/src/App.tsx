@@ -105,22 +105,54 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    // Process URL authentication or payment redirects from Google Callback
+    // Process URL authentication or payment redirects from Google Callback (supports query params or hash)
     const hash = window.location.hash;
+    const search = window.location.search;
+    
+    let params: URLSearchParams | null = null;
+    let isHash = false;
+    
     if (hash) {
       const cleanHash = hash.startsWith('#') ? hash.substring(1) : hash;
-      const params = new URLSearchParams(cleanHash);
+      // Simple check to make sure it looks like query params rather than a standard element ID
+      if (cleanHash.includes('=')) {
+        params = new URLSearchParams(cleanHash);
+        isHash = true;
+      }
+    }
+    
+    if (!params && search) {
+      params = new URLSearchParams(search);
+    }
+    
+    if (params) {
       const token = params.get('token');
       const paymentRequired = params.get('payment_required');
       const userId = params.get('userId');
+      const error = params.get('error');
 
       if (token) {
         localStorage.setItem('token', token);
-        window.location.hash = ''; // clear hash
+        if (isHash) {
+          window.location.hash = '';
+        } else {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
         setIsAuthenticated(true);
       } else if (paymentRequired === 'true' && userId) {
         setPaymentRequiredUserId(userId);
-        window.location.hash = '';
+        if (isHash) {
+          window.location.hash = '';
+        } else {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } else if (error) {
+        alert(`Authentication Failed: ${error}`);
+        if (isHash) {
+          window.location.hash = '';
+        } else {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
       }
     }
   }, []);
