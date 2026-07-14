@@ -57,27 +57,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ isPaid, user, onPaymentSuc
   };
 
   useEffect(() => {
-    if (!isPaid) {
-      setIsLoading(false);
-      return;
-    }
     fetchDashboardData();
     // Poll updates every 30 seconds to show active progress without hammering the database
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
-  }, [isPaid]);
-
-  if (!isPaid) {
-    if (!user) {
-      return (
-        <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-neutral-400 gap-4">
-          <div className="w-8 h-8 rounded-full border-2 border-neutral-800 border-t-purple-500 animate-spin" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 animate-pulse">Loading Profile...</span>
-        </div>
-      );
-    }
-    return <PricingPage user={user} onPaymentSuccess={onPaymentSuccess} />;
-  }
+  }, []);
 
   // Compute aggregated stats
   const totalContacts = campaigns.reduce((acc, c) => acc + (c.metrics?.total || 0), 0);

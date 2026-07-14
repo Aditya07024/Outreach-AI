@@ -73,8 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1">
             {activeLinks.map((link) => {
-              const isLinkRestricted = link.to !== '/' && link.to !== '/settings' && link.to !== '/subscription' && link.to !== '/admin-portal';
-              const isLinkDisabled = !isPaid && isLinkRestricted;
+              const isLinkDisabled = false;
 
               return (
                 <NavLink

@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send } from 'lucide-react';
+import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send, Lock, Sparkles } from 'lucide-react';
 import { Settings as SettingsType, Resume } from '../types';
 
 interface SettingsProps {
   gmailStatus: { connected: boolean; email?: string } | null;
   onRefreshGmailStatus: () => void;
+  isPaid?: boolean;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailStatus }) => {
+export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailStatus, isPaid = false }) => {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -162,7 +163,24 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
             </h3>
 
             <div className="space-y-3">
-              {gmailStatus?.connected ? (
+              {!isPaid ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-zinc-950/40 border border-neutral-800 rounded-lg flex items-start gap-2 text-xs text-neutral-400">
+                    <Lock className="w-4 h-4 flex-shrink-0 text-purple-400 animate-pulse" />
+                    <span className="leading-relaxed">
+                      Linking a Gmail account is a premium feature. Upgrade your subscription to authorize sending emails using Gmail API OAuth 2.0.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => window.location.href = '/subscription'}
+                    className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-neutral-100 font-bold rounded-md text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-purple-950/20"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Upgrade Plan to Link Gmail
+                  </button>
+                </div>
+              ) : gmailStatus?.connected ? (
                 <div className="space-y-3">
                   <div className="p-3 bg-emerald-950/10 border border-emerald-900/40 rounded-lg flex items-start gap-2 text-xs text-emerald-300">
                     <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
@@ -174,6 +192,7 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={handleDisconnectGmail}
                     className="w-full py-1.5 border border-rose-900/30 hover:border-rose-800/60 bg-rose-950/10 hover:bg-rose-950/20 text-rose-400 font-semibold rounded-md text-xs transition-colors"
                   >
@@ -189,6 +208,7 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
                     </span>
                   </div>
                   <button
+                    type="button"
                     onClick={handleConnectGmail}
                     className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-md text-xs transition-colors"
                   >

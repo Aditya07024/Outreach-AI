@@ -48,11 +48,29 @@ router.get('/url', (req, res) => {
     }
     
     // Connect Gmail inside settings requires requireAuth
-    requireAuth(req as any, res as any, () => {
-      const userId = (req as any).user!.id;
-      const state = encodeState({ userId, origin });
-      const url = GmailService.getAuthUrl(state);
-      res.json({ url });
+    requireAuth(req as any, res as any, async () => {
+      try {
+        const userId = (req as any).user!.id;
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+          return res.status(404).json({ error: 'User not found' });
+        }
+        const isPaid = user.role === 'admin' || (
+          user.paid && (
+            user.plan !== 'yearly' || 
+            !user.paidUntil || 
+            user.paidUntil > new Date()
+          )
+        );
+        if (!isPaid) {
+          return res.status(403).json({ error: 'Upgrade required: linking a Gmail account is a premium feature.' });
+        }
+        const state = encodeState({ userId, origin });
+        const url = GmailService.getAuthUrl(state);
+        res.json({ url });
+      } catch (err: any) {
+        res.status(500).json({ error: err.message || 'Failed to generate OAuth URL' });
+      }
     });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to generate OAuth URL' });
@@ -105,11 +123,25 @@ router.get('/callback', async (req, res) => {
     } else {
       // 2. CONNECT GMAIL ACCOUNT FLOW
       const userId = stateData.userId || 1;
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      const isPaid = user?.role === 'admin' || (
+        user?.paid && (
+          user.plan !== 'yearly' || 
+          !user.paidUntil || 
+          user.paidUntil > new Date()
+        )
+      );
+      if (!isPaid) {
+        throw new Error('Upgrade required: linking a Gmail account is a premium feature.');
+      }
       const email = await GmailService.handleCallback(code, userId);
       res.redirect(`${redirectOrigin}/settings?connected=true&email=${encodeURIComponent(email)}`);
     }
   } catch (error: any) {
     await logger.error('OAUTH', 'OAuth callback exchange failed', error);
+    if (stateData && stateData.userId) {
+      return res.redirect(`${redirectOrigin}/settings?error=${encodeURIComponent(error.message || 'auth_failed')}`);
+    }
     res.redirect(`${redirectOrigin}/#error=${encodeURIComponent(error.message || 'auth_failed')}`);
   }
 });

@@ -221,7 +221,7 @@ export const App: React.FC = () => {
                   
                   {/* Top Navbar */}
                   <Header 
-                    title={isPaid ? currentTitle : "Subscription Plans"} 
+                    title={currentTitle} 
                     gmailStatus={gmailStatus} 
                     onMenuClick={() => setSidebarOpen(!sidebarOpen)}
                   />
@@ -247,80 +247,60 @@ export const App: React.FC = () => {
                       <Route 
                         path="/compose" 
                         element={
-                          isPaid ? (
-                            <PageWrapper title="Compose Email" setTitle={setCurrentTitle}>
-                              <Compose gmailStatus={gmailStatus} />
-                            </PageWrapper>
-                          ) : (
-                            <Navigate to="/" replace />
-                          )
+                          <PageWrapper title="Compose Email" setTitle={setCurrentTitle}>
+                            <Compose gmailStatus={gmailStatus} />
+                          </PageWrapper>
                         } 
                       />
                       <Route 
                         path="/campaigns" 
                         element={
-                          isPaid ? (
-                            <PageWrapper title="Campaigns" setTitle={setCurrentTitle}>
-                              <Campaigns />
-                            </PageWrapper>
-                          ) : (
-                            <Navigate to="/" replace />
-                          )
+                          <PageWrapper title="Campaigns" setTitle={setCurrentTitle}>
+                            <Campaigns />
+                          </PageWrapper>
                         } 
                       />
                       <Route 
                         path="/outbox" 
                         element={
-                          isPaid ? (
-                            <PageWrapper title="Outbox Queue" setTitle={setCurrentTitle}>
-                              <Outbox />
-                            </PageWrapper>
-                          ) : (
-                            <Navigate to="/" replace />
-                          )
+                          <PageWrapper title="Outbox Queue" setTitle={setCurrentTitle}>
+                            <Outbox />
+                          </PageWrapper>
                         } 
                       />
                       <Route 
                         path="/resumes" 
                         element={
-                          isPaid ? (
-                            <PageWrapper title="Resumes" setTitle={setCurrentTitle}>
-                              <Resumes />
-                            </PageWrapper>
-                          ) : (
-                            <Navigate to="/" replace />
-                          )
+                          <PageWrapper title="Resumes" setTitle={setCurrentTitle}>
+                            <Resumes />
+                          </PageWrapper>
                         } 
                       />
                       <Route 
                         path="/history" 
                         element={
-                          isPaid ? (
-                            <PageWrapper title="Outreach History" setTitle={setCurrentTitle}>
-                              <History />
-                            </PageWrapper>
-                          ) : (
-                            <Navigate to="/" replace />
-                          )
+                          <PageWrapper title="Outreach History" setTitle={setCurrentTitle}>
+                            <History />
+                          </PageWrapper>
                         } 
                       />
                       <Route 
                         path="/logs" 
                         element={
-                          isPaid ? (
-                            <PageWrapper title="System Logs" setTitle={setCurrentTitle}>
-                              <Logs />
-                            </PageWrapper>
-                          ) : (
-                            <Navigate to="/" replace />
-                          )
+                          <PageWrapper title="System Logs" setTitle={setCurrentTitle}>
+                            <Logs />
+                          </PageWrapper>
                         } 
                       />
                       <Route 
                         path="/settings" 
                         element={
                           <PageWrapper title="Settings" setTitle={setCurrentTitle}>
-                            <Settings gmailStatus={gmailStatus} onRefreshGmailStatus={fetchGmailStatus} />
+                            <Settings 
+                              gmailStatus={gmailStatus} 
+                              onRefreshGmailStatus={fetchGmailStatus} 
+                              isPaid={isPaid}
+                            />
                           </PageWrapper>
                         } 
                       />

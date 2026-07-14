@@ -65,11 +65,11 @@ app.use('/api/health', healthRoutes);
 // Register Protected Routes
 app.use('/api/auth/google', authRoutes);
 app.use('/api/settings', requireAuth, settingsRoutes);
-app.use('/api/resumes', requireAuth, requirePaid, resumeRoutes);
-app.use('/api/campaigns', requireAuth, requirePaid, campaignRoutes);
-app.use('/api/contacts', requireAuth, requirePaid, contactRoutes);
-app.use('/api/history', requireAuth, requirePaid, historyRoutes);
-app.use('/api/logs', requireAuth, requirePaid, logsRoutes);
+app.use('/api/resumes', requireAuth, resumeRoutes);
+app.use('/api/campaigns', requireAuth, campaignRoutes);
+app.use('/api/contacts', requireAuth, contactRoutes);
+app.use('/api/history', requireAuth, historyRoutes);
+app.use('/api/logs', requireAuth, logsRoutes);
 app.use('/api/admin', requireAuth, adminRoutes);
 app.use('/api/extension', requireAuth, extensionRoutes);
 

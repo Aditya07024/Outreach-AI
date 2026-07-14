@@ -134,12 +134,13 @@ export const Subscription: React.FC<SubscriptionProps> = ({ user }) => {
             {[
               { name: 'Dashboard Analytics', unlocked: true },
               { name: 'Profile Configuration', unlocked: true },
-              { name: 'Campaign Creator', unlocked: isPaid },
-              { name: 'CSV Contact Uploader', unlocked: isPaid },
-              { name: 'PDF Resume Parser', unlocked: isPaid },
-              { name: 'Grok-2 AI Draft Builder', unlocked: isPaid },
-              { name: 'Anti-Spam Sequential Sending', unlocked: isPaid },
-              { name: 'System Performance Logs', unlocked: isPaid }
+              { name: 'Campaign Creator', unlocked: true },
+              { name: 'CSV Contact Uploader', unlocked: true },
+              { name: 'PDF Resume Parser', unlocked: true },
+              { name: 'Grok-2 AI Draft Builder', unlocked: true },
+              { name: 'Anti-Spam Sequential Sending', unlocked: true },
+              { name: 'System Performance Logs', unlocked: true },
+              { name: 'Gmail API OAuth 2.0 Connection', unlocked: isPaid }
             ].map((feat, idx) => (
               <div key={idx} className="flex items-center justify-between text-[11px]">
                 <span className={feat.unlocked ? 'text-neutral-300' : 'text-neutral-550 line-through'}>
