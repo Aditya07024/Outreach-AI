@@ -32,11 +32,24 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
-      // Allow frontend URL
-      if (origin === frontendUrl) return callback(null, true);
+      
+      const cleanOrigin = origin.replace(/\/$/, '');
+      const cleanFrontend = frontendUrl.replace(/\/$/, '');
+      
+      // Allow frontend URL or custom subdomains
+      if (cleanOrigin === cleanFrontend || 
+          cleanOrigin === 'https://outreach.aditya07.me' || 
+          cleanOrigin === 'http://outreach.aditya07.me' ||
+          cleanOrigin.endsWith('.aditya07.me')) {
+        return callback(null, true);
+      }
+      
       // Allow Chrome Extension origins (chrome-extension://...)
-      if (origin.startsWith('chrome-extension://')) return callback(null, true);
-      // Block all other origins
+      if (origin.startsWith('chrome-extension://')) {
+        return callback(null, true);
+      }
+      
+      // Block other origins
       callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
@@ -76,6 +89,14 @@ app.use('/api/extension', requireAuth, extensionRoutes);
 // Catch-all 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
+});
+
+// Global Express JSON Error Handler (prevents HTML error page on exceptions/CORS issues)
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('[Unhandled Express Error]', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error'
+  });
 });
 
 // Seed default settings and run server
