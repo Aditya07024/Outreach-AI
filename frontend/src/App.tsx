@@ -6,6 +6,7 @@ import { LandingPage } from './pages/LandingPage';
 
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsAndConditions } from './pages/TermsAndConditions';
+import { SupportPage } from './pages/SupportPage';
 
 // Views
 import { Dashboard } from './pages/Dashboard';
@@ -172,6 +173,8 @@ export const App: React.FC = () => {
 
         {!isAuthenticated ? (
           <>
+            {/* Unauthenticated support portal */}
+            <Route path="/support" element={<SupportPage isPublic={true} />} />
             {/* Unauthenticated admin portal */}
             <Route 
               path="/admin-portal" 
@@ -330,6 +333,14 @@ export const App: React.FC = () => {
                         } 
                       />
                       <Route 
+                        path="/support" 
+                        element={
+                          <PageWrapper title="Support Help Center" description="Get help with your Outreach AI account, search frequently asked questions, or contact support." setTitle={setCurrentTitle}>
+                            <SupportPage isPublic={false} />
+                          </PageWrapper>
+                        } 
+                      />
+                      <Route 
                         path="/admin-portal" 
                         element={
                           <PageWrapper title="Admin Command Center" setTitle={setCurrentTitle}>
@@ -357,15 +368,28 @@ export const App: React.FC = () => {
 // Simple helper component to set document / header titles dynamically on load
 interface PageWrapperProps {
   title: string;
+  description?: string;
   setTitle: (title: string) => void;
   children: React.ReactNode;
 }
 
-const PageWrapper: React.FC<PageWrapperProps> = ({ title, setTitle, children }) => {
+const PageWrapper: React.FC<PageWrapperProps> = ({ title, description, setTitle, children }) => {
   useEffect(() => {
     setTitle(title);
-    document.title = `${title} | AI Job Outreach Assistant`;
-  }, [title, setTitle]);
+    document.title = `${title} | Outreach AI`;
+    
+    // Update dynamic meta description for SEO
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (!metaDescription) {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute('name', 'description');
+      document.head.appendChild(metaDescription);
+    }
+    metaDescription.setAttribute(
+      'content', 
+      description || "Automate personalized cold emails, build campaigns, and scale your job search with Outreach AI."
+    );
+  }, [title, description, setTitle]);
 
   return <>{children}</>;
 };

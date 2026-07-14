@@ -265,6 +265,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <a className="hover:text-black transition-colors" href="#how-it-works">How it works</a>
                 <a className="hover:text-black transition-colors" href="#pricing">Pricing</a>
                 <a className="hover:text-black transition-colors" href="#faq">FAQ</a>
+                <a className="hover:text-black transition-colors" href="/support">Support</a>
               </div>
 
               <div className="flex items-center gap-2">
@@ -1042,6 +1043,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <a className="hover:text-black transition-colors" href="#features">Features</a>
               <a className="hover:text-black transition-colors" href="#pricing">Pricing</a>
               <a className="hover:text-black transition-colors" href="#how-it-works">How it works</a>
+              <a className="hover:text-black transition-colors" href="/support">Support Help</a>
             </nav>
           </div>
 

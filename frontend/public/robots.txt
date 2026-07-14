@@ -1,0 +1,22 @@
+# Robots.txt for Outreach AI
+# Allows indexing of all public static pages, but disallows private workspace paths
+
+User-agent: *
+Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /support
+
+# Disallow indexing of private dashboard sub-routes and admin dashboard
+Disallow: /admin-portal
+Disallow: /dashboard
+Disallow: /compose
+Disallow: /campaigns
+Disallow: /outbox
+Disallow: /resumes
+Disallow: /history
+Disallow: /logs
+Disallow: /settings
+Disallow: /subscription
+
+Sitemap: https://outreachai.aditya07.me/sitemap.xml

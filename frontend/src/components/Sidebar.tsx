@@ -12,7 +12,8 @@ import {
   PenSquare,
   Lock,
   CreditCard,
-  ShieldAlert
+  ShieldAlert,
+  HelpCircle
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -42,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     // { to: '/logs', name: 'Logs', icon: Terminal },
     { to: '/settings', name: 'Settings', icon: Settings },
     { to: '/subscription', name: 'Subscription', icon: CreditCard },
+    { to: '/support', name: 'Support Help', icon: HelpCircle },
   ];
 
   const activeLinks = [...links];
