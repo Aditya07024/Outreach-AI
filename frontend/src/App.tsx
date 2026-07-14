@@ -308,7 +308,13 @@ export const App: React.FC = () => {
                         path="/subscription" 
                         element={
                           <PageWrapper title="Subscription Details" setTitle={setCurrentTitle}>
-                            <Subscription user={currentUser} />
+                            <Subscription 
+                              user={currentUser} 
+                              onPaymentSuccess={(newToken) => {
+                                localStorage.setItem('token', newToken);
+                                fetchUserProfile();
+                              }}
+                            />
                           </PageWrapper>
                         } 
                       />

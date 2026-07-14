@@ -1,6 +1,7 @@
 import React from 'react';
 import { CreditCard, CheckCircle2, AlertCircle, Calendar, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { PricingPage } from './PricingPage';
 
 interface SubscriptionProps {
   user: {
@@ -11,9 +12,10 @@ interface SubscriptionProps {
     plan: string | null;
     paidUntil: string | null;
   } | null;
+  onPaymentSuccess: (token: string) => void;
 }
 
-export const Subscription: React.FC<SubscriptionProps> = ({ user }) => {
+export const Subscription: React.FC<SubscriptionProps> = ({ user, onPaymentSuccess }) => {
   const navigate = useNavigate();
 
   if (!user) {
@@ -25,6 +27,11 @@ export const Subscription: React.FC<SubscriptionProps> = ({ user }) => {
   }
 
   const isPaid = user.paid || user.role === 'admin';
+
+  if (!isPaid) {
+    return <PricingPage user={user} onPaymentSuccess={onPaymentSuccess} />;
+  }
+
   const planName = user.plan === 'yearly' ? 'Yearly Subscription' : user.plan === 'lifetime' ? 'Lifetime Access License' : 'No Active Plan';
   const planPrice = user.plan === 'yearly' ? '₹100/year' : user.plan === 'lifetime' ? '₹300 one-time' : 'N/A';
 
