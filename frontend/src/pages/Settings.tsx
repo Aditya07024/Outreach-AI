@@ -305,10 +305,20 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
 
           {/* Chrome Extension Connection */}
           <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-5 space-y-4">
-            <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-neutral-400" />
-              Chrome Extension Connection
-            </h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-neutral-400" />
+                Chrome Extension Connection
+              </h3>
+              <a
+                href="https://chromewebstore.google.com/detail/outreach-ai-%E2%80%94-email-extra/lghahidlejpibjojgiokdghjjpmkhcnc"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] text-purple-450 hover:text-purple-300 font-bold flex items-center gap-1 transition-colors border border-purple-800/40 bg-purple-950/20 px-2.5 py-0.5 rounded-full"
+              >
+                Web Store <Send className="w-2.5 h-2.5" />
+              </a>
+            </div>
             <p className="text-[10px] text-neutral-500 leading-relaxed">
               Use this token to connect the Chrome Extension to your account.
             </p>
@@ -337,7 +347,17 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
               <div className="text-[9px] text-neutral-500 leading-relaxed">
                 Instructions:
                 <ol className="list-decimal pl-3 mt-1 space-y-0.5">
-                  <li>Install the Outreach AI Chrome Extension.</li>
+                  <li>
+                    Install the{' '}
+                    <a
+                      href="https://chromewebstore.google.com/detail/outreach-ai-%E2%80%94-email-extra/lghahidlejpibjojgiokdghjjpmkhcnc"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-purple-400 hover:text-purple-300 font-semibold underline"
+                    >
+                      Outreach AI Chrome Extension
+                    </a>.
+                  </li>
                   <li>Click the extension icon in your toolbar.</li>
                   <li>Paste this JWT access token and click Connect.</li>
                 </ol>
