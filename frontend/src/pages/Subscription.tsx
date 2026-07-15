@@ -33,7 +33,7 @@ export const Subscription: React.FC<SubscriptionProps> = ({ user, onPaymentSucce
   }
 
   const planName = user.plan === 'yearly' ? 'Yearly Subscription' : user.plan === 'lifetime' ? 'Lifetime Access License' : 'No Active Plan';
-  const planPrice = user.plan === 'yearly' ? '₹1000/year' : user.plan === 'lifetime' ? '₹3000 one-time' : 'N/A';
+  const planPrice = user.plan === 'yearly' ? '₹100/year' : user.plan === 'lifetime' ? '₹300 one-time' : 'N/A';
 
   const formatExpiryDate = (dateStr: string | null) => {
     if (!dateStr) return 'Never expires';

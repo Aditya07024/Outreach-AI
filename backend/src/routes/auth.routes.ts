@@ -236,7 +236,7 @@ router.post('/razorpay/order', requireAuth, async (req: AuthenticatedRequest, re
     return res.status(400).json({ error: 'Valid plan (yearly or lifetime) is required.' });
   }
 
-  const amount = plan === 'yearly' ? 100000 : 300000; // Rs. 1000 or Rs. 3000 in paisa
+  const amount = plan === 'yearly' ? 10000 : 30000; // Rs. 100 or Rs. 300 in paisa
   const userId = req.user!.id;
 
   try {
