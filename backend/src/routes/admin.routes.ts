@@ -44,6 +44,7 @@ router.get('/users', requireSuperAdmin, async (req: AuthenticatedRequest, res) =
           paid: u.paid,
           plan: u.plan,
           paidUntil: u.paidUntil,
+          trialEndsAt: u.trialEndsAt,
           createdAt: u.createdAt,
           lastActiveAt: u.lastActiveAt,
           campaignsCount,

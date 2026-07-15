@@ -62,8 +62,9 @@ router.get('/url', (req, res) => {
             user.paidUntil > new Date()
           )
         );
-        if (!isPaid) {
-          return res.status(403).json({ error: 'Upgrade required: linking a Gmail account is a premium feature.' });
+        const isTrialActive = user.trialEndsAt && user.trialEndsAt > new Date();
+        if (!isPaid && !isTrialActive) {
+          return res.status(403).json({ error: 'Upgrade required: your free trial has expired. Please subscribe to link your Gmail account.' });
         }
         const state = encodeState({ userId, origin });
         const url = GmailService.getAuthUrl(state);
@@ -102,12 +103,16 @@ router.get('/callback', async (req, res) => {
       const isAdminEmail = email === 'adityakumar07024@gmail.com' || email === 'adityakumarjat106@gmail.com';
 
       if (!user) {
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + 3);
+
         // Create new user, paid = true if admin email, else false
         user = await prisma.user.create({
           data: {
             email,
             paid: isAdminEmail,
-            role: isAdminEmail ? 'admin' : 'paid_user'
+            role: isAdminEmail ? 'admin' : 'paid_user',
+            trialEndsAt
           }
         });
       } else if (isAdminEmail && user.role !== 'admin') {
@@ -131,8 +136,10 @@ router.get('/callback', async (req, res) => {
           user.paidUntil > new Date()
         )
       );
-      if (!isPaid) {
-        throw new Error('Upgrade required: linking a Gmail account is a premium feature.');
+      const isTrialActive = user?.trialEndsAt && user.trialEndsAt > new Date();
+      if (!isPaid && !isTrialActive) {
+        // Redirect to settings with error if not paid/trial expired
+        return res.redirect(`${redirectOrigin}/settings?error=trial_expired`);
       }
       const email = await GmailService.handleCallback(code, userId);
       res.redirect(`${redirectOrigin}/settings?connected=true&email=${encodeURIComponent(email)}`);
@@ -173,7 +180,9 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res) => {
       role: user.role,
       paid: isPaid,
       plan: user.plan,
-      paidUntil: user.paidUntil
+      paidUntil: user.paidUntil,
+      trialEndsAt: user.trialEndsAt,
+      createdAt: user.createdAt
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to retrieve user profile' });

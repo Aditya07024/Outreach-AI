@@ -21,6 +21,7 @@ interface UserDetail {
   paid: boolean;
   plan: string | null;
   paidUntil: string | null;
+  trialEndsAt: string | null;
   createdAt: string;
   lastActiveAt: string | null;
   campaignsCount: number;
@@ -366,13 +367,40 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       <td className="p-3.5 text-neutral-200 font-semibold">{u.email || 'Local Owner / Admin'}</td>
                       <td className="p-3.5 text-neutral-400 font-mono text-[10px]">{u.role}</td>
                       <td className="p-3.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${
-                          isUserPaid
-                            ? 'bg-emerald-950/20 text-emerald-400 border-emerald-900/20'
-                            : 'bg-rose-950/20 text-rose-450 border-rose-900/20'
-                        }`}>
-                          {isUserPaid ? `${u.plan || 'Admin Bypass'}` : 'Unpaid'}
-                        </span>
+                        {(() => {
+                          if (isUserPaid) {
+                            return (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border bg-emerald-950/20 text-emerald-400 border-emerald-900/20">
+                                {u.plan || 'Admin Bypass'}
+                              </span>
+                            );
+                          }
+                          
+                          if (u.trialEndsAt) {
+                            const ends = new Date(u.trialEndsAt);
+                            const diffMs = ends.getTime() - Date.now();
+                            const hoursLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)));
+                            if (hoursLeft > 0) {
+                              return (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border bg-purple-950/20 text-purple-400 border-purple-900/20">
+                                  Trial: {hoursLeft}h left
+                                </span>
+                              );
+                            } else {
+                              return (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border bg-rose-950/20 text-rose-450 border-rose-900/20">
+                                  Trial Expired
+                                </span>
+                              );
+                            }
+                          }
+                          
+                          return (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border bg-rose-950/20 text-rose-450 border-rose-900/20">
+                              Unpaid
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="p-3.5 text-neutral-450">
                         {u.plan === 'yearly' && u.paidUntil 

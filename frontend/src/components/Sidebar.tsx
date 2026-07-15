@@ -23,6 +23,16 @@ interface SidebarProps {
   userRole?: string;
   isOpen?: boolean;
   onClose?: () => void;
+  currentUser?: {
+    id: number;
+    email: string | null;
+    role: string;
+    paid: boolean;
+    plan: string | null;
+    paidUntil: string | null;
+    trialEndsAt: string | null;
+    createdAt: string;
+  } | null;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -31,7 +41,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isPaid = true, 
   userRole,
   isOpen = false,
-  onClose
+  onClose,
+  currentUser
 }) => {
   const links = [
     { to: '/', name: 'Dashboard', icon: LayoutDashboard },
@@ -106,6 +117,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
             })}
           </nav>
         </div>
+
+        {/* Trial Status Warning Badge */}
+        {currentUser && !currentUser.paid && currentUser.role !== 'admin' && currentUser.role !== 'super_admin' && (
+          <div className="mx-6 px-3 py-2.5 rounded-lg bg-purple-950/20 border border-purple-900/40 text-[11px] space-y-1">
+            {(() => {
+              const trialEndsAt = currentUser.trialEndsAt;
+              if (!trialEndsAt) return <span className="text-neutral-500">No active trial</span>;
+              const ends = new Date(trialEndsAt);
+              const diffMs = ends.getTime() - Date.now();
+              const hoursLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)));
+              if (hoursLeft > 0) {
+                return (
+                  <>
+                    <div className="font-semibold text-purple-300">Free Trial Active</div>
+                    <div className="text-neutral-400">{hoursLeft} hours remaining</div>
+                  </>
+                );
+              } else {
+                return (
+                  <>
+                    <div className="font-semibold text-rose-450">Trial Expired</div>
+                    <div className="text-neutral-550">Please subscribe to link Gmail.</div>
+                  </>
+                );
+              }
+            })()}
+          </div>
+        )}
 
         {/* Gmail Connection Status Footer */}
         <div className="p-4 border-t border-neutral-900 bg-zinc-950/40 space-y-2">

@@ -42,6 +42,7 @@ model User {
   paid         Boolean    @default(false)
   plan         String?
   paidUntil    DateTime?
+  trialEndsAt  DateTime?
   createdAt    DateTime   @default(now())
   lastActiveAt DateTime?
   resumes      Resume[]

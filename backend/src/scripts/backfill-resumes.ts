@@ -33,16 +33,16 @@ async function main() {
 
         const msg = `Successfully backfilled resume ID ${resume.id} (${resume.name}) from disk (size: ${fileBuffer.length} bytes)`;
         console.log(msg);
-        await logger.info('BACKFILL', msg);
+        await logger.info('API', msg);
       } catch (err: any) {
         const errMsg = `Failed to backfill resume ID ${resume.id} (${resume.name}): ${err.message || String(err)}`;
         console.error(errMsg);
-        await logger.error('BACKFILL', errMsg, err);
+        await logger.error('API', errMsg, err);
       }
     } else {
       const warnMsg = `Resume file for ID ${resume.id} (${resume.name}) does not exist at ${resume.filePath}.`;
       console.warn(warnMsg);
-      await logger.warn('BACKFILL', warnMsg);
+      await logger.warn('API', warnMsg);
     }
   }
 

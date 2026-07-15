@@ -40,6 +40,46 @@ export class SendingEngine {
   }
 
   /**
+   * Automatically checks for users whose free trial has expired and who are not paid,
+   * disconnecting their Gmail connection and pausing their active campaigns.
+   */
+  private static async checkExpiredTrials(): Promise<void> {
+    try {
+      const expiredUsers = await prisma.user.findMany({
+        where: {
+          paid: false,
+          role: { not: 'admin' },
+          trialEndsAt: { lt: new Date() }
+        }
+      });
+
+      for (const user of expiredUsers) {
+        const creds = await prisma.gmailCredentials.findUnique({
+          where: { id: user.id }
+        });
+        if (creds) {
+          console.log(`Auto-disconnecting Gmail for user ${user.id} (${user.email}) due to expired trial.`);
+          await GmailService.disconnect(user.id);
+
+          await prisma.campaign.updateMany({
+            where: { userId: user.id, status: 'SENDING' },
+            data: { status: 'PAUSED' }
+          });
+
+          await logger.info(
+            'EMAIL_SENDING',
+            `User ${user.email}'s trial expired. Automatically disconnected Gmail and paused active campaigns.`,
+            null,
+            user.id
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Error checking expired trials in SendingEngine:', err);
+    }
+  }
+
+  /**
    * Main processing tick. Finds one active campaign and sends the next email.
    */
   private static async processQueue(): Promise<void> {
@@ -48,6 +88,9 @@ export class SendingEngine {
     let campaign: any = null;
 
     try {
+      // Run automatic trial expiration check
+      await this.checkExpiredTrials();
+
       // Find the first campaign currently in SENDING state
       campaign = await prisma.campaign.findFirst({
         where: { status: 'SENDING' },

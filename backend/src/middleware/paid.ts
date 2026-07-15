@@ -33,7 +33,9 @@ export async function requirePaid(req: AuthenticatedRequest, res: Response, next
       user.paidUntil > new Date()
     );
 
-    if (!isPaid) {
+    const isTrialActive = user.trialEndsAt && user.trialEndsAt > new Date();
+
+    if (!isPaid && !isTrialActive) {
       return res.status(402).json({ 
         error: 'Payment required. Please subscribe to access these features.',
         code: 'PAYMENT_REQUIRED'

@@ -67,6 +67,8 @@ export const App: React.FC = () => {
     paid: boolean;
     plan: string | null;
     paidUntil: string | null;
+    trialEndsAt: string | null;
+    createdAt: string;
   } | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -268,6 +270,7 @@ export const App: React.FC = () => {
                   userRole={currentUser?.role}
                   isOpen={sidebarOpen}
                   onClose={() => setSidebarOpen(false)}
+                  currentUser={currentUser}
                 />
 
                 {/* Main Content Pane */}
