@@ -242,13 +242,16 @@ export class GmailService {
       '',
     ];
 
+    const bodyHtml = body.replace(/\n/g, '<br />');
+    const bodyBase64 = Buffer.from(bodyHtml).toString('base64');
+    const formattedBody = bodyBase64.match(/.{1,76}/g)?.join('\r\n') || bodyBase64;
+
     const bodyParts = [
       `--${boundary}`,
       'Content-Type: text/html; charset="utf-8"',
-      'Content-Transfer-Encoding: quoted-printable',
+      'Content-Transfer-Encoding: base64',
       '',
-      // Clean HTML conversion of newlines to linebreaks
-      body.replace(/\n/g, '<br />'),
+      formattedBody,
       '',
     ];
 
