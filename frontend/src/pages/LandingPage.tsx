@@ -548,6 +548,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           {isSubmitting ? 'Connecting...' : 'Continue with Google'}
                         </button>
 
+                        {/* Google OAuth Verification Warning Notice */}
+                        <div className="p-3 bg-amber-50/60 border border-amber-200/50 rounded-xl text-left space-y-1">
+                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-800">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                            <span>Google Verification Note</span>
+                          </div>
+                          <p className="text-[10px] text-amber-700 leading-normal">
+                            Outreach AI is currently undergoing Google’s OAuth verification. During sign-in, Google may display a temporary verification warning. To continue testing, click <strong>Advanced → Go to Outreach AI</strong>.
+                          </p>
+                        </div>
+
                         <div className="pt-3 border-t border-neutral-100 text-left space-y-1.5 text-xs text-neutral-450 leading-relaxed">
                           <div className="flex items-center gap-1.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
