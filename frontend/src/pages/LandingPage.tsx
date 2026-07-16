@@ -294,15 +294,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="space-y-6 lg:col-span-7 text-left text-white animate-fade-in-up">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-sm font-mono font-bold tracking-widest uppercase">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Pipeline Automation</span>
+                  <span>Outreach Made Simple</span>
                 </div>
 
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white animate-fade-in-up animation-delay-100">
-                  Automated Cold <br/>Emailing Pipeline
+                  Automate Your Job <br/>Application Emails
                 </h1>
 
                 <p className="text-sm md:text-base text-white/90 max-w-md leading-relaxed animate-fade-in-up animation-delay-200">
-                  Import recruiter databases in bulk, queue personalized pitches, review drafts in a single outbox, and dispatch sequentially with safety delays to protect your sender reputation.
+                  Upload your resume, connect your Gmail, and send personalized emails to recruiter lists automatically. Review and edit drafts in one place before sending them out safely one-by-one.
                 </p>
 
                 <div className="flex flex-wrap gap-3.5 items-center pt-2 animate-fade-in-up animation-delay-300">
@@ -582,10 +582,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="text-center mb-12 space-y-3">
           <span className="text-sm font-mono tracking-widest text-[#2563eb] uppercase font-bold">The Difference</span>
           <h2 className="text-3xl font-black tracking-tight text-neutral-900">
-            Why not just use Gemini + Gmail manually?
+            Why not just copy-paste drafts manually?
           </h2>
           <p className="text-sm text-neutral-500 max-w-xl mx-auto leading-relaxed">
-            Writing pitches one-by-one is slow and prone to copy-paste errors. Outreach AI automates the entire pipeline, keeping you out of the spam folder.
+            Writing pitches one-by-one is slow and prone to errors. Outreach AI makes it easy, quick, and safe.
           </p>
         </div>
 
@@ -594,24 +594,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="bg-white p-6 rounded-2xl border border-neutral-200/60 space-y-4">
             <h3 className="text-base font-bold text-neutral-500 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-neutral-400" />
-              Manual Gemini + Gmail
+              Manual Copy-Pasting (Gemini + Gmail)
             </h3>
             <ul className="space-y-3 text-xs text-neutral-500">
               <li className="flex items-start gap-2">
                 <span className="text-rose-500 font-bold">✕</span>
-                <span><strong>Tedious Copy-Paste Loop</strong>: Manually feed your resume and job description to Gemini, then copy the draft to Gmail for every recruiter.</span>
+                <span><strong>Hours of copy-pasting</strong>: You have to copy the recruiter's name, company, and job info for every single email.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-rose-500 font-bold">✕</span>
-                <span><strong>Fragile Document Control</strong>: Forgetting to attach your resume or attaching the wrong version of your CV to a draft.</span>
+                <span><strong>Forget attachments</strong>: It's easy to forget to attach your resume or attach the wrong version of your CV to a draft.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-rose-500 font-bold">✕</span>
-                <span><strong>No Pipeline Management</strong>: Storing lists of recruiters in spreadsheets, manually tracking who you've already emailed.</span>
+                <span><strong>Hard to track</strong>: You have to manually track who you have already emailed in a messy spreadsheet.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-rose-500 font-bold">✕</span>
-                <span><strong>High Spam Risks</strong>: Blasting dozens of emails at once triggers Gmail's anti-spam security, blacklisting your address.</span>
+                <span><strong>Spam warning</strong>: Sending too many emails manually all at once can get your Gmail account flagged.</span>
               </li>
             </ul>
           </div>
@@ -620,24 +620,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="bg-blue-50/20 p-6 rounded-2xl border border-blue-200/80 space-y-4 shadow-sm shadow-blue-500/5">
             <h3 className="text-base font-bold text-[#2563eb] flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#2563eb]" />
-              Outreach AI Automated Pipeline
+              Outreach AI (Automated & Safe)
             </h3>
             <ul className="space-y-3 text-xs text-neutral-700">
               <li className="flex items-start gap-2">
                 <span className="text-emerald-500 font-bold">✓</span>
-                <span><strong>Bulk Contact Importer</strong>: Import hundreds of recruiter contacts via CSV, or capture them in one click with our LinkedIn Chrome Extension.</span>
+                <span><strong>One-click import</strong>: Upload a list of recruiters or grab them directly from LinkedIn with a simple click.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-emerald-500 font-bold">✓</span>
-                <span><strong>Smart Automated Queueing</strong>: The engine auto-generates pitches for all contacts, linking specific target resumes automatically.</span>
+                <span><strong>Automatic drafting</strong>: Instantly generates unique, custom emails for every recruiter matching your resume.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-emerald-500 font-bold">✓</span>
-                <span><strong>Single Outbox Dashboard</strong>: Review, modify, and approve all customized drafts in a unified control panel before any email leaves.</span>
+                <span><strong>Easy review dashboard</strong>: See and edit all your email drafts in one place before sending.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-emerald-500 font-bold">✓</span>
-                <span><strong>Anti-Spam Delay Engine</strong>: Dispatches emails sequentially through your Gmail account with random anti-spam delays to protect domain safety.</span>
+                <span><strong>Safe sending</strong>: Sends your emails one-by-one with natural pauses, keeping your Gmail account safe and healthy.</span>
               </li>
             </ul>
           </div>
@@ -649,10 +649,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="text-center mb-16 space-y-3">
           <span className="text-sm font-mono tracking-widest text-[#2563eb] uppercase font-bold">Capabilities</span>
           <h2 className="text-3xl font-black tracking-tight text-neutral-900">
-            Complete Job Outreach Pipeline
+            Everything you need to apply at scale
           </h2>
           <p className="text-sm text-neutral-500 max-w-xl mx-auto leading-relaxed">
-            Skip manual templates and fragile copy-pasting. Outreach AI automates database management, drafting, and sequential delivery.
+            No copy-pasting. No spreadsheet clutter. Just a simple workflow to get you hired.
           </p>
         </div>
 
@@ -662,9 +662,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="md:col-span-2 rounded-2xl p-6 bg-[#f8faff] border border-neutral-200/60 hover:border-blue-400/40 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 relative overflow-hidden group flex flex-col justify-between min-h-[240px] hover:shadow-xl hover:shadow-blue-500/5">
             <div className="space-y-4 z-10">
               <Mail className="w-8 h-8 text-blue-500" />
-              <h3 className="text-base font-bold text-neutral-900">Personalized Bulk Drafting</h3>
+              <h3 className="text-base font-bold text-neutral-900">Personalized Email Writing</h3>
               <p className="text-sm text-neutral-500 max-w-md leading-relaxed">
-                Automatically match job specifications and recruiter roles to your specific target resume, drafting bulk pitches customized for each contact.
+                Every email is tailored. The system matches the recruiter's job details to your skills to write a pitch that gets replies.
               </p>
             </div>
             {/* Visual simulation elements */}
@@ -686,9 +686,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="rounded-2xl p-6 bg-[#f8faff] border border-neutral-200/60 hover:border-blue-400/40 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 flex flex-col justify-between min-h-[240px] hover:shadow-xl hover:shadow-blue-500/5">
             <FileText className="w-8 h-8 text-cyan-500" />
             <div className="space-y-2">
-              <h3 className="text-base font-bold text-neutral-900">Resume Parsing</h3>
+              <h3 className="text-base font-bold text-neutral-900">Resume Attachment</h3>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                Upload PDF files. We extract your core skills, expected salaries, target positions, and achievements to prime the AI.
+                Upload your resume once. The tool automatically attaches it to your outreach emails, ensuring you never forget it.
               </p>
             </div>
           </div>
@@ -699,19 +699,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="space-y-2">
               <h3 className="text-base font-bold text-neutral-900">Gmail Integration</h3>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                Secure, official API Google OAuth connection. Review, edit, compile drafts and send directly from Outreach AI.
+                Connects securely with your own Gmail account. All emails are sent directly from your address so they look personal.
               </p>
             </div>
           </div>
 
-          {/* Card 4: CSV Campaign Outreach (2 Cols) */}
+          {/* Card 4: Excel/CSV Upload (2 Cols) */}
           <div className="md:col-span-2 rounded-2xl p-6 bg-[#f8faff] border border-neutral-200/60 hover:border-blue-400/40 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 flex flex-col justify-between relative overflow-hidden group min-h-[240px] hover:shadow-xl hover:shadow-blue-500/5">
             <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between w-full h-full">
               <div className="space-y-4 flex-1">
                 <Layers className="w-8 h-8 text-amber-500" />
-                <h3 className="text-base font-bold text-neutral-900">CSV Campaign Outreach</h3>
+                <h3 className="text-base font-bold text-neutral-900">Excel/CSV Upload</h3>
                 <p className="text-sm text-neutral-500 leading-relaxed">
-                  Managing multiple applications? Upload a CSV of recruiter contacts and let the AI draft personalized outreach for your review.
+                  Have a list of recruiters? Upload your list and the tool will handle the rest, queueing up custom drafts for everyone.
                 </p>
               </div>
               {/* Visual simulation spreadsheet overlay */}
