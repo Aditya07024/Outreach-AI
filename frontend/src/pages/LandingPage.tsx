@@ -294,15 +294,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="space-y-6 lg:col-span-7 text-left text-white animate-fade-in-up">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-sm font-mono font-bold tracking-widest uppercase">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Next-Gen Outreach</span>
+                  <span>Pipeline Automation</span>
                 </div>
 
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white animate-fade-in-up animation-delay-100">
-                  Automate Personalized <br/>Career Outreach with AI
+                  Automated Cold <br/>Emailing Pipeline
                 </h1>
 
                 <p className="text-sm md:text-base text-white/90 max-w-md leading-relaxed animate-fade-in-up animation-delay-200">
-                  Upload your resume, connect your Gmail, and let AI generate personalized outreach emails for recruiters. Review every draft before sending with built-in safety delays.
+                  Import recruiter databases in bulk, queue personalized pitches, review drafts in a single outbox, and dispatch sequentially with safety delays to protect your sender reputation.
                 </p>
 
                 <div className="flex flex-wrap gap-3.5 items-center pt-2 animate-fade-in-up animation-delay-300">
@@ -577,27 +577,94 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
+      {/* Unique Value Proposition Comparison Section */}
+      <section className="py-20 px-6 max-w-[1000px] mx-auto z-10 relative border-b border-neutral-100 bg-neutral-50/30 rounded-3xl my-12 animate-fade-in-up" id="why-different">
+        <div className="text-center mb-12 space-y-3">
+          <span className="text-sm font-mono tracking-widest text-[#2563eb] uppercase font-bold">The Difference</span>
+          <h2 className="text-3xl font-black tracking-tight text-neutral-900">
+            Why not just use Gemini + Gmail manually?
+          </h2>
+          <p className="text-sm text-neutral-500 max-w-xl mx-auto leading-relaxed">
+            Writing pitches one-by-one is slow and prone to copy-paste errors. Outreach AI automates the entire pipeline, keeping you out of the spam folder.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+          {/* Manual Workflow */}
+          <div className="bg-white p-6 rounded-2xl border border-neutral-200/60 space-y-4">
+            <h3 className="text-base font-bold text-neutral-500 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-neutral-400" />
+              Manual Gemini + Gmail
+            </h3>
+            <ul className="space-y-3 text-xs text-neutral-500">
+              <li className="flex items-start gap-2">
+                <span className="text-rose-500 font-bold">✕</span>
+                <span><strong>Tedious Copy-Paste Loop</strong>: Manually feed your resume and job description to Gemini, then copy the draft to Gmail for every recruiter.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-rose-500 font-bold">✕</span>
+                <span><strong>Fragile Document Control</strong>: Forgetting to attach your resume or attaching the wrong version of your CV to a draft.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-rose-500 font-bold">✕</span>
+                <span><strong>No Pipeline Management</strong>: Storing lists of recruiters in spreadsheets, manually tracking who you've already emailed.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-rose-500 font-bold">✕</span>
+                <span><strong>High Spam Risks</strong>: Blasting dozens of emails at once triggers Gmail's anti-spam security, blacklisting your address.</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Outreach AI Automated Pipeline */}
+          <div className="bg-blue-50/20 p-6 rounded-2xl border border-blue-200/80 space-y-4 shadow-sm shadow-blue-500/5">
+            <h3 className="text-base font-bold text-[#2563eb] flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#2563eb]" />
+              Outreach AI Automated Pipeline
+            </h3>
+            <ul className="space-y-3 text-xs text-neutral-700">
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span><strong>Bulk Contact Importer</strong>: Import hundreds of recruiter contacts via CSV, or capture them in one click with our LinkedIn Chrome Extension.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span><strong>Smart Automated Queueing</strong>: The engine auto-generates pitches for all contacts, linking specific target resumes automatically.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span><strong>Single Outbox Dashboard</strong>: Review, modify, and approve all customized drafts in a unified control panel before any email leaves.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span><strong>Anti-Spam Delay Engine</strong>: Dispatches emails sequentially through your Gmail account with random anti-spam delays to protect domain safety.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* Feature Bento Grid Section */}
       <section className="py-24 px-6 max-w-[1000px] mx-auto z-10 relative" id="features">
         <div className="text-center mb-16 space-y-3">
           <span className="text-sm font-mono tracking-widest text-[#2563eb] uppercase font-bold">Capabilities</span>
           <h2 className="text-3xl font-black tracking-tight text-neutral-900">
-            Find out why we're best-in-class
+            Complete Job Outreach Pipeline
           </h2>
           <p className="text-sm text-neutral-500 max-w-xl mx-auto leading-relaxed">
-            Skip the generic templates. Use AI that understands your career narrative and the roles you're chasing.
+            Skip manual templates and fragile copy-pasting. Outreach AI automates database management, drafting, and sequential delivery.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-neutral-800">
           
-          {/* Card 1: AI Email Drafting (2 Cols) */}
+          {/* Card 1: Bulk Campaign Pitch Drafting (2 Cols) */}
           <div className="md:col-span-2 rounded-2xl p-6 bg-[#f8faff] border border-neutral-200/60 hover:border-blue-400/40 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 relative overflow-hidden group flex flex-col justify-between min-h-[240px] hover:shadow-xl hover:shadow-blue-500/5">
             <div className="space-y-4 z-10">
               <Mail className="w-8 h-8 text-blue-500" />
-              <h3 className="text-base font-bold text-neutral-900">Smart AI Email Drafting</h3>
+              <h3 className="text-base font-bold text-neutral-900">Personalized Bulk Drafting</h3>
               <p className="text-sm text-neutral-500 max-w-md leading-relaxed">
-                Every email is unique. Our engine analyzes the job description and your profile to craft a narrative that resonates with recruiters.
+                Automatically match job specifications and recruiter roles to your specific target resume, drafting bulk pitches customized for each contact.
               </p>
             </div>
             {/* Visual simulation elements */}
@@ -681,10 +748,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="hidden lg:block absolute top-6 left-12 right-12 h-[1px] bg-neutral-200" />
             
             {[
-              { step: '1', title: 'Upload Resume', desc: 'Simply drop your CV. Our AI extracts core skills and learns your voice.' },
+              { step: '1', title: 'Upload Resume', desc: 'Simply drop your CV. Our engine extracts core skills and parses job roles.' },
               { step: '2', title: 'Link Gmail', desc: 'Connect via Google OAuth secure token. No credentials saved.' },
-              { step: '3', title: 'Generate Drafts', desc: 'Paste recruiter contacts. Watch as Grok drafts custom pitches.' },
-              { step: '4', title: 'Review & Send', desc: 'Review everything. Once approved, the queue dispatches emails.' }
+              { step: '3', title: 'Queue Campaigns', desc: 'Import recruiter databases or capture contacts from LinkedIn in one click.' },
+              { step: '4', title: 'Sequential Send', desc: 'Approve drafts in your Outbox; our engine dispatches them with safe delays.' }
             ].map((item, idx) => (
               <div key={idx} className="space-y-4 group relative hover:translate-y-[-2px] transition-transform duration-300">
                 <div className="w-12 h-12 rounded-full bg-white border border-neutral-200 flex items-center justify-center group-hover:border-blue-500 transition-colors shadow-sm">
