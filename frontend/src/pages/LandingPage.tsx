@@ -55,6 +55,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     };
   }, []);
 
+  // Update dynamic SEO title and description
+  useEffect(() => {
+    document.title = "Outreach AI | Automate Your Job Application Emails";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', 'Automate your job application emails. Outreach AI makes it easy to upload your resume, connect your Gmail, and send personalized emails to recruiters in bulk safely.');
+    }
+  }, []);
+
   const handleGoogleSignIn = async () => {
     setErrorMsg(null);
     setIsSubmitting(true);
