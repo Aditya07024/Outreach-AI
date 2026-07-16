@@ -219,6 +219,7 @@ export const App: React.FC = () => {
   }
 
   const isPaid = currentUser?.paid || currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  const isTrialActive = !!(currentUser?.trialEndsAt && new Date(currentUser.trialEndsAt) > new Date());
 
   return (
     <BrowserRouter>
@@ -266,7 +267,7 @@ export const App: React.FC = () => {
                 <Sidebar 
                   gmailStatus={gmailStatus} 
                   onLogout={handleLogout} 
-                  isPaid={isPaid} 
+                  isPaid={isPaid || isTrialActive} 
                   userRole={currentUser?.role}
                   isOpen={sidebarOpen}
                   onClose={() => setSidebarOpen(false)}
@@ -291,7 +292,7 @@ export const App: React.FC = () => {
                         element={
                           <PageWrapper title="Dashboard" setTitle={setCurrentTitle}>
                             <Dashboard 
-                              isPaid={isPaid}
+                              isPaid={isPaid || isTrialActive}
                               user={currentUser}
                               onPaymentSuccess={(newToken) => {
                                 localStorage.setItem('token', newToken);
@@ -356,7 +357,7 @@ export const App: React.FC = () => {
                             <Settings 
                               gmailStatus={gmailStatus} 
                               onRefreshGmailStatus={fetchGmailStatus} 
-                              isPaid={isPaid}
+                              isPaid={isPaid || isTrialActive}
                             />
                           </PageWrapper>
                         } 
