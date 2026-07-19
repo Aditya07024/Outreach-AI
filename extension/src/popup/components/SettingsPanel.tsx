@@ -40,8 +40,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onLogout }) => {
       <button
         onClick={handleOpenDashboard}
         className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 text-xs text-zinc-300 hover:text-zinc-100 transition-all cursor-pointer"
+        aria-label="Open Outreach AI Dashboard"
       >
-        <span className="font-medium">Open Outreach Dashboard</span>
+        <span className="font-medium">Open Outreach AI Dashboard</span>
         <ExternalLink className="w-3.5 h-3.5" />
       </button>
 

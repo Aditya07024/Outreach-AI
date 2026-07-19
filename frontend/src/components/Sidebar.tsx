@@ -78,11 +78,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-6 flex flex-col gap-6">
           {/* App Title */}
           <div className="flex items-center gap-2 px-2">
-            <img src={logo} alt="Outreach AI Logo" className="h-8 object-contain rounded-md" />
+            <img src={logo} alt="Outreach AI" className="h-8 object-contain rounded-md" />
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex flex-col gap-1">
+          <nav className="flex flex-col gap-1" aria-label="Sidebar Navigation">
             {activeLinks.map((link) => {
               const isLinkDisabled = false;
 

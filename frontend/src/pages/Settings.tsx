@@ -17,7 +17,7 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
   // Test Email Sender state variables
   const [testTo, setTestTo] = useState('');
   const [testSubject, setTestSubject] = useState('Outreach AI - Standalone Connection Test');
-  const [testBody, setTestBody] = useState('Hi,\n\nThis is a standalone test email sent from Outreach-AI to verify my Gmail API integration.\n\nBest regards,\nCandidate');
+  const [testBody, setTestBody] = useState('Hi,\n\nThis is a standalone test email sent from Outreach AI to verify my Gmail API integration.\n\nBest regards,\nCandidate');
   const [testResumeId, setTestResumeId] = useState<number | null>(null);
   const [isSendingTest, setIsSendingTest] = useState(false);
 

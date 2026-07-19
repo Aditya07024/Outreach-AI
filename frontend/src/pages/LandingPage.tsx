@@ -57,10 +57,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   // Update dynamic SEO title and description
   useEffect(() => {
-    document.title = "Outreach AI | Automate Your Job Application Emails";
+    document.title = "Outreach AI – AI Job Application Email Automation";
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
-      metaDesc.setAttribute('content', 'Automate your job application emails. Outreach AI makes it easy to upload your resume, connect your Gmail, and send personalized emails to recruiters in bulk safely.');
+      metaDesc.setAttribute('content', 'Outreach AI helps job seekers automate personalized Gmail job application emails using secure Google OAuth, AI-generated drafts, recruiter management, and campaign tracking.');
     }
   }, []);
 
@@ -265,22 +265,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {/* Floating White Navbar Capsule */}
             <header className="w-full max-w-[1000px] mx-auto bg-white/95 backdrop-blur-md rounded-full px-6 py-2 flex items-center justify-between shadow-lg shadow-black/5 border border-white/20 relative z-50">
               <div className="flex items-center gap-2">
-                <img alt="Outreach AI Logo" className="h-6 w-6 object-contain" src={logo} />
+                <img alt="Outreach AI" className="h-6 w-6 object-contain" src={logo} />
                 <span className="text-base font-black text-neutral-900 tracking-tight">Outreach AI</span>
               </div>
               
-              <div className="hidden md:flex gap-8 text-sm font-bold text-neutral-500">
+              <nav className="hidden md:flex gap-8 text-sm font-bold text-neutral-500" aria-label="Main Navigation Menu">
                 <a className="hover:text-black transition-colors" href="#features">Features</a>
                 <a className="hover:text-black transition-colors" href="#how-it-works">How it works</a>
                 <a className="hover:text-black transition-colors" href="#pricing">Pricing</a>
                 <a className="hover:text-black transition-colors" href="#faq">FAQ</a>
                 <a className="hover:text-black transition-colors" href="/support">Support</a>
-              </div>
+              </nav>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigate('/admin-portal')}
                   className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold rounded-full text-sm transition-colors cursor-pointer"
+                  aria-label="Admin Portal"
                 >
                   Admin
                 </button>
@@ -289,6 +290,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   onClick={handleGoogleSignIn}
                   disabled={isSubmitting}
                   className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold px-5 py-2 rounded-full text-sm flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-blue-500/10 hover:scale-95"
+                  aria-label="Sign in with Google"
                 >
                   Login
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -303,7 +305,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="space-y-6 lg:col-span-7 text-left text-white animate-fade-in-up">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-sm font-mono font-bold tracking-widest uppercase">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Outreach Made Simple</span>
+                  <span>Outreach AI Made Simple</span>
                 </div>
 
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white animate-fade-in-up animation-delay-100">
@@ -319,12 +321,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     onClick={handleGoogleSignIn}
                     disabled={isSubmitting}
                     className="bg-black hover:bg-neutral-900 text-white font-bold px-8 py-3.5 rounded-full hover:scale-95 transition-all text-sm cursor-pointer shadow-xl shadow-black/20"
+                    aria-label="Sign in with Google"
                   >
                     Get Started
                   </button>
                   <a
                     href="#how-it-works"
                     className="text-white hover:text-white/80 font-bold text-sm flex items-center gap-1.5 transition-all"
+                    aria-label="Request a Demo"
                   >
                     Request a Demo <ArrowUpRight className="w-3.5 h-3.5" />
                   </a>
@@ -351,7 +355,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <div className="col-span-3 border-r border-neutral-100 pr-2.5 space-y-4">
                       <div className="flex items-center gap-1">
                         <img alt="logo" className="w-3.5 h-3.5 object-contain" src={logo} />
-                        <span className="text-xs font-bold text-neutral-900 tracking-tight">Outreach</span>
+                        <span className="text-xs font-bold text-neutral-900 tracking-tight">Outreach AI</span>
                       </div>
                       
                       <div className="space-y-1.5">
@@ -432,7 +436,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       // Payment Gating Card
                       <div className="space-y-4 text-center">
                         <div className="space-y-1">
-                          <h3 className="text-xs font-bold text-neutral-905">Unlock Outreach Platform</h3>
+                          <h3 className="text-xs font-bold text-neutral-905">Unlock Outreach AI</h3>
                           <p className="text-sm text-neutral-500 font-medium">Choose a subscription option to launch your career outreach campaign.</p>
                         </div>
 
@@ -446,6 +450,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                               onClick={() => handleStartPurchase('yearly')}
                               disabled={isSubmitting}
                               className="px-3 py-1 bg-neutral-900 hover:bg-black text-white text-xs font-bold rounded cursor-pointer"
+                              aria-label="Select Yearly Plan for 100 Rupees per year"
                             >
                               Select
                             </button>
@@ -463,6 +468,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                               onClick={() => handleStartPurchase('lifetime')}
                               disabled={isSubmitting}
                               className="px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 text-xs font-bold rounded cursor-pointer shadow-md shadow-blue-500/10"
+                              aria-label="Unlock Lifetime Plan for 300 Rupees once"
                             >
                               Unlock
                             </button>
@@ -472,6 +478,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <button
                           onClick={onClearPaymentRequired}
                           className="w-full py-1.5 border border-neutral-200 text-neutral-500 hover:text-neutral-700 text-sm font-bold rounded-lg cursor-pointer"
+                          aria-label="Cancel and Sign Out"
                         >
                           Cancel / Sign Out
                         </button>
@@ -526,6 +533,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           onClick={handleGoogleSignIn}
                           disabled={isSubmitting}
                           className="w-full py-2.5 bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-200 hover:border-neutral-300 text-sm font-bold rounded-xl transition-all duration-300 shadow-sm flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+                          aria-label="Sign in with Google"
                         >
                           <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24">
                             <path
@@ -547,17 +555,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           </svg>
                           {isSubmitting ? 'Connecting...' : 'Continue with Google'}
                         </button>
-
-                        {/* Google OAuth Verification Warning Notice */}
-                        <div className="p-3 bg-amber-50/60 border border-amber-200/50 rounded-xl text-left space-y-1">
-                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-800">
-                            <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                            <span>Google Verification Note</span>
-                          </div>
-                          <p className="text-[10px] text-amber-700 leading-normal">
-                            Outreach AI is currently undergoing Google’s OAuth verification. During sign-in, Google may display a temporary verification warning. To continue testing, click <strong>Advanced → Go to Outreach AI</strong>.
-                          </p>
-                        </div>
 
                         <div className="pt-3 border-t border-neutral-100 text-left space-y-1.5 text-xs text-neutral-450 leading-relaxed">
                           <div className="flex items-center gap-1.5">
@@ -862,7 +859,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 The Ultimate Career Outreach Combo
               </h4>
               <p className="text-xs text-neutral-600 leading-relaxed">
-                By combining the **Chrome Extension** (the Extractor) with the **Outreach Web App** (the Brain), you get an integrated recruiter contact and career outreach pipeline:
+                By combining the **Chrome Extension** (the Extractor) with **Outreach AI** (the Brain), you get an integrated recruiter contact and career outreach pipeline:
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div className="space-y-1">
@@ -871,7 +868,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-neutral-900 block uppercase tracking-wider">2. The Dashboard Delivers</span>
-                  <span className="text-xs text-neutral-500 block leading-relaxed">Automatically drafts personalized cover letters matching your resume using Grok AI, and sends them via Gmail.</span>
+                  <span className="text-xs text-neutral-500 block leading-relaxed">Automatically drafts personalized application emails matching your resume using AI, and sends them via Gmail.</span>
                 </div>
               </div>
             </div>
@@ -983,6 +980,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button 
               onClick={() => handleStartPurchase('yearly')}
               className="mt-6 w-full py-3 rounded-xl border border-neutral-200 hover:bg-neutral-50 text-sm font-bold text-neutral-700 transition-colors cursor-pointer"
+              aria-label="Purchase Yearly Access Plan for 100 Rupees per year"
             >
               Start Yearly Access
             </button>
@@ -1008,6 +1006,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button 
               onClick={() => handleStartPurchase('lifetime')}
               className="mt-6 w-full py-3 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all cursor-pointer shadow-md shadow-blue-500/10"
+              aria-label="Purchase Lifetime License Plan for 300 Rupees once"
             >
               Go Lifetime License
             </button>
@@ -1126,10 +1125,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="max-w-[1000px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <img alt="Outreach AI Logo" className="h-6 w-6 object-contain" src={logo} />
+              <img alt="Outreach AI" className="h-6 w-6 object-contain" src={logo} />
               <span className="text-base font-bold text-neutral-900 tracking-tight">Outreach AI</span>
             </div>
-            <p className="text-xs text-neutral-505 leading-relaxed">
+            <p className="text-xs text-neutral-555 leading-relaxed">
               Precision-engineered for growth. Amplifying human potential with intelligent communication.
             </p>
             <p className="text-sm text-neutral-400">© 2026 Outreach AI. All rights reserved.</p>
@@ -1137,17 +1136,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           
           <div className="space-y-3">
             <h5 className="text-xs font-bold text-neutral-900">Product</h5>
-            <nav className="flex flex-col gap-1.5 text-xs text-neutral-500">
+            <nav className="flex flex-col gap-1.5 text-xs text-neutral-500" aria-label="Product Links">
               <a className="hover:text-black transition-colors" href="#features">Features</a>
               <a className="hover:text-black transition-colors" href="#pricing">Pricing</a>
               <a className="hover:text-black transition-colors" href="#how-it-works">How it works</a>
-              <a className="hover:text-black transition-colors" href="/support">Support Help</a>
+              <a className="hover:text-black transition-colors" href="/support" aria-label="Support Help Center">Support</a>
             </nav>
           </div>
 
           <div className="space-y-3">
             <h5 className="text-xs font-bold text-neutral-900">Legal</h5>
-            <nav className="flex flex-col gap-1.5 text-xs text-neutral-500">
+            <nav className="flex flex-col gap-1.5 text-xs text-neutral-500" aria-label="Legal Links">
               <a className="hover:text-black transition-colors" href="/privacy">Privacy Policy</a>
               <a className="hover:text-black transition-colors" href="/terms">Terms of Service</a>
             </nav>
@@ -1155,7 +1154,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <div className="space-y-3">
             <h5 className="text-xs font-bold text-neutral-900">Connect</h5>
-            <nav className="flex flex-col gap-1.5 text-xs text-neutral-500">
+            <nav className="flex flex-col gap-1.5 text-xs text-neutral-500" aria-label="Developer Links">
               <a className="hover:text-black transition-colors flex items-center gap-1" href="https://aditya07.me" target="_blank" rel="noopener noreferrer">
                 Developer aditya07.me
                 <ArrowUpRight className="w-3 h-3" />

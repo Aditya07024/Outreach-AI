@@ -219,6 +219,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
             onClick={() => handleStartPurchase('yearly')}
             disabled={isSubmitting}
             className="w-full py-2.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 text-neutral-200 font-bold rounded-lg text-xs transition-colors shadow-md mt-auto"
+            aria-label="Select Yearly Plan for 100 Rupees per year"
           >
             {isSubmitting && selectedPlan === 'yearly' ? 'Initializing Pay...' : 'Select Yearly Plan'}
           </button>
@@ -267,6 +268,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
             onClick={() => handleStartPurchase('lifetime')}
             disabled={isSubmitting}
             className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-lg text-xs transition-colors shadow-lg shadow-white/5 mt-auto"
+            aria-label="Buy Lifetime Access for 300 Rupees once"
           >
             {isSubmitting && selectedPlan === 'lifetime' ? 'Initializing Pay...' : 'Buy Lifetime Access'}
           </button>

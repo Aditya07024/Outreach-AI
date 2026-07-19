@@ -19,4 +19,4 @@ Disallow: /logs
 Disallow: /settings
 Disallow: /subscription
 
-Sitemap: https://outreachai.aditya07.me/sitemap.xml
+Sitemap: https://outreach.aditya07.me/sitemap.xml

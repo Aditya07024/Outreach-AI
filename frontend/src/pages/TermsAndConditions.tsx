@@ -31,7 +31,7 @@ export const TermsAndConditions: React.FC = () => {
           <section className="space-y-2">
             <h2 className="text-sm font-bold text-neutral-200">1. License and Access</h2>
             <p>
-              By purchasing our ₹499 lifetime access license, you are granted a non-transferable, single-user license to access and use the AI Outreach platform. You agree not to resell, distribute, lease, or commercially exploit any part of our outreach dashboard services.
+              By purchasing our ₹499 lifetime access license, you are granted a non-transferable, single-user license to access and use Outreach AI. You agree not to resell, distribute, lease, or commercially exploit any part of our outreach dashboard services.
             </p>
           </section>
 

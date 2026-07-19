@@ -37,7 +37,7 @@
     "tabs"
   ],
   "host_permissions": [
-    "https://api.outreachai.aditya07.me/*"
+    "https://api.outreach.aditya07.me/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

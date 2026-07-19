@@ -6,7 +6,7 @@
  */
 
 /** Locked production API server URL */
-const DEFAULT_API_URL = 'https://api.outreachai.aditya07.me';
+const DEFAULT_API_URL = 'https://api.outreach.aditya07.me';
 
 /** Storage keys */
 const STORAGE_KEYS = {

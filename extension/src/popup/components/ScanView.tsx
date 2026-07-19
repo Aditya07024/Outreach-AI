@@ -647,9 +647,10 @@ export const ScanView: React.FC = () => {
                 chrome.tabs.create({ url: 'https://outreach.aditya07.me/' });
               }}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 transition-all cursor-pointer"
+              aria-label="Open Outreach AI Dashboard"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              Open Outreach Dashboard
+              Open Outreach AI Dashboard
             </button>
           </div>
         </div>
