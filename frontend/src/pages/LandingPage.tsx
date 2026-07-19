@@ -521,12 +521,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <div className="space-y-1">
                           <div className="flex items-center justify-center gap-1.5 py-0.5 px-2.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-mono w-fit mx-auto">
                             <Lock className="w-2.5 h-2.5 text-blue-500" />
-                            <span>OAuth 2.0 Secure</span>
+                            <span>Secure Google Sign-In</span>
                           </div>
                           <h3 className="text-xs font-bold text-neutral-900 tracking-tight">Access Dashboard</h3>
                           <p className="text-sm text-neutral-500 leading-normal">
                             Sign in with Google to set up campaigns, upload resumes, and manage professional career outreach.
                           </p>
+                        </div>
+
+                        {/* Google OAuth Permissions and Transparency Explanation */}
+                        <div className="text-left space-y-3.5 p-3 bg-neutral-50/50 border border-neutral-200/50 rounded-xl text-neutral-800">
+                          <div className="space-y-1">
+                            <h4 className="text-[10px] font-bold text-neutral-800 uppercase tracking-wider">Why connect your Google account?</h4>
+                            <p className="text-[10px] text-neutral-500 leading-relaxed">
+                              Outreach AI uses Gmail authorization only to create, review, and send job application emails on your behalf after your approval. We never ask for your Gmail password and you can disconnect your account at any time.
+                            </p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <h4 className="text-[10px] font-bold text-neutral-800 uppercase tracking-wider">You stay in control</h4>
+                            <ul className="text-[10px] text-neutral-550 space-y-0.5 list-disc pl-3 leading-normal">
+                              <li>Review every email before sending</li>
+                              <li>Disconnect Google anytime</li>
+                              <li>Delete your account and data anytime</li>
+                              <li>Emails are sent only from your Gmail account</li>
+                            </ul>
+                          </div>
+
+                          <div className="space-y-1">
+                            <h4 className="text-[10px] font-bold text-neutral-800 uppercase tracking-wider">Data Usage</h4>
+                            <p className="text-[10px] text-neutral-500 leading-relaxed">
+                              We only request the permissions necessary to send emails you create inside Outreach AI. We do not read unrelated Gmail messages or sell your data.
+                            </p>
+                          </div>
                         </div>
 
                         <button
@@ -582,14 +609,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section className="py-12 border-b border-neutral-100 bg-[#f8faff] z-10 relative">
         <div className="max-w-[1000px] mx-auto px-6">
           <p className="text-sm font-mono tracking-[0.2em] text-neutral-400 text-center uppercase mb-8">
-            Our users have secured interviews at
+            Designed for students and professionals applying to companies like
           </p>
           <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500 text-xs font-black tracking-tighter text-neutral-500">
-            <span>GLOBO</span>
-            <span>NEXUS</span>
-            <span>VELOCITY</span>
-            <span>ZENITH</span>
-            <span>AETHER</span>
+            <span>TECH STARTUPS</span>
+            <span>FORTUNE 500</span>
+            <span>DESIGN AGENCIES</span>
+            <span>CONSULTING FIRMS</span>
+            <span>SOFTWARE COMPANIES</span>
           </div>
         </div>
       </section>
@@ -1063,6 +1090,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
+      {/* About Section */}
+      <section className="py-16 px-6 max-w-[800px] mx-auto z-10 relative text-center border-t border-neutral-100" id="about">
+        <h2 className="text-2xl font-black tracking-tight text-neutral-900 mb-4">About Outreach AI</h2>
+        <p className="text-sm text-neutral-505 leading-relaxed max-w-xl mx-auto">
+          Outreach AI helps job seekers automate personalized application emails using secure Google OAuth, AI-assisted drafting, and Gmail integration while keeping users in complete control of every email sent.
+        </p>
+      </section>
+
+      {/* Contact Section */}
+      <section className="pb-16 px-6 max-w-[800px] mx-auto z-10 relative text-center space-y-4 border-t border-neutral-100 pt-16" id="contact">
+        <h2 className="text-2xl font-black tracking-tight text-neutral-900">Questions or Support?</h2>
+        <p className="text-sm text-neutral-505 leading-relaxed max-w-md mx-auto">
+          Need help setting up your integrations, or have questions about how Outreach AI works? Get in touch:
+        </p>
+        <div className="flex flex-wrap justify-center gap-6 pt-2">
+          <div className="bg-[#f8faff] border border-neutral-200/60 p-4.5 rounded-2xl min-w-[220px] space-y-1">
+            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Support</span>
+            <a href="mailto:support@outreach.aditya07.me" className="text-sm font-bold text-blue-600 hover:underline">support@outreach.aditya07.me</a>
+          </div>
+          <div className="bg-[#f8faff] border border-neutral-200/60 p-4.5 rounded-2xl min-w-[220px] space-y-1">
+            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Questions?</span>
+            <a href="mailto:adityakumar07024@gmail.com" className="text-sm font-bold text-blue-600 hover:underline">adityakumar07024@gmail.com</a>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Bottom Banner */}
       <section className="py-24 px-6 max-w-[1000px] mx-auto text-center z-10 relative">
         <div className="rounded-3xl p-12 bg-[#70a6ff] bg-[linear-gradient(to_right,rgba(255,255,255,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.15)_1px,transparent_1px)] [background-size:40px_40px] shadow-md relative overflow-hidden space-y-6">
@@ -1145,10 +1198,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           <div className="space-y-3">
-            <h5 className="text-xs font-bold text-neutral-900">Legal</h5>
-            <nav className="flex flex-col gap-1.5 text-xs text-neutral-500" aria-label="Legal Links">
+            <h5 className="text-xs font-bold text-neutral-900">Legal & Support</h5>
+            <nav className="flex flex-col gap-1.5 text-xs text-neutral-500" aria-label="Legal and Support Links">
               <a className="hover:text-black transition-colors" href="/privacy">Privacy Policy</a>
               <a className="hover:text-black transition-colors" href="/terms">Terms of Service</a>
+              <a className="hover:text-black transition-colors" href="/support#contact">Contact</a>
+              <a className="hover:text-black transition-colors" href="/support">Support</a>
+              <a className="hover:text-black transition-colors" href="/privacy#controls">Delete Account</a>
+              <a className="hover:text-black transition-colors" href="/privacy#controls">Data Deletion</a>
             </nav>
           </div>
 

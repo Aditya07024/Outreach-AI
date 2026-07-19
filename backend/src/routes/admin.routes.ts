@@ -59,7 +59,7 @@ router.get('/users', requireSuperAdmin, async (req: AuthenticatedRequest, res) =
     
     const yearlyCount = users.filter(u => u.paid && u.plan === 'yearly').length;
     const lifetimeCount = users.filter(u => u.paid && u.plan === 'lifetime').length;
-    const totalIncome = (yearlyCount * 100) + (lifetimeCount * 300);
+    const totalIncome = (yearlyCount * 1499) + (lifetimeCount * 3999);
 
     res.json({
       users: enrichedUsers,

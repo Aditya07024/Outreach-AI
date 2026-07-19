@@ -35,17 +35,17 @@ export const PrivacyPolicy: React.FC = () => {
             </p>
           </section>
 
-          <section className="space-y-2">
+          <section className="space-y-2" id="google-data">
             <h2 className="text-sm font-bold text-neutral-200">2. Google User Data</h2>
             <p>
-              Outreach AI accesses Google user data only after the user explicitly grants permission through Google OAuth. We request only the Gmail Send permission (https://www.googleapis.com/auth/gmail.send) to send emails that the user explicitly creates, reviews, or authorizes. We do not read, access, modify, or delete the user's Gmail inbox or messages.
+              Outreach AI accesses Google user data only after the user explicitly grants permission through secure Google Sign-In. We request only the Gmail Send permission (https://www.googleapis.com/auth/gmail.send) to send emails that you explicitly create, review, or authorize. We do not read, access, modify, or delete your Gmail inbox, messages, metadata, or settings. We request the absolute minimum scopes necessary to operate the service.
             </p>
           </section>
 
-          <section className="space-y-2">
+          <section className="space-y-2" id="use-information">
             <h2 className="text-sm font-bold text-neutral-200">3. How We Use Information</h2>
             <p>
-              We use your connected Gmail account solely to send emails that you explicitly create, review, and authorize through Outreach AI. We do not read your inbox, analyze existing emails, or access Gmail content beyond what is necessary to send emails using the Gmail Send API.
+              We use your connected Gmail account solely to send emails that you explicitly create, review, and authorize through Outreach AI. We do not read your inbox, analyze existing emails, or access Gmail content. Under no circumstances do we share, transfer, or sell your Google user data, email contents, or Gmail tokens to third parties or advertising services.
             </p>
           </section>
 
@@ -76,10 +76,10 @@ export const PrivacyPolicy: React.FC = () => {
             </p>
           </section>
 
-          <section className="space-y-2">
-            <h2 className="text-sm font-bold text-neutral-200">7. Your Controls and Data Retention</h2>
+          <section className="space-y-2" id="controls">
+            <h2 className="text-sm font-bold text-neutral-200">7. Your Controls and Data Retention (Delete Account & Data Deletion)</h2>
             <p>
-              You can disconnect your Google account, delete all uploaded resumes, remove campaigns, or clear your history at any time. When a user disconnects their Google account or deletes their account, OAuth credentials are permanently removed from our production systems. Campaign and application data are deleted according to our retention policy unless required by law.
+              You can disconnect your Google account, delete all uploaded resumes, remove campaigns, or clear your history at any time directly through the Settings panel. When a user disconnects their Google account or deletes their account, OAuth credentials and Gmail tokens are permanently removed from our production systems. Complete account deletion and data deletion can be requested at any time by contacting our support team at <a href="mailto:adityakumar07024@gmail.com" className="text-purple-400 hover:underline">adityakumar07024@gmail.com</a>. Upon request, all stored user profile data, logs, resume uploads, and credentials will be purged permanently.
             </p>
           </section>
 
