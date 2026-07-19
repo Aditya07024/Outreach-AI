@@ -529,33 +529,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           </p>
                         </div>
 
-                        {/* Google OAuth Permissions and Transparency Explanation */}
-                        <div className="text-left space-y-3.5 p-3 bg-neutral-50/50 border border-neutral-200/50 rounded-xl text-neutral-800">
-                          <div className="space-y-1">
-                            <h4 className="text-[10px] font-bold text-neutral-800 uppercase tracking-wider">Why connect your Google account?</h4>
-                            <p className="text-[10px] text-neutral-500 leading-relaxed">
-                              Outreach AI uses Gmail authorization only to create, review, and send job application emails on your behalf after your approval. We never ask for your Gmail password and you can disconnect your account at any time.
-                            </p>
-                          </div>
-
-                          <div className="space-y-1">
-                            <h4 className="text-[10px] font-bold text-neutral-800 uppercase tracking-wider">You stay in control</h4>
-                            <ul className="text-[10px] text-neutral-550 space-y-0.5 list-disc pl-3 leading-normal">
-                              <li>Review every email before sending</li>
-                              <li>Disconnect Google anytime</li>
-                              <li>Delete your account and data anytime</li>
-                              <li>Emails are sent only from your Gmail account</li>
-                            </ul>
-                          </div>
-
-                          <div className="space-y-1">
-                            <h4 className="text-[10px] font-bold text-neutral-800 uppercase tracking-wider">Data Usage</h4>
-                            <p className="text-[10px] text-neutral-500 leading-relaxed">
-                              We only request the permissions necessary to send emails you create inside Outreach AI. We do not read unrelated Gmail messages or sell your data.
-                            </p>
-                          </div>
-                        </div>
-
                         <button
                           onClick={handleGoogleSignIn}
                           disabled={isSubmitting}
@@ -1091,11 +1064,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* About Section */}
-      <section className="py-16 px-6 max-w-[800px] mx-auto z-10 relative text-center border-t border-neutral-100" id="about">
-        <h2 className="text-2xl font-black tracking-tight text-neutral-900 mb-4">About Outreach AI</h2>
-        <p className="text-sm text-neutral-505 leading-relaxed max-w-xl mx-auto">
-          Outreach AI helps job seekers automate personalized application emails using secure Google OAuth, AI-assisted drafting, and Gmail integration while keeping users in complete control of every email sent.
-        </p>
+      <section className="py-16 px-6 max-w-[1000px] mx-auto z-10 relative border-t border-neutral-100" id="about">
+        <div className="text-center space-y-4 max-w-2xl mx-auto mb-12">
+          <h2 className="text-2xl font-black tracking-tight text-neutral-900">About Outreach AI</h2>
+          <p className="text-sm text-neutral-505 leading-relaxed">
+            Outreach AI helps job seekers automate personalized application emails using secure Google OAuth, AI-assisted drafting, and Gmail integration while keeping users in complete control of every email sent.
+          </p>
+        </div>
+
+        {/* Security & Google Integration Disclosures */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+          <div className="p-5 bg-blue-50/40 border border-blue-100/50 rounded-2xl space-y-2.5">
+            <h3 className="text-xs font-bold text-neutral-850 uppercase tracking-wider">Why connect your Google account?</h3>
+            <p className="text-xs text-neutral-500 leading-relaxed">
+              Outreach AI uses Gmail authorization only to create, review, and send job application emails on your behalf after your approval. We never ask for your Gmail password and you can disconnect your account at any time.
+            </p>
+          </div>
+
+          <div className="p-5 bg-emerald-50/40 border border-emerald-100/50 rounded-2xl space-y-2.5">
+            <h3 className="text-xs font-bold text-neutral-850 uppercase tracking-wider">You stay in control</h3>
+            <ul className="text-xs text-neutral-550 space-y-1 list-disc pl-4 leading-relaxed">
+              <li>Review every email before sending</li>
+              <li>Disconnect Google anytime</li>
+              <li>Delete your account and data anytime</li>
+              <li>Emails are sent only from your Gmail account</li>
+            </ul>
+          </div>
+
+          <div className="p-5 bg-neutral-50 border border-neutral-200/60 rounded-2xl space-y-2.5">
+            <h3 className="text-xs font-bold text-neutral-850 uppercase tracking-wider">Data Usage</h3>
+            <p className="text-xs text-neutral-500 leading-relaxed">
+              We only request the permissions necessary to send emails you create inside Outreach AI. We do not read unrelated Gmail messages or sell your data.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* Contact Section */}
