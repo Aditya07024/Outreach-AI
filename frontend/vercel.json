@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://api.outreach.aditya07.me/api/:path*"
+      "destination": "https://outreach-ai-backend.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
