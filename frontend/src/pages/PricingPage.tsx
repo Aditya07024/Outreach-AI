@@ -53,6 +53,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
       }
 
       if (!res.ok) throw new Error(order.error || 'Failed to create payment order');
+      if (!order.id) throw new Error('Payment order is missing an order ID. Please try again.');
 
       if (order.mock) {
         // Trigger simulated success dialog for sandbox/local testing
@@ -60,6 +61,11 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onPaymentSuccess
         setShowMockPaymentModal(true);
         setIsSubmitting(false);
         return;
+      }
+
+      // Validate Razorpay is loaded
+      if (!(window as any).Razorpay) {
+        throw new Error('Payment gateway failed to load. Please refresh and try again.');
       }
 
       // Initialize real Razorpay Checkout modal

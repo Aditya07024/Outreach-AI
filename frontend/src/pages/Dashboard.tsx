@@ -40,11 +40,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ isPaid, user, onPaymentSuc
         fetch('/api/logs?limit=8')
       ]);
 
-      const [campData, histData, logsData] = await Promise.all([
-        campRes.json(),
-        histRes.json(),
-        logsRes.json()
-      ]);
+      // Parse each response independently so one failure doesn't crash the dashboard
+      const campData = campRes.ok ? await campRes.json().catch(() => []) : [];
+      const histData = histRes.ok ? await histRes.json().catch(() => []) : [];
+      const logsData = logsRes.ok ? await logsRes.json().catch(() => []) : [];
 
       setCampaigns(campData);
       setHistory(histData);

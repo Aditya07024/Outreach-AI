@@ -70,8 +70,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     try {
       const origin = window.location.origin;
       const res = await fetch(`/api/auth/google/url?action=login&origin=${encodeURIComponent(origin)}`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error((errData as any).error || `Authentication service unavailable (${res.status})`);
+      }
       const data = await res.json();
-      if (data.url) {
+      if (data.url && typeof data.url === 'string' && data.url.startsWith('http')) {
         window.location.href = data.url;
       } else {
         throw new Error('Failed to retrieve authentication URL.');
@@ -123,12 +127,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       const order = await res.json();
 
       if (!res.ok) throw new Error(order.error || 'Failed to create payment order');
+      if (!order.id) throw new Error('Payment order is missing an order ID. Please try again.');
 
       if (order.mock) {
         setMockOrderId(order.id);
         setShowMockPaymentModal(true);
         setIsSubmitting(false);
         return;
+      }
+
+      // Validate Razorpay is loaded
+      if (!(window as any).Razorpay) {
+        throw new Error('Payment gateway failed to load. Please refresh and try again.');
       }
 
       // Initialize real Razorpay Checkout modal
@@ -193,6 +203,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           plan: selectedPlan
         })
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error((errData as any).error || `Verification failed (${res.status})`);
+      }
       const data = await res.json();
       if (data.success) {
         localStorage.setItem('token', data.token);

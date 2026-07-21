@@ -98,12 +98,18 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
     try {
       const origin = window.location.origin;
       const res = await fetch(`/api/auth/google/url?origin=${encodeURIComponent(origin)}`);
-      const { url } = await res.json();
-      if (url) {
-        window.location.href = url; // Redirect to Google Sign-In
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error((errData as any).error || `Failed to connect (${res.status})`);
       }
-    } catch (err) {
-      alert('Failed to connect to Google OAuth service');
+      const { url } = await res.json();
+      if (url && typeof url === 'string' && url.startsWith('http')) {
+        window.location.href = url; // Redirect to Google Sign-In
+      } else {
+        throw new Error('Failed to get Google OAuth URL.');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to connect to Google OAuth service');
     }
   };
 

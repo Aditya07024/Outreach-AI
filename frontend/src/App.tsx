@@ -50,6 +50,28 @@ window.fetch = async (input, init) => {
     localStorage.removeItem('token');
     window.dispatchEvent(new Event('unauthorized'));
   }
+
+  // Make .json() resilient to non-JSON error responses (e.g., proxy/gateway error pages).
+  // Without this, calling .json() on an HTML error page throws a cryptic
+  // "Unexpected token '<'" or "Unexpected token 'A'" SyntaxError.
+  const _safeClone = response.clone();
+  Object.defineProperty(response, 'json', {
+    value: async () => {
+      const text = await _safeClone.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        throw new Error(
+          response.ok
+            ? `Unexpected response format: ${text.substring(0, 100) || '(empty)'}`
+            : `Server error (${response.status}): ${text.substring(0, 100) || '(empty)'}`
+        );
+      }
+    },
+    configurable: true,
+    writable: true,
+  });
+
   return response;
 };
 
