@@ -36,11 +36,12 @@ app.use(
       const cleanOrigin = origin.replace(/\/$/, '');
       const cleanFrontend = frontendUrl.replace(/\/$/, '');
       
-      // Allow frontend URL or custom subdomains
+      // Allow frontend URL or custom subdomains (including Vercel preview/prod links)
       if (cleanOrigin === cleanFrontend || 
           cleanOrigin === 'https://outreach.aditya07.me' || 
           cleanOrigin === 'http://outreach.aditya07.me' ||
-          cleanOrigin.endsWith('.aditya07.me')) {
+          cleanOrigin.endsWith('.aditya07.me') ||
+          cleanOrigin.endsWith('.vercel.app')) {
         return callback(null, true);
       }
       
