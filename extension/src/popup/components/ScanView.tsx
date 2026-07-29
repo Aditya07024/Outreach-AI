@@ -28,6 +28,8 @@ import {
   Sparkles,
   Shield,
   Lock,
+  Play,
+  Pause,
 } from 'lucide-react';
 
 interface ExtractedEmail {
@@ -85,6 +87,59 @@ export const ScanView: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const [syncResult, setSyncResult] = useState<{ imported: number; duplicates: number } | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+
+  // AutoScroll state
+  const [autoScrollState, setAutoScrollState] = useState<'idle' | 'running' | 'paused' | 'stopped'>('idle');
+
+  /** Query active tab auto-scroll status via background worker */
+  useEffect(() => {
+    chrome.runtime.sendMessage({ action: 'GET_AUTO_SCROLL_STATUS' }).then((response) => {
+      if (response?.running) {
+        setAutoScrollState('running');
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleStartAutoScroll = async () => {
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'START_AUTO_SCROLL' });
+      if (response?.error) {
+        throw new Error(response.error);
+      }
+      setAutoScrollState('running');
+    } catch (err: any) {
+      console.error('Failed to start auto scroll:', err);
+      setScanStatus('error');
+      setScanError(err.message || 'Failed to start auto-scroll. Try refreshing the page.');
+    }
+  };
+
+  const handlePauseAutoScroll = async () => {
+    try {
+      await chrome.runtime.sendMessage({ action: 'PAUSE_AUTO_SCROLL' });
+      setAutoScrollState('paused');
+    } catch (err) {
+      console.error('Failed to pause auto scroll:', err);
+    }
+  };
+
+  const handleResumeAutoScroll = async () => {
+    try {
+      await chrome.runtime.sendMessage({ action: 'RESUME_AUTO_SCROLL' });
+      setAutoScrollState('running');
+    } catch (err) {
+      console.error('Failed to resume auto scroll:', err);
+    }
+  };
+
+  const handleStopAutoScroll = async () => {
+    try {
+      await chrome.runtime.sendMessage({ action: 'STOP_AUTO_SCROLL' });
+      setAutoScrollState('stopped');
+    } catch (err) {
+      console.error('Failed to stop auto scroll:', err);
+    }
+  };
 
   /** Fetch campaigns from backend */
   const fetchCampaigns = useCallback(async () => {
@@ -473,6 +528,62 @@ export const ScanView: React.FC = () => {
           <span className="text-[9px] text-zinc-500">
             Page verified
           </span>
+        )}
+      </div>
+
+      {/* ─── Auto-Scroll Controller Section ─── */}
+      <div className="px-4 py-2.5 border-b border-zinc-800/40 bg-zinc-900/30 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
+            <RefreshCw className={`w-3.5 h-3.5 ${autoScrollState === 'running' ? 'animate-spin' : ''}`} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-zinc-200">LinkedIn Feed AutoScroll</p>
+            <p className="text-[9px] text-zinc-500">
+              {autoScrollState === 'running'
+                ? 'Scrolling feed & extracting...'
+                : autoScrollState === 'paused'
+                ? 'AutoScroll paused'
+                : 'Automatically scroll feed'}
+            </p>
+          </div>
+        </div>
+
+        {autoScrollState === 'idle' || autoScrollState === 'stopped' ? (
+          <button
+            onClick={handleStartAutoScroll}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
+          >
+            <Play className="w-3.5 h-3.5 fill-current" />
+            Start Scraping
+          </button>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            {autoScrollState === 'running' ? (
+              <button
+                onClick={handlePauseAutoScroll}
+                className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs font-medium transition-all cursor-pointer"
+                title="Pause Scraping"
+              >
+                <Pause className="w-3.5 h-3.5 fill-current" />
+              </button>
+            ) : (
+              <button
+                onClick={handleResumeAutoScroll}
+                className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 text-xs font-medium transition-all cursor-pointer"
+                title="Resume Scraping"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+              </button>
+            )}
+            <button
+              onClick={handleStopAutoScroll}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition-all cursor-pointer"
+            >
+              <Square className="w-3 h-3 fill-current" />
+              Stop Scraping
+            </button>
+          </div>
         )}
       </div>
 

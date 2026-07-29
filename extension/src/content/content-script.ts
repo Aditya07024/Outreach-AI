@@ -1,17 +1,38 @@
 /**
  * Content Script Entry Point
  * 
- * Injected into every webpage. Automatically scans whitelisted webpages for emails
- * and company info on load, and caches them in the background service worker.
- * Also listens for scan requests from the popup.
+ * Injected into whitelisted webpages for email extraction and auto-scrolling.
  */
 
 import { extractEmails, extractEmailsFromHTML, detectRelatedPages, type ExtractedEmail } from './extractor';
 import { detectCompany, type DetectedCompany } from './company-detector';
+import {
+  AutoScrollController,
+  startAutoScroll,
+  pauseAutoScroll,
+  resumeAutoScroll,
+  stopAutoScroll,
+  isRunning,
+} from './AutoScrollController';
+
+/** Expose scrapeVisiblePosts globally for AutoScrollController */
+async function scrapeVisiblePosts(): Promise<void> {
+  autoScan();
+}
+(window as any).scrapeVisiblePosts = scrapeVisiblePosts;
+
+/** Expose AutoScroll functions globally */
+(window as any).startAutoScroll = startAutoScroll;
+(window as any).pauseAutoScroll = pauseAutoScroll;
+(window as any).resumeAutoScroll = resumeAutoScroll;
+(window as any).stopAutoScroll = stopAutoScroll;
+(window as any).isRunning = isRunning;
+(window as any).AutoScrollController = AutoScrollController;
 
 /** Message types between popup/background and content script */
 interface ScanRequest {
-  action: 'SCAN_PAGE' | 'SCAN_CONTACT_PAGES' | 'GET_PAGE_INFO';
+  action: string;
+  options?: any;
 }
 
 interface ScanResponse {
@@ -31,6 +52,35 @@ interface ScanResponse {
  * Handle messages from popup or background script
  */
 chrome.runtime.onMessage.addListener((message: ScanRequest, _sender, sendResponse) => {
+  if (message.action === 'START_AUTO_SCROLL' || message.action === 'START_SCRAPING') {
+    startAutoScroll(message.options);
+    sendResponse({ status: 'started' });
+    return true;
+  }
+
+  if (message.action === 'STOP_AUTO_SCROLL' || message.action === 'STOP_SCRAPING') {
+    stopAutoScroll();
+    sendResponse({ status: 'stopped' });
+    return true;
+  }
+
+  if (message.action === 'PAUSE_AUTO_SCROLL' || message.action === 'PAUSE_SCRAPING') {
+    pauseAutoScroll();
+    sendResponse({ status: 'paused' });
+    return true;
+  }
+
+  if (message.action === 'RESUME_AUTO_SCROLL' || message.action === 'RESUME_SCRAPING') {
+    resumeAutoScroll();
+    sendResponse({ status: 'resumed' });
+    return true;
+  }
+
+  if (message.action === 'GET_AUTO_SCROLL_STATUS') {
+    sendResponse({ running: isRunning() });
+    return true;
+  }
+
   if (message.action === 'SCAN_PAGE') {
     // Enable real-time observer when scanned manually/allowed
     try {
@@ -196,6 +246,12 @@ const observer = new MutationObserver(() => {
  * Automatically scan page on load if domain is allowed.
  */
 async function initAutoScan() {
+  // Prevent execution inside embedded sub-iframes or duplicate injections
+  if (window.self !== window.top || (window as any).__OUTREACH_AI_INITIALIZED__) {
+    return;
+  }
+  (window as any).__OUTREACH_AI_INITIALIZED__ = true;
+
   try {
     const domain = window.location.hostname;
     
@@ -208,6 +264,7 @@ async function initAutoScan() {
       domain.includes('outlook.office.com') ||
       domain.includes('mail.yahoo.com') ||
       domain.includes('outreach.aditya07.me') ||
+      domain.includes('outreachai.aditya07.me') ||
       domain === 'localhost'
     ) {
       console.log(`[Outreach AI] Blocklisted domain ${domain} bypassed.`);

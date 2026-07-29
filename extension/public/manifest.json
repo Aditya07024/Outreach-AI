@@ -27,7 +27,8 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ],
   "permissions": [
@@ -37,6 +38,7 @@
     "tabs"
   ],
   "host_permissions": [
+    "https://api.outreachai.aditya07.me/*",
     "https://api.outreach.aditya07.me/*"
   ],
   "content_security_policy": {

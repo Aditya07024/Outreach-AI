@@ -6,7 +6,7 @@
  */
 
 /** Locked production API server URL */
-const DEFAULT_API_URL = 'https://api.outreach.aditya07.me';
+const DEFAULT_API_URL = 'https://api.outreachai.aditya07.me';
 
 /** Storage keys */
 const STORAGE_KEYS = {
@@ -204,48 +204,48 @@ async function handleMessage(message: any): Promise<any> {
     }
     
     // ─── Content Script Relay ───
-    case 'SCAN_ACTIVE_TAB': {
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      const tab = tabs[0];
-      if (!tab?.id) throw new Error('No active tab found.');
-      
-      try {
-        const response = await chrome.tabs.sendMessage(tab.id, { action: 'SCAN_PAGE' });
-        return response;
-      } catch (err) {
-        throw new Error('Please refresh this tab or try scanning a different website. Note that standard security policies prevent extension execution on internal chrome:// pages.');
-      }
-    }
-    
-    case 'SCAN_CONTACT_PAGES': {
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      const tab = tabs[0];
-      if (!tab?.id) throw new Error('No active tab found.');
-      
-      try {
-        const response = await chrome.tabs.sendMessage(tab.id, { action: 'SCAN_CONTACT_PAGES' });
-        return response;
-      } catch (err) {
-        throw new Error('Please refresh this tab or try scanning a different website. Note that standard security policies prevent extension execution on internal chrome:// pages.');
-      }
-    }
-    
+    case 'START_AUTO_SCROLL':
+    case 'STOP_AUTO_SCROLL':
+    case 'PAUSE_AUTO_SCROLL':
+    case 'RESUME_AUTO_SCROLL':
+    case 'GET_AUTO_SCROLL_STATUS':
+    case 'SCAN_ACTIVE_TAB':
+    case 'SCAN_CONTACT_PAGES':
     case 'GET_PAGE_INFO': {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const tab = tabs[0];
       if (!tab?.id) throw new Error('No active tab found.');
       
-      try {
-        const response = await chrome.tabs.sendMessage(tab.id, { action: 'GET_PAGE_INFO' });
-        return response;
-      } catch (err) {
-        // Return null/empty info gracefully rather than throwing
-        return { action: 'PAGE_INFO', company: null, relatedPages: { contactUrls: [], aboutUrls: [], careersUrls: [] }, url: tab.url || '' };
-      }
+      const payloadAction = message.action === 'SCAN_ACTIVE_TAB' ? 'SCAN_PAGE' : message.action;
+      return await sendTabMessageWithFallback(tab.id, { ...message, action: payloadAction });
     }
     
     default:
       throw new Error(`Unknown action: ${message.action}`);
+  }
+}
+
+/**
+ * Safely send a message to a tab's content script, auto-injecting content.js if missing.
+ */
+async function sendTabMessageWithFallback(tabId: number, message: any): Promise<any> {
+  try {
+    return await chrome.tabs.sendMessage(tabId, message);
+  } catch (err) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content.js'],
+      });
+      return await chrome.tabs.sendMessage(tabId, message);
+    } catch (injectErr) {
+      if (message.action === 'GET_PAGE_INFO') {
+        return { action: 'PAGE_INFO', company: null, relatedPages: { contactUrls: [], aboutUrls: [], careersUrls: [] }, url: '' };
+      }
+      throw new Error(
+        'Please refresh this tab or try scanning a different website. Note that standard security policies prevent extension execution on internal chrome:// pages.'
+      );
+    }
   }
 }
 

@@ -437,6 +437,7 @@ export const Campaigns: React.FC = () => {
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Subject Template</label>
                       <input
+
                         type="text"
                         value={newTemplateSubject}
                         onChange={(e) => setNewTemplateSubject(e.target.value)}
@@ -447,6 +448,26 @@ export const Campaigns: React.FC = () => {
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Body Template</label>
                       <textarea
+                        placeholder="Hi {firstName},
+
+I hope you're doing well.
+
+I came across the opportunity at {company} and wanted to express my interest in the {role} position.
+
+I have experience in relevant technologies and have worked on projects that helped me strengthen my technical and problem-solving skills. I believe my background aligns well with the role and I'd love the opportunity to contribute to your team.
+
+I've attached my resume for your review. You can also find more about my work here:
+
+Portfolio: {portfolio}
+GitHub: {github}
+LinkedIn: {linkedin}
+
+Thank you for your time and consideration. I look forward to hearing from you.
+
+Best regards,
+{name}
+{phone}
+{location}"
                         value={newTemplateBody}
                         onChange={(e) => setNewTemplateBody(e.target.value)}
                         rows={5}
@@ -705,6 +726,26 @@ export const Campaigns: React.FC = () => {
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Body Template</label>
                         <textarea
+                        placeholder="Hi {firstName},
+
+I hope you're doing well.
+
+I came across the opportunity at {company} and wanted to express my interest in the {role} position.
+
+I have experience in relevant technologies and have worked on projects that helped me strengthen my technical and problem-solving skills. I believe my background aligns well with the role and I'd love the opportunity to contribute to your team.
+
+I've attached my resume for your review. You can also find more about my work here:
+
+Portfolio: {portfolio}
+GitHub: {github}
+LinkedIn: {linkedin}
+
+Thank you for your time and consideration. I look forward to hearing from you.
+
+Best regards,
+{name}
+{phone}
+{location}"
                           value={editTemplateBody}
                           onChange={(e) => setEditTemplateBody(e.target.value)}
                           rows={6}
