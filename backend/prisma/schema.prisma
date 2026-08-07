@@ -38,6 +38,7 @@ model GmailCredentials {
 model User {
   id           Int        @id @default(autoincrement())
   email        String?    @unique
+  clerkId      String?    @unique
   role         String     @default("paid_user")
   paid         Boolean    @default(false)
   plan         String?

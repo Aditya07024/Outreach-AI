@@ -152,10 +152,14 @@ export const App: React.FC = () => {
   }, [clerkSignedIn, signOut]);
 
   const fetchUserProfile = useCallback(async (retryCount = 0) => {
-    if (!clerkSignedIn && !localStorage.getItem('token')) {
+    if (!clerkLoaded) return;
+
+    const token = await activeTokenResolver();
+    if (!token && !clerkSignedIn && !localStorage.getItem('token')) {
       setLoadingUser(false);
       return;
     }
+
     try {
       setLoadingUser(true);
       const response = await fetch('/api/auth/google/me');
@@ -170,10 +174,9 @@ export const App: React.FC = () => {
       } else if (response.status === 401) {
         // If Clerk says we're signed in, the token may just not be ready yet — retry once
         if (clerkSignedIn && retryCount < 2) {
-          await new Promise(r => setTimeout(r, 1500));
+          await new Promise(r => setTimeout(r, 1200));
           return fetchUserProfile(retryCount + 1);
         }
-        // Only logout for non-Clerk sessions or after retries exhausted
         if (!clerkSignedIn) {
           handleLogout();
         }
@@ -183,10 +186,13 @@ export const App: React.FC = () => {
     } finally {
       setLoadingUser(false);
     }
-  }, [clerkSignedIn, handleLogout]);
+  }, [clerkLoaded, clerkSignedIn, handleLogout]);
 
   const fetchGmailStatus = useCallback(async () => {
-    if (!clerkSignedIn && !localStorage.getItem('token')) return;
+    if (!clerkLoaded) return;
+    const token = await activeTokenResolver();
+    if (!token && !clerkSignedIn && !localStorage.getItem('token')) return;
+
     try {
       const response = await fetch('/api/auth/google/status');
       if (!response.ok) return;
@@ -200,7 +206,7 @@ export const App: React.FC = () => {
     } catch (err) {
       console.error('Failed to retrieve Gmail OAuth connection status', err);
     }
-  }, [clerkSignedIn]);
+  }, [clerkLoaded, clerkSignedIn]);
 
   useEffect(() => {
     // Process URL authentication or payment redirects from Google Callback (supports query params or hash)

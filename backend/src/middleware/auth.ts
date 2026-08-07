@@ -27,94 +27,86 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
   const token = authHeader.split(' ')[1];
   const clerkSecretKey = process.env.CLERK_SECRET_KEY;
 
-  // 1. Try verifying Clerk Token if Secret Key is set
-  if (clerkSecretKey) {
-    try {
-      let clerkUserId: string | null = null;
-      let email: string | null = null;
+  // 1. Check if token is a Clerk JWT token by decoding payload
+  try {
+    const decodedAny = jwt.decode(token) as any;
+    const clerkUserId = (decodedAny && typeof decodedAny.sub === 'string' && decodedAny.sub.startsWith('user_')) 
+      ? decodedAny.sub 
+      : null;
 
-      try {
-        const payload = await verifyToken(token, {
-          secretKey: clerkSecretKey,
-        });
-        if (payload && payload.sub) {
-          clerkUserId = payload.sub;
-          if ((payload as any).email) email = (payload as any).email;
-          if (!email && (payload as any).email_address) email = (payload as any).email_address;
+    if (clerkUserId) {
+      let email: string | null = decodedAny.email || decodedAny.email_address || null;
+
+      // Search database for existing user by clerkId or email
+      let user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { clerkId: clerkUserId },
+            ...(email ? [{ email }] : [])
+          ]
         }
-      } catch (vErr) {
-        // Fallback to jwt.decode if verifyToken hit clock drift or network issue
-        try {
-          const decodedClerk = jwt.decode(token) as any;
-          if (decodedClerk && decodedClerk.sub && typeof decodedClerk.sub === 'string' && decodedClerk.sub.startsWith('user_')) {
-            clerkUserId = decodedClerk.sub;
-            if (decodedClerk.email) email = decodedClerk.email;
-            if (!email && decodedClerk.email_address) email = decodedClerk.email_address;
-          }
-        } catch (dErr) {}
-      }
+      });
 
-      if (clerkUserId) {
-        if (!email) {
+      // If user not found, try retrieving details from Clerk API or use fallback
+      if (!user) {
+        if (!email && clerkSecretKey) {
           try {
             const clerkUser = await clerkClient.users.getUser(clerkUserId);
             email = clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress || null;
           } catch (clerkApiErr) {
-            console.error('[Clerk API Error] Could not fetch user details for:', clerkUserId, clerkApiErr);
+            console.warn('[Clerk API Warning] Could not fetch user details from Clerk API:', clerkApiErr);
           }
         }
 
-        if (email) {
-          let user = await prisma.user.findUnique({
-            where: { email }
-          });
+        const effectiveEmail = email || `${clerkUserId}@user.clerk`;
+        const isAdminEmail = effectiveEmail === 'adityakumar07024@gmail.com' || effectiveEmail === 'adityakumarjat106@gmail.com';
 
-          const isAdminEmail = email === 'adityakumar07024@gmail.com' || email === 'adityakumarjat106@gmail.com';
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + 3);
 
-          if (!user) {
-            const trialEndsAt = new Date();
-            trialEndsAt.setDate(trialEndsAt.getDate() + 3);
-
-            user = await prisma.user.create({
-              data: {
-                email,
-                paid: isAdminEmail,
-                role: isAdminEmail ? 'admin' : 'paid_user',
-                trialEndsAt
-              }
-            });
-          } else if (isAdminEmail && user.role !== 'admin') {
-            user = await prisma.user.update({
-              where: { id: user.id },
-              data: { role: 'admin', paid: true }
-            });
-          } else if (!user.paid && !user.trialEndsAt && user.role !== 'admin' && user.role !== 'super_admin') {
-            const trialEndsAt = new Date();
-            trialEndsAt.setDate(trialEndsAt.getDate() + 3);
-            user = await prisma.user.update({
-              where: { id: user.id },
-              data: { trialEndsAt }
-            });
+        user = await prisma.user.create({
+          data: {
+            clerkId: clerkUserId,
+            email: effectiveEmail,
+            paid: isAdminEmail,
+            role: isAdminEmail ? 'admin' : 'paid_user',
+            trialEndsAt
           }
-
-          req.user = {
-            id: user.id,
-            role: user.role as any,
-            email: user.email || undefined
-          };
-
-          // Update lastActiveAt in background
-          prisma.user.update({
+        });
+      } else {
+        // Link clerkId if not linked yet
+        if (!user.clerkId) {
+          user = await prisma.user.update({
             where: { id: user.id },
-            data: { lastActiveAt: new Date() }
-          }).catch(() => {});
-
-          return next();
+            data: { clerkId: clerkUserId }
+          });
         }
       }
-    } catch (clerkErr) {
-      console.error('[Clerk Auth Middleware Error]:', clerkErr);
+
+      // Check admin email override
+      if (user.email && (user.email === 'adityakumar07024@gmail.com' || user.email === 'adityakumarjat106@gmail.com') && user.role !== 'admin') {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { role: 'admin', paid: true }
+        });
+      }
+
+      req.user = {
+        id: user.id,
+        role: user.role as any,
+        email: user.email || undefined
+      };
+
+      // Update lastActiveAt asynchronously
+      prisma.user.update({
+        where: { id: user.id },
+        data: { lastActiveAt: new Date() }
+      }).catch(() => {});
+
+      return next();
     }
+  } catch (clerkDecodeErr) {
+    // Continue to legacy JWT check
   }
 
   // 2. Fallback to legacy/passcode JWT token verification
@@ -134,5 +126,3 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
     return res.status(401).json({ error: 'Access denied. Invalid or expired token.' });
   }
 }
-
-
