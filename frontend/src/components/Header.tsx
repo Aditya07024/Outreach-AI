@@ -1,4 +1,5 @@
 import React from 'react';
+import { UserButton, useUser } from '@clerk/clerk-react';
 import { Mail, CheckCircle, AlertTriangle, Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -9,6 +10,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ title, gmailStatus, onMenuClick }) => {
+  const { isSignedIn } = useUser();
+
   return (
     <header className="h-14 border-b border-neutral-900 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between px-4 md:px-8 sticky top-0 z-10">
       <div className="flex items-center gap-3">
@@ -40,7 +43,18 @@ export const Header: React.FC<HeaderProps> = ({ title, gmailStatus, onMenuClick 
             </>
           )}
         </Link>
+
+        {isSignedIn && (
+          <UserButton 
+            appearance={{
+              elements: {
+                avatarBox: "w-7 h-7"
+              }
+            }}
+          />
+        )}
       </div>
     </header>
   );
 };
+

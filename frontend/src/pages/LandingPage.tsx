@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useClerk } from '@clerk/clerk-react';
 import logo from '../assets/logo.png';
 import { 
   Sparkles, 
@@ -31,6 +32,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onClearPaymentRequired 
 }) => {
   const navigate = useNavigate();
+  const clerk = useClerk();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -64,26 +66,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     }
   }, []);
 
-  const handleGoogleSignIn = async () => {
-    setErrorMsg(null);
-    setIsSubmitting(true);
-    try {
-      const origin = window.location.origin;
-      const res = await fetch(`/api/auth/google/url?action=login&origin=${encodeURIComponent(origin)}`);
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error((errData as any).error || `Authentication service unavailable (${res.status})`);
-      }
-      const data = await res.json();
-      if (data.url && typeof data.url === 'string' && data.url.startsWith('http')) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('Failed to retrieve authentication URL.');
-      }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Google Sign-In failed to initialize');
-    } finally {
-      setIsSubmitting(false);
+  const handleSignIn = () => {
+    if (clerk && clerk.openSignIn) {
+      clerk.openSignIn();
+    }
+  };
+
+  const handleSignUp = () => {
+    if (clerk && clerk.openSignUp) {
+      clerk.openSignUp();
     }
   };
 
@@ -301,10 +292,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </button>
 
                 <button 
-                  onClick={handleGoogleSignIn}
-                  disabled={isSubmitting}
+                  onClick={handleSignIn}
                   className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold px-5 py-2 rounded-full text-sm flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-blue-500/10 hover:scale-95"
-                  aria-label="Sign in with Google"
+                  aria-label="Sign in"
                 >
                   Login
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -332,10 +322,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                 <div className="flex flex-wrap gap-3.5 items-center pt-2 animate-fade-in-up animation-delay-300">
                   <button
-                    onClick={handleGoogleSignIn}
-                    disabled={isSubmitting}
+                    onClick={handleSignUp}
                     className="bg-black hover:bg-neutral-900 text-white font-bold px-8 py-3.5 rounded-full hover:scale-95 transition-all text-sm cursor-pointer shadow-xl shadow-black/20"
-                    aria-label="Sign in with Google"
+                    aria-label="Get Started"
                   >
                     Get Started
                   </button>
@@ -539,35 +528,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           </div>
                           <h3 className="text-xs font-bold text-neutral-900 tracking-tight">Access Dashboard</h3>
                           <p className="text-sm text-neutral-500 leading-normal">
-                            Sign in with Google to set up campaigns, upload resumes, and manage professional career outreach.
+                            Sign in with Clerk to set up campaigns, upload resumes, and manage professional career outreach.
                           </p>
                         </div>
 
                         <button
-                          onClick={handleGoogleSignIn}
-                          disabled={isSubmitting}
-                          className="w-full py-2.5 bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-200 hover:border-neutral-300 text-sm font-bold rounded-xl transition-all duration-300 shadow-sm flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
-                          aria-label="Sign in with Google"
+                          onClick={handleSignIn}
+                          className="w-full py-2.5 bg-black hover:bg-neutral-900 text-white border border-neutral-800 hover:border-black text-sm font-bold rounded-xl transition-all duration-300 shadow-sm flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+                          aria-label="Sign in"
                         >
-                          <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24">
-                            <path
-                              fill="#ea4335"
-                              d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582l3.51-3.51C17.827.99 15.09 0 12 0 7.34 0 3.318 2.668 1.34 6.57l3.926 3.195z"
-                            />
-                            <path
-                              fill="#4285f4"
-                              d="M24 12.24c0-.825-.075-1.62-.212-2.385H12v4.51h6.724a5.747 5.747 0 0 1-2.495 3.778v3.136h4.037C22.623 19.125 24 15.933 24 12.24z"
-                            />
-                            <path
-                              fill="#fbbc05"
-                              d="M5.266 14.235a7.1 7.1 0 0 1 0-4.47L1.34 6.57a12.022 12.022 0 0 0 0 10.86l3.926-3.195z"
-                            />
-                            <path
-                              fill="#34a853"
-                              d="M12 24c3.24 0 5.955-1.075 7.94-2.915l-4.037-3.136c-1.12.75-2.55 1.205-3.903 1.205-2.977 0-5.503-2.01-6.403-4.71H1.543v3.253C3.582 21.737 7.545 24 12 24z"
-                            />
-                          </svg>
-                          {isSubmitting ? 'Connecting...' : 'Continue with Google'}
+                          Sign In / Sign Up
                         </button>
 
                         <div className="pt-3 border-t border-neutral-100 text-left space-y-1.5 text-xs text-neutral-450 leading-relaxed">
@@ -1143,11 +1113,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </h2>
           
           <button 
-            onClick={handleGoogleSignIn}
-            disabled={isSubmitting}
+            onClick={handleSignIn}
             className="bg-black text-white hover:bg-neutral-900 font-bold px-8 py-3.5 rounded-full hover:scale-95 transition-all shadow-xl shadow-black/10 inline-flex items-center gap-2 cursor-pointer text-sm"
           >
-            Sign in with Google
+            Get Started with Clerk Auth
           </button>
         </div>
       </section>

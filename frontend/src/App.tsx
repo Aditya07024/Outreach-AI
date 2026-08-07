@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth, useClerk } from '@clerk/clerk-react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { LandingPage } from './pages/LandingPage';
@@ -21,10 +22,13 @@ import { PricingPage } from './pages/PricingPage';
 import { Subscription } from './pages/Subscription';
 import { AdminPortal } from './pages/AdminPortal';
 
+// Global dynamic token resolver for fetch interceptor
+let activeTokenResolver: () => Promise<string | null> = async () => localStorage.getItem('token');
+
 // Global fetch interceptor to append authorization token & handle 401s
 const originalFetch = window.fetch;
 window.fetch = async (input, init) => {
-  const token = localStorage.getItem('token');
+  const token = await activeTokenResolver();
   if (token) {
     init = init || {};
     init.headers = init.headers || {};
@@ -52,8 +56,6 @@ window.fetch = async (input, init) => {
   }
 
   // Make .json() resilient to non-JSON error responses (e.g., proxy/gateway error pages).
-  // Without this, calling .json() on an HTML error page throws a cryptic
-  // "Unexpected token '<'" or "Unexpected token 'A'" SyntaxError.
   const _safeClone = response.clone();
   Object.defineProperty(response, 'json', {
     value: async () => {
@@ -76,7 +78,10 @@ window.fetch = async (input, init) => {
 };
 
 export const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const { isLoaded: clerkLoaded, isSignedIn: clerkSignedIn, getToken } = useAuth();
+  const { signOut } = useClerk();
+  
+  const [adminToken, setAdminToken] = useState<string | null>(localStorage.getItem('token'));
   const [gmailStatus, setGmailStatus] = useState<{ connected: boolean; email?: string } | null>(null);
   const [currentTitle, setCurrentTitle] = useState('Dashboard');
   const [paymentRequiredUserId, setPaymentRequiredUserId] = useState<string | null>(null);
@@ -95,8 +100,39 @@ export const App: React.FC = () => {
   const [loadingUser, setLoadingUser] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const fetchUserProfile = async () => {
-    if (!localStorage.getItem('token')) {
+  const isAuthenticated = (clerkLoaded && clerkSignedIn) || !!adminToken;
+
+  // Sync token resolver with Clerk auth state
+  useEffect(() => {
+    activeTokenResolver = async () => {
+      if (clerkSignedIn) {
+        try {
+          const t = await getToken();
+          if (t) return t;
+        } catch (err) {
+          console.warn('Failed to retrieve Clerk session token', err);
+        }
+      }
+      return localStorage.getItem('token');
+    };
+  }, [clerkSignedIn, getToken]);
+
+  const handleLogout = useCallback(async () => {
+    localStorage.removeItem('token');
+    setAdminToken(null);
+    if (clerkSignedIn) {
+      try {
+        await signOut();
+      } catch (err) {
+        console.warn('Clerk sign out error', err);
+      }
+    }
+    setGmailStatus(null);
+    setCurrentUser(null);
+  }, [clerkSignedIn, signOut]);
+
+  const fetchUserProfile = useCallback(async () => {
+    if (!clerkSignedIn && !localStorage.getItem('token')) {
       setLoadingUser(false);
       return;
     }
@@ -119,10 +155,10 @@ export const App: React.FC = () => {
     } finally {
       setLoadingUser(false);
     }
-  };
+  }, [clerkSignedIn, handleLogout]);
 
-  const fetchGmailStatus = async () => {
-    if (!localStorage.getItem('token')) return;
+  const fetchGmailStatus = useCallback(async () => {
+    if (!clerkSignedIn && !localStorage.getItem('token')) return;
     try {
       const response = await fetch('/api/auth/google/status');
       if (!response.ok) return;
@@ -136,7 +172,7 @@ export const App: React.FC = () => {
     } catch (err) {
       console.error('Failed to retrieve Gmail OAuth connection status', err);
     }
-  };
+  }, [clerkSignedIn]);
 
   useEffect(() => {
     // Process URL authentication or payment redirects from Google Callback (supports query params or hash)
@@ -148,7 +184,6 @@ export const App: React.FC = () => {
     
     if (hash) {
       const cleanHash = hash.startsWith('#') ? hash.substring(1) : hash;
-      // Simple check to make sure it looks like query params rather than a standard element ID
       if (cleanHash.includes('=')) {
         params = new URLSearchParams(cleanHash);
         isHash = true;
@@ -167,6 +202,7 @@ export const App: React.FC = () => {
 
       if (token) {
         localStorage.setItem('token', token);
+        setAdminToken(token);
         if (isHash) {
           window.location.hash = '';
         } else {
@@ -176,7 +212,6 @@ export const App: React.FC = () => {
             console.warn('replaceState failed', err);
           }
         }
-        setIsAuthenticated(true);
       } else if (paymentRequired === 'true' && userId) {
         setPaymentRequiredUserId(userId);
         if (isHash) {
@@ -207,31 +242,23 @@ export const App: React.FC = () => {
     if (isAuthenticated) {
       fetchUserProfile();
       fetchGmailStatus();
-      // Poll Gmail connection state every 30 seconds
       const interval = setInterval(fetchGmailStatus, 30000);
       return () => clearInterval(interval);
     } else {
       setCurrentUser(null);
       setLoadingUser(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchUserProfile, fetchGmailStatus]);
 
   useEffect(() => {
     const handleUnauthorized = () => {
-      setIsAuthenticated(false);
+      handleLogout();
     };
     window.addEventListener('unauthorized', handleUnauthorized);
     return () => window.removeEventListener('unauthorized', handleUnauthorized);
-  }, []);
+  }, [handleLogout]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setIsAuthenticated(false);
-    setGmailStatus(null);
-    setCurrentUser(null);
-  };
-
-  if (loadingUser && isAuthenticated) {
+  if (!clerkLoaded || (loadingUser && isAuthenticated)) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-neutral-400 gap-4">
         <div className="w-8 h-8 rounded-full border-2 border-neutral-800 border-t-purple-500 animate-spin" />
@@ -239,6 +266,7 @@ export const App: React.FC = () => {
       </div>
     );
   }
+
 
   const isPaid = currentUser?.paid || currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
   const isTrialActive = !!(currentUser?.trialEndsAt && new Date(currentUser.trialEndsAt) > new Date());
@@ -272,7 +300,7 @@ export const App: React.FC = () => {
               path="*" 
               element={
                 <LandingPage 
-                  onAuthenticated={() => setIsAuthenticated(true)} 
+                  onAuthenticated={fetchUserProfile} 
                   initialPaymentRequiredUserId={paymentRequiredUserId}
                   onClearPaymentRequired={() => setPaymentRequiredUserId(null)}
                 />
@@ -376,11 +404,12 @@ export const App: React.FC = () => {
                         path="/settings" 
                         element={
                           <PageWrapper title="Settings" setTitle={setCurrentTitle}>
-                            <Settings 
-                              gmailStatus={gmailStatus} 
-                              onRefreshGmailStatus={fetchGmailStatus} 
-                              isPaid={isPaid || isTrialActive}
-                            />
+                              <Settings 
+                                gmailStatus={gmailStatus} 
+                                onRefreshGmailStatus={fetchGmailStatus} 
+                                isPaid={isPaid || isTrialActive}
+                                currentUser={currentUser}
+                              />
                           </PageWrapper>
                         } 
                       />

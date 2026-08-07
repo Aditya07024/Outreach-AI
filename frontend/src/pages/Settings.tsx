@@ -7,9 +7,24 @@ interface SettingsProps {
   gmailStatus: { connected: boolean; email?: string } | null;
   onRefreshGmailStatus: () => void;
   isPaid?: boolean;
+  currentUser?: {
+    id: number;
+    email: string | null;
+    role: string;
+    paid: boolean;
+    plan: string | null;
+    paidUntil: string | null;
+    trialEndsAt: string | null;
+    createdAt: string;
+  } | null;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailStatus, isPaid = false }) => {
+export const Settings: React.FC<SettingsProps> = ({ 
+  gmailStatus, 
+  onRefreshGmailStatus, 
+  isPaid = false,
+  currentUser
+}) => {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -179,18 +194,21 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
             <div className="space-y-3">
               {!isPaid ? (
                 <div className="space-y-3">
-                  <div className="p-3 bg-zinc-950/40 border border-neutral-800 rounded-lg flex items-start gap-2 text-xs text-neutral-400">
-                    <Lock className="w-4 h-4 flex-shrink-0 text-purple-400 animate-pulse" />
-                    <span className="leading-relaxed">
-                      Linking a Gmail account is a premium feature. Upgrade your subscription to authorize sending emails using Gmail API OAuth 2.0.
-                    </span>
+                  <div className="p-3 bg-rose-950/20 border border-rose-900/40 rounded-lg flex items-start gap-2 text-xs text-rose-300">
+                    <Lock className="w-4 h-4 flex-shrink-0 text-rose-400 animate-pulse mt-0.5" />
+                    <div className="space-y-1">
+                      <span className="font-semibold text-rose-200 block">3-Day Free Trial Expired</span>
+                      <span className="leading-relaxed text-[11px] text-rose-300/80 block">
+                        Your 3-day free trial has ended. Please upgrade your plan to link your Gmail account and continue sending automated outreach emails.
+                      </span>
+                    </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => window.location.href = '/subscription'}
-                    className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-neutral-100 font-bold rounded-md text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-purple-950/20"
+                    className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-neutral-100 font-bold rounded-md text-xs transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-purple-950/30 cursor-pointer hover:scale-[0.99]"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Sparkles className="w-4 h-4" />
                     Upgrade Plan to Link Gmail
                   </button>
                 </div>
@@ -208,13 +226,24 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
                   <button
                     type="button"
                     onClick={handleDisconnectGmail}
-                    className="w-full py-1.5 border border-rose-900/30 hover:border-rose-800/60 bg-rose-950/10 hover:bg-rose-950/20 text-rose-400 font-semibold rounded-md text-xs transition-colors"
+                    className="w-full py-1.5 border border-rose-900/30 hover:border-rose-800/60 bg-rose-950/10 hover:bg-rose-950/20 text-rose-400 font-semibold rounded-md text-xs transition-colors cursor-pointer"
                   >
                     Disconnect Gmail
                   </button>
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {currentUser && !currentUser.paid && currentUser.trialEndsAt && (
+                    <div className="p-3 bg-purple-950/20 border border-purple-900/40 rounded-lg text-xs text-purple-300 flex items-start gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="font-semibold text-purple-200 block">3-Day Free Trial Active</span>
+                        <span className="text-[11px] text-purple-300/80 leading-relaxed block">
+                          You can link your Gmail account now during your 3-day free trial. After trial expires, upgrade will be required.
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <div className="p-3 bg-amber-950/15 border border-amber-900/30 rounded-lg flex items-start gap-2 text-xs text-amber-300">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0 animate-pulse text-amber-500" />
                     <span className="leading-relaxed">
@@ -224,7 +253,7 @@ export const Settings: React.FC<SettingsProps> = ({ gmailStatus, onRefreshGmailS
                   <button
                     type="button"
                     onClick={handleConnectGmail}
-                    className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-md text-xs transition-colors"
+                    className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-md text-xs transition-colors cursor-pointer"
                   >
                     Connect Gmail Account
                   </button>

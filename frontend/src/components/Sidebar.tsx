@@ -147,7 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         {/* Gmail Connection Status Footer */}
-        <div className="p-4 border-t border-neutral-900 bg-zinc-950/40 space-y-2">
+        {/* <div className="p-4 border-t border-neutral-900 bg-zinc-950/40 space-y-2">
           <div className="flex items-center gap-3 px-2 py-1.5 rounded-lg bg-neutral-900/30 border border-neutral-900">
             <div className="relative flex">
               <span className={`h-2.5 w-2.5 rounded-full ${gmailStatus?.connected ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
@@ -168,7 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               Sign Out
             </button>
           )}
-        </div>
+        </div> */}
       </aside>
     </>
   );
