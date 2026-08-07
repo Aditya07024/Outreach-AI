@@ -241,11 +241,17 @@ router.post('/login', async (req, res) => {
 router.post('/razorpay/order', requireAuth, async (req: AuthenticatedRequest, res) => {
   const { plan } = req.body;
   
-  if (!plan || (plan !== 'yearly' && plan !== 'lifetime')) {
-    return res.status(400).json({ error: 'Valid plan (yearly or lifetime) is required.' });
+  if (!plan || (plan !== 'monthly' && plan !== 'six_months' && plan !== 'yearly')) {
+    return res.status(400).json({ error: 'Valid plan (monthly, six_months, or yearly) is required.' });
   }
 
-  const amount = plan === 'yearly' ? 149900 : 399900; // Rs. 1499 or Rs. 3999 in paisa
+  let amount = 29900; // Rs. 299 in paisa
+  if (plan === 'six_months') {
+    amount = 159900; // Rs. 1599 in paisa
+  } else if (plan === 'yearly') {
+    amount = 299900; // Rs. 2999 in paisa
+  }
+
   const userId = req.user!.id;
 
   try {
@@ -299,9 +305,14 @@ router.post('/razorpay/verify', requireAuth, async (req: AuthenticatedRequest, r
   try {
     const handleSuccessPayment = async (resolvedPlan: string) => {
       const now = new Date();
-      const paidUntil = resolvedPlan === 'yearly'
-        ? new Date(now.getFullYear() + 1, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds())
-        : null;
+      let paidUntil: Date;
+      if (resolvedPlan === 'monthly') {
+        paidUntil = new Date(now.setMonth(now.getMonth() + 1));
+      } else if (resolvedPlan === 'six_months') {
+        paidUntil = new Date(now.setMonth(now.getMonth() + 6));
+      } else {
+        paidUntil = new Date(now.setFullYear(now.getFullYear() + 1));
+      }
 
       const user = await prisma.user.update({
         where: { id: userId },
@@ -318,8 +329,10 @@ router.post('/razorpay/verify', requireAuth, async (req: AuthenticatedRequest, r
 
     // If it is a mock order
     if (razorpay_order_id.startsWith('order_mock_')) {
-      let resolvedPlan = 'lifetime';
-      if (razorpay_order_id.includes('_yearly_')) {
+      let resolvedPlan = 'monthly';
+      if (razorpay_order_id.includes('_six_months_')) {
+        resolvedPlan = 'six_months';
+      } else if (razorpay_order_id.includes('_yearly_')) {
         resolvedPlan = 'yearly';
       }
       return await handleSuccessPayment(resolvedPlan);
@@ -348,8 +361,8 @@ router.post('/razorpay/verify', requireAuth, async (req: AuthenticatedRequest, r
         console.error('Failed to fetch Razorpay order notes, falling back to request body plan:', fetchErr);
       }
 
-      if (!resolvedPlan || (resolvedPlan !== 'yearly' && resolvedPlan !== 'lifetime')) {
-        resolvedPlan = 'lifetime'; // Fallback
+      if (!resolvedPlan || (resolvedPlan !== 'monthly' && resolvedPlan !== 'six_months' && resolvedPlan !== 'yearly')) {
+        resolvedPlan = 'monthly'; // Fallback
       }
 
       return await handleSuccessPayment(resolvedPlan);

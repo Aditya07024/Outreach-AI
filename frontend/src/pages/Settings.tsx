@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send, Lock, Sparkles } from 'lucide-react';
 import { Settings as SettingsType, Resume } from '../types';
+import { GoogleVerificationModal } from '../components/GoogleVerificationModal';
 
 interface SettingsProps {
   gmailStatus: { connected: boolean; email?: string } | null;
@@ -28,6 +29,8 @@ export const Settings: React.FC<SettingsProps> = ({
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Test Email Sender state variables
   const [testTo, setTestTo] = useState('');
@@ -109,8 +112,13 @@ export const Settings: React.FC<SettingsProps> = ({
     }
   };
 
-  const handleConnectGmail = async () => {
+  const handleConnectGmail = () => {
+    setShowGoogleModal(true);
+  };
+
+  const executeGoogleRedirect = async () => {
     try {
+      setIsRedirecting(true);
       const origin = window.location.origin;
       const res = await fetch(`/api/auth/google/url?origin=${encodeURIComponent(origin)}`);
       if (!res.ok) {
@@ -125,6 +133,7 @@ export const Settings: React.FC<SettingsProps> = ({
       }
     } catch (err: any) {
       alert(err.message || 'Failed to connect to Google OAuth service');
+      setIsRedirecting(false);
     }
   };
 
@@ -174,10 +183,8 @@ export const Settings: React.FC<SettingsProps> = ({
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
       
       <div>
-        <h2 className="text-xl font-bold text-neutral-100 tracking-tight">Configuration Settings</h2>
-        <p className="text-xs text-neutral-400 mt-1">
-          Manage your personal application profile, custom prompts, and Gmail OAuth sync.
-        </p>
+        <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">System Settings & Configurations</h2>
+        <p className="text-xs text-slate-500 mt-1">Configure your personal profile variables, AI writing prompt guidelines, and Gmail integration.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -185,9 +192,9 @@ export const Settings: React.FC<SettingsProps> = ({
         {/* Left Col: OAuth & Setup status */}
         <div className="space-y-6">
           {/* Gmail OAuth setup */}
-          <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-5 space-y-4">
-            <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
-              <Mail className="w-4 h-4 text-neutral-400" />
+          <div className="border border-slate-200/80 bg-white rounded-2xl p-6 space-y-4 shadow-sm">
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <Mail className="w-4 h-4 text-indigo-600" />
               Gmail API OAuth 2.0
             </h3>
 
@@ -253,7 +260,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   <button
                     type="button"
                     onClick={handleConnectGmail}
-                    className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-md text-xs transition-colors cursor-pointer"
+                    className="w-full py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer shadow-xs active:scale-[0.98]"
                   >
                     Connect Gmail Account
                   </button>
@@ -263,58 +270,58 @@ export const Settings: React.FC<SettingsProps> = ({
           </div>
 
           {/* Direct Test Email Sender */}
-          <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-5 space-y-4">
-            <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
-              <Send className="w-4 h-4 text-neutral-400" />
+          <div className="border border-slate-200/80 bg-white rounded-2xl p-6 space-y-4 shadow-sm">
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <Send className="w-4 h-4 text-slate-600" />
               Test Email Sender
             </h3>
-            <p className="text-[10px] text-neutral-500 leading-relaxed">
+            <p className="text-[10px] text-slate-500 leading-relaxed">
               Send a test email directly to any address to verify email routing and attachment loading.
             </p>
 
             <form onSubmit={handleSendTestEmail} className="space-y-3.5 pt-1">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">Recipient Email</label>
+                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Recipient Email</label>
                 <input
                   type="email"
                   required
                   placeholder="e.g. test@inbox.com"
                   value={testTo}
                   onChange={(e) => setTestTo(e.target.value)}
-                  className="rounded-md border border-neutral-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">Subject</label>
+                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Subject</label>
                 <input
                   type="text"
                   required
                   placeholder="Connection Test"
                   value={testSubject}
                   onChange={(e) => setTestSubject(e.target.value)}
-                  className="rounded-md border border-neutral-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">Message Body</label>
+                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Message Body</label>
                 <textarea
                   required
                   rows={4}
                   placeholder="Test email content..."
                   value={testBody}
                   onChange={(e) => setTestBody(e.target.value)}
-                  className="rounded-md border border-neutral-800 bg-zinc-950 p-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700 resize-none font-sans"
+                  className="rounded-xl border border-slate-300 bg-slate-50 p-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors resize-none font-sans"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">Attach Resume PDF</label>
+                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Attach Resume PDF</label>
                 <select
                   value={testResumeId || ''}
                   onChange={(e) => setTestResumeId(e.target.value ? Number(e.target.value) : null)}
-                  className="rounded-md border border-neutral-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 >
                   <option value="">No Resume Attachment</option>
                   {resumes.map((r) => (
@@ -326,7 +333,7 @@ export const Settings: React.FC<SettingsProps> = ({
               <button
                 type="submit"
                 disabled={isSendingTest || !gmailStatus?.connected}
-                className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-md text-xs transition-colors disabled:opacity-40"
+                className="w-full py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 shadow-xs cursor-pointer active:scale-[0.98]"
               >
                 {!gmailStatus?.connected 
                   ? 'Connect Gmail First' 
@@ -339,47 +346,47 @@ export const Settings: React.FC<SettingsProps> = ({
           </div>
 
           {/* Chrome Extension Connection */}
-          <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-5 space-y-4">
+          <div className="border border-slate-200/80 bg-white rounded-2xl p-6 space-y-4 shadow-sm">
             <div className="flex justify-between items-center">
-              <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
-                <KeyRound className="w-4 h-4 text-neutral-400" />
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-slate-600" />
                 Chrome Extension Connection
               </h3>
               <a
                 href="https://chromewebstore.google.com/detail/outreach-ai-%E2%80%94-email-extra/lghahidlejpibjojgiokdghjjpmkhcnc"
                 target="_blank"
                 rel="noreferrer"
-                className="text-[10px] text-purple-450 hover:text-purple-300 font-bold flex items-center gap-1 transition-colors border border-purple-800/40 bg-purple-950/20 px-2.5 py-0.5 rounded-full"
+                className="text-[10px] text-slate-800 hover:text-slate-900 font-bold flex items-center gap-1 transition-colors border border-slate-300 bg-slate-100 px-2.5 py-0.5 rounded-full"
               >
                 Web Store <Send className="w-2.5 h-2.5" />
               </a>
             </div>
-            <p className="text-[10px] text-neutral-500 leading-relaxed">
+            <p className="text-[10px] text-slate-500 leading-relaxed">
               Use this token to connect the Chrome Extension to your account.
             </p>
 
             <div className="space-y-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">JWT Access Token</label>
+                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">JWT Access Token</label>
                 <div className="relative">
                   <input
                     type="password"
                     readOnly
                     value={localStorage.getItem('token') || ''}
-                    className="w-full rounded-md border border-neutral-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none pr-16"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none pr-16 font-mono"
                   />
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(localStorage.getItem('token') || '');
                       alert('Token copied to clipboard!');
                     }}
-                    className="absolute right-1 top-1 bottom-1 px-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded text-[10px] font-semibold transition-colors"
+                    className="absolute right-1 top-1 bottom-1 px-3 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
                   >
                     Copy
                   </button>
                 </div>
               </div>
-              <div className="text-[9px] text-neutral-500 leading-relaxed">
+              <div className="text-[9px] text-slate-500 leading-relaxed">
                 Instructions:
                 <ol className="list-decimal pl-3 mt-1 space-y-0.5">
                   <li>
@@ -407,98 +414,98 @@ export const Settings: React.FC<SettingsProps> = ({
           <form onSubmit={handleSubmit(onSaveSettings)} className="space-y-6">
             
             {/* PROFILE DETAILS */}
-            <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-6 space-y-4">
-              <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-900 pb-2">
-                <Sliders className="w-4 h-4 text-neutral-400" />
+            <div className="border border-slate-200/80 bg-white rounded-2xl p-6 space-y-4 shadow-sm">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
+                <Sliders className="w-4 h-4 text-slate-600" />
                 Personal Profile Variables
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Full Name</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Full Name</label>
                   <input
                     type="text"
                     {...register('name')}
                     placeholder="John Doe"
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Phone</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Phone</label>
                   <input
                     type="text"
                     {...register('phone')}
                     placeholder="+1 (555) 019-2834"
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Portfolio Website</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Portfolio Website</label>
                   <input
                     type="url"
                     {...register('portfolio')}
                     placeholder="https://myportfolio.dev"
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">GitHub Link</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">GitHub Link</label>
                   <input
                     type="url"
                     {...register('github')}
                     placeholder="https://github.com/myusername"
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">LinkedIn URL</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">LinkedIn URL</label>
                   <input
                     type="url"
                     {...register('linkedin')}
                     placeholder="https://linkedin.com/in/myusername"
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Preferred Role</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Preferred Role</label>
                   <input
                     type="text"
                     {...register('preferredRole')}
                     placeholder="Senior React Engineer"
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Desired Salary</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Desired Salary</label>
                   <input
                     type="text"
                     {...register('desiredSalary')}
                     placeholder="$140,000 / year"
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Location</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Location</label>
                   <input
                     type="text"
                     {...register('location')}
                     placeholder="San Francisco, CA (Remote)"
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Default Resume</label>
+                <div className="flex flex-col gap-1.5 sm:col-span-2">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Default Resume</label>
                   <select
                     {...register('defaultResumeId')}
-                    className="rounded-md border border-neutral-800 bg-zinc-950 px-3 py-2 text-xs text-neutral-205 focus:outline-none"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   >
                     <option value="">No Default Resume</option>
                     {resumes.map((r) => (
@@ -510,30 +517,30 @@ export const Settings: React.FC<SettingsProps> = ({
             </div>
 
             {/* SENDING CONFIGURATIONS */}
-            <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-6 space-y-4">
-              <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-900 pb-2">
-                <Sliders className="w-4 h-4 text-neutral-400" />
+            <div className="border border-slate-200/80 bg-white rounded-2xl p-6 space-y-4 shadow-sm">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
+                <Sliders className="w-4 h-4 text-slate-600" />
                 Queue Delays & Filters
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Min Delay (Seconds)</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Min Delay (Seconds)</label>
                   <input
                     type="number"
                     min={1}
                     {...register('delayMin')}
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Max Delay (Seconds)</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Max Delay (Seconds)</label>
                   <input
                     type="number"
                     min={1}
                     {...register('delayMax')}
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
               </div>
@@ -544,30 +551,30 @@ export const Settings: React.FC<SettingsProps> = ({
                   type="checkbox"
                   id="technicalFilter"
                   {...register('technicalFilter')}
-                  className="rounded border-neutral-800 bg-zinc-950/40 w-4 h-4 focus:ring-0 focus:outline-none"
+                  className="rounded border-slate-300 bg-slate-50 w-4 h-4 text-slate-900 focus:ring-0 focus:outline-none"
                 />
-                <label htmlFor="technicalFilter" className="text-xs font-medium text-neutral-350 cursor-pointer select-none">
+                <label htmlFor="technicalFilter" className="text-xs font-medium text-slate-700 cursor-pointer select-none">
                   Enable Recruiter Title Technical Filter (only import technical recruiter contacts)
                 </label>
               </div>
             </div>
 
             {/* AI SYSTEM PROMPT */}
-            <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-6 space-y-4">
-              <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-900 pb-2">
-                <Cpu className="w-4 h-4 text-neutral-400" />
+            <div className="border border-slate-200/80 bg-white rounded-2xl p-6 space-y-4 shadow-sm">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
+                <Cpu className="w-4 h-4 text-slate-600" />
                 AI Writing Prompt Parameters
               </h3>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">AI Guidelines / Pitch Text</label>
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">AI Guidelines / Pitch Text</label>
                 <textarea
                   {...register('customPrompt')}
                   rows={6}
                   placeholder="Instructions for generating the email cover pitches..."
-                  className="w-full rounded-md border border-neutral-800 bg-zinc-950/40 p-3 text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-neutral-700 font-mono leading-relaxed"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 font-mono leading-relaxed transition-colors"
                 />
-                <span className="text-[10px] text-neutral-500">
+                <span className="text-[10px] text-slate-500">
                   These instructions guide how the AI frames your skills, what languages/projects it mentions, and writing constraints (e.g. keep under 150 words).
                 </span>
               </div>
@@ -583,7 +590,7 @@ export const Settings: React.FC<SettingsProps> = ({
               <button
                 type="submit"
                 disabled={isSaving}
-                className="px-6 py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-md text-xs transition-colors disabled:opacity-40"
+                className="px-6 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-[0.98]"
               >
                 {isSaving ? 'Saving Configurations...' : 'Save Settings'}
               </button>
@@ -593,6 +600,13 @@ export const Settings: React.FC<SettingsProps> = ({
         </div>
 
       </div>
+
+      <GoogleVerificationModal
+        isOpen={showGoogleModal}
+        onClose={() => setShowGoogleModal(false)}
+        onProceed={executeGoogleRedirect}
+        isLoading={isRedirecting}
+      />
     </div>
   );
 };

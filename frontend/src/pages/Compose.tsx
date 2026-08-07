@@ -122,13 +122,13 @@ export const Compose: React.FC<ComposeProps> = ({ gmailStatus }) => {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200">
       <div>
-        <h2 className="text-xl font-bold text-neutral-100 tracking-tight flex items-center gap-2">
-          <MailOpen className="w-5 h-5 text-neutral-350" />
+        <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+          <MailOpen className="w-5 h-5 text-indigo-600" />
           Direct Mail Composer
         </h2>
-        <p className="text-xs text-neutral-400 mt-1">
+        <p className="text-xs text-slate-500 mt-1">
           Draft and dispatch personalized recruiter outreach directly from your secure Gmail instance without running a bulk campaign.
         </p>
       </div>
@@ -136,10 +136,10 @@ export const Compose: React.FC<ComposeProps> = ({ gmailStatus }) => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* COMPOSER (LEFT 7 COLS) */}
-        <form onSubmit={handleSend} className="lg:col-span-7 border border-neutral-800 bg-zinc-900/10 rounded-xl overflow-hidden shadow-xl space-y-0">
+        <form onSubmit={handleSend} className="lg:col-span-7 border border-slate-200/80 bg-white rounded-2xl overflow-hidden shadow-sm space-y-0">
           {/* Header Banner */}
-          <div className="bg-zinc-950 border-b border-neutral-900 px-5 py-3.5 flex justify-between items-center">
-            <span className="text-xs font-bold text-neutral-300 uppercase tracking-widest">New Outreach Message</span>
+          <div className="bg-slate-50 border-b border-slate-200/80 px-5 py-3.5 flex justify-between items-center">
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">New Outreach Message</span>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -155,37 +155,37 @@ export const Compose: React.FC<ComposeProps> = ({ gmailStatus }) => {
           <div className="p-5 space-y-4">
             {/* Recipient */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:items-center">
-              <label className="sm:col-span-2 text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">To</label>
+              <label className="sm:col-span-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">To</label>
               <input
                 type="email"
                 required
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
                 placeholder="recruiter@company.com"
-                className="sm:col-span-10 rounded-md border border-neutral-850 bg-zinc-950/40 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+                className="sm:col-span-10 rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
               />
             </div>
 
             {/* Subject */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:items-center">
-              <label className="sm:col-span-2 text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Subject</label>
+              <label className="sm:col-span-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">Subject</label>
               <input
                 type="text"
                 required
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Opportunities at Company - Application"
-                className="sm:col-span-10 rounded-md border border-neutral-850 bg-zinc-950/40 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+                className="sm:col-span-10 rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
               />
             </div>
 
             {/* Attach Resume */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:items-center">
-              <label className="sm:col-span-2 text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Resume</label>
+              <label className="sm:col-span-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">Resume</label>
               <select
                 value={resumeId || ''}
                 onChange={(e) => setResumeId(e.target.value ? Number(e.target.value) : null)}
-                className="sm:col-span-10 rounded-md border border-neutral-850 bg-zinc-950 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none"
+                className="sm:col-span-10 rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
               >
                 <option value="">No Resume Attachment</option>
                 {resumes.map((r) => (
@@ -196,27 +196,27 @@ export const Compose: React.FC<ComposeProps> = ({ gmailStatus }) => {
 
             {/* Content Body */}
             <div className="flex flex-col gap-1.5 pt-2">
-              <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Message Content</label>
+              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Message Content</label>
               <textarea
                 required
                 rows={12}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Write your email here, or use the AI Writing Assistant on the right..."
-                className="w-full rounded-md border border-neutral-850 bg-zinc-950/40 p-4 text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-neutral-700 font-mono leading-relaxed"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-4 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 font-mono leading-relaxed transition-colors"
               />
             </div>
 
             {/* Send Controls */}
             <div className="flex justify-between items-center pt-2">
-              <span className="text-[10px] text-neutral-500 flex items-center gap-1">
+              <span className="text-[10px] text-slate-500 flex items-center gap-1">
                 <FileText className="w-3.5 h-3.5" />
                 {resumeId ? 'PDF Resume Attached' : 'No Resume Attachment'}
               </span>
               <button
                 type="submit"
                 disabled={isSending || !gmailStatus?.connected}
-                className="flex items-center gap-2 px-5 py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-lg text-xs transition-colors disabled:opacity-40"
+                className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-[0.98]"
               >
                 <Send className="w-3.5 h-3.5" />
                 {isSending ? 'Sending Email...' : 'Send Message'}
@@ -226,61 +226,61 @@ export const Compose: React.FC<ComposeProps> = ({ gmailStatus }) => {
         </form>
 
         {/* AI ASSISTANT (RIGHT 5 COLS) */}
-        <div className="lg:col-span-5 border border-neutral-800 bg-zinc-900/10 rounded-xl p-5 space-y-4 shadow-xl">
-          <div className="flex items-center gap-2 border-b border-neutral-900 pb-3">
-            <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+        <div className="lg:col-span-5 border border-slate-200/80 bg-white rounded-2xl p-5 space-y-4 shadow-sm">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <div className="p-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-800">
               <Cpu className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">AI Writing Assistant</h3>
-              <p className="text-[10px] text-neutral-550">Powered by xAI Grok</p>
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">AI Writing Assistant</h3>
+              <p className="text-[10px] text-slate-500">Powered by xAI Grok</p>
             </div>
           </div>
 
-          <p className="text-[10px] text-neutral-450 leading-relaxed">
+          <p className="text-[10px] text-slate-600 leading-relaxed">
             Enter the details of the job opportunity and the AI will draft a highly tailored pitch using your Personal Profile Settings automatically.
           </p>
 
           <div className="space-y-3.5">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">Target Company Name *</label>
+              <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Target Company Name *</label>
               <input
                 type="text"
                 placeholder="e.g. OpenAI, Stripe, Google"
                 value={aiCompany}
                 onChange={(e) => setAiCompany(e.target.value)}
-                className="rounded-md border border-neutral-850 bg-zinc-950 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+                className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">Target Role / Position *</label>
+              <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Target Role / Position *</label>
               <input
                 type="text"
                 placeholder="e.g. Frontend Engineer, Fullstack Developer"
                 value={aiRole}
                 onChange={(e) => setAiRole(e.target.value)}
-                className="rounded-md border border-neutral-850 bg-zinc-950 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+                className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[9px] text-neutral-450 font-bold uppercase tracking-wider">Custom Guidelines / Context (Optional)</label>
+              <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Custom Guidelines / Context (Optional)</label>
               <textarea
                 rows={3}
                 placeholder="e.g. Focus on my experience with NextJS and mention my React Native open source library..."
                 value={aiContext}
                 onChange={(e) => setAiContext(e.target.value)}
-                className="rounded-md border border-neutral-850 bg-zinc-950 p-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700 resize-none font-sans"
+                className="rounded-xl border border-slate-300 bg-slate-50 p-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors resize-none font-sans"
               />
             </div>
 
             <button
               onClick={handleAIDraft}
               disabled={isDrafting}
-              className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-neutral-100 font-bold rounded-lg text-xs transition-colors disabled:opacity-40 shadow-lg shadow-indigo-950/20"
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-colors disabled:opacity-40 shadow-xs cursor-pointer active:scale-[0.98]"
             >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
+              <Sparkles className="w-3.5 h-3.5" />
               {isDrafting ? 'Drafting Custom Pitch...' : 'Draft Pitch with AI'}
             </button>
           </div>

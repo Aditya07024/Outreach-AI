@@ -359,7 +359,7 @@ export const Campaigns: React.FC = () => {
             </div>
             <button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-semibold rounded-md text-xs transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all shadow-xs cursor-pointer active:scale-[0.98]"
             >
               <Plus className="w-4 h-4" />
               Create Campaign
@@ -368,40 +368,40 @@ export const Campaigns: React.FC = () => {
 
           {/* New Campaign Creation Modal */}
           {showCreateForm && (
-            <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
               <form 
                 onSubmit={handleCreateCampaign}
-                className="w-full max-w-md border border-neutral-800 bg-zinc-900/90 rounded-xl p-6 space-y-4 shadow-xl"
+                className="w-full max-w-md border border-slate-200 bg-white rounded-2xl p-6 space-y-4 shadow-xl text-slate-900"
               >
-                <h3 className="text-sm font-semibold text-neutral-200 uppercase tracking-wider">New Outreach Campaign</h3>
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">New Outreach Campaign</h3>
                 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Name *</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Name *</label>
                   <input
                     type="text"
                     required
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="e.g. July Product Startups"
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Description</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Description</label>
                   <textarea
                     value={newDesc}
                     onChange={(e) => setNewDesc(e.target.value)}
                     placeholder="Brief description of targeted positions or locations..."
                     rows={3}
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Select Resume PDF *</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Select Resume PDF *</label>
                   {resumes.length === 0 ? (
-                    <div className="text-[10px] text-amber-400 bg-amber-950/20 p-2 rounded border border-amber-800/40">
+                    <div className="text-[10px] text-amber-800 bg-amber-50 p-2 rounded-xl border border-amber-200">
                       No resumes uploaded. Please upload a PDF resume in settings or resumes tab first.
                     </div>
                   ) : (
@@ -409,7 +409,7 @@ export const Campaigns: React.FC = () => {
                       <select
                         value={newResumeId || ''}
                         onChange={(e) => setNewResumeId(Number(e.target.value))}
-                        className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+                        className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                       >
                         {resumes.map((r) => (
                           <option key={r.id} value={r.id}>{r.name}{r.description ? ` — ${r.description}` : ''}</option>
@@ -420,11 +420,11 @@ export const Campaigns: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Outreach Template Mode</label>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Outreach Template Mode</label>
                   <select
                     value={newTemplateType}
                     onChange={(e) => setNewTemplateType(e.target.value as any)}
-                    className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   >
                     <option value="AI_GENERATED">AI Generated (Grok)</option>
                     <option value="SAVED_TEMPLATE">Saved Custom Template</option>
@@ -433,49 +433,26 @@ export const Campaigns: React.FC = () => {
                 </div>
 
                 {newTemplateType === 'SAVED_TEMPLATE' && (
-                  <div className="space-y-3 p-3 bg-zinc-955/20 border border-neutral-800/60 rounded-lg">
+                  <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Subject Template</label>
+                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Subject Template</label>
                       <input
-
                         type="text"
                         value={newTemplateSubject}
                         onChange={(e) => setNewTemplateSubject(e.target.value)}
                         placeholder="Opportunities at {company} - {role}"
-                        className="rounded-md border border-neutral-800 bg-zinc-950 px-3 py-1.5 text-xs text-neutral-105 focus:outline-none"
+                        className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900 transition-colors"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Body Template</label>
+                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Body Template</label>
                       <textarea
-                        placeholder="Hi {firstName},
-
-I hope you're doing well.
-
-I came across the opportunity at {company} and wanted to express my interest in the {role} position.
-
-I have experience in relevant technologies and have worked on projects that helped me strengthen my technical and problem-solving skills. I believe my background aligns well with the role and I'd love the opportunity to contribute to your team.
-
-I've attached my resume for your review. You can also find more about my work here:
-
-Portfolio: {portfolio}
-GitHub: {github}
-LinkedIn: {linkedin}
-
-Thank you for your time and consideration. I look forward to hearing from you.
-
-Best regards,
-{name}
-{phone}
-{location}"
+                        placeholder="Hi {firstName}, ..."
                         value={newTemplateBody}
                         onChange={(e) => setNewTemplateBody(e.target.value)}
                         rows={5}
-                        className="rounded-md border border-neutral-800 bg-zinc-950 p-2 text-xs text-neutral-105 focus:outline-none font-mono"
+                        className="rounded-xl border border-slate-300 bg-white p-3 text-xs text-slate-900 focus:outline-none focus:border-slate-900 font-mono transition-colors"
                       />
-                      <span className="text-[8px] text-neutral-500 leading-normal">
-                        Supports: {"{firstName}, {lastName}, {company}, {role}, {name}, {portfolio}, {github}"}
-                      </span>
                     </div>
                   </div>
                 )}
@@ -484,14 +461,14 @@ Best regards,
                   <button
                     type="button"
                     onClick={() => setShowCreateForm(false)}
-                    className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 font-semibold rounded-md text-xs transition-colors"
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting || resumes.length === 0}
-                    className="px-4 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-semibold rounded-md text-xs transition-colors disabled:opacity-40"
+                    className="px-5 py-2 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer disabled:opacity-40"
                   >
                     {isSubmitting ? 'Creating...' : 'Create'}
                   </button>
@@ -503,47 +480,47 @@ Best regards,
           {/* Campaigns Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {campaigns.length === 0 ? (
-              <div className="col-span-2 border border-dashed border-neutral-800 rounded-xl p-12 text-center text-neutral-500 text-xs">
+              <div className="col-span-2 border border-dashed border-slate-300 rounded-2xl p-12 text-center text-slate-500 text-xs bg-white">
                 No outreach campaigns created yet. Click "Create Campaign" to get started.
               </div>
             ) : (
               campaigns.map((camp) => (
                 <div 
                   key={camp.id} 
-                  className="border border-neutral-800 bg-zinc-900/20 hover:border-neutral-700 rounded-xl p-6 transition-all duration-300 flex flex-col justify-between"
+                  className="border border-slate-200/80 bg-white hover:border-slate-300 rounded-2xl p-6 transition-all duration-200 flex flex-col justify-between shadow-sm"
                 >
                   <div className="space-y-2">
                     <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-neutral-200 text-sm tracking-tight">{camp.name}</h3>
+                      <h3 className="font-bold text-slate-900 text-sm tracking-tight">{camp.name}</h3>
                       <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase ${
                         camp.status === 'SENDING' 
-                          ? 'bg-blue-950/20 border-blue-800/40 text-blue-400' 
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
                           : camp.status === 'COMPLETED'
-                          ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-400'
+                          ? 'bg-slate-100 border-slate-300 text-slate-800'
                           : camp.status === 'PAUSED'
-                          ? 'bg-amber-950/20 border-amber-800/40 text-amber-400'
-                          : 'bg-neutral-900 border-neutral-800 text-neutral-400'
+                          ? 'bg-amber-50 border-amber-200 text-amber-800'
+                          : 'bg-slate-100 border-slate-200 text-slate-600'
                       }`}>
                         {camp.status}
                       </span>
                     </div>
-                    <p className="text-[11px] text-neutral-400 line-clamp-2 leading-relaxed">{camp.description || 'No description provided.'}</p>
+                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{camp.description || 'No description provided.'}</p>
                   </div>
 
-                  <div className="mt-6 pt-4 border-t border-neutral-900/60 flex justify-between items-center">
-                    <div className="text-[10px] text-neutral-500 font-semibold uppercase tracking-wider">
-                      Contacts: <span className="text-neutral-300 font-bold">{camp.metrics?.total || 0}</span> | Sent: <span className="text-neutral-300 font-bold">{camp.metrics?.sent || 0}</span>
+                  <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center">
+                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                      Contacts: <span className="text-slate-900 font-bold">{camp.metrics?.total || 0}</span> | Sent: <span className="text-slate-900 font-bold">{camp.metrics?.sent || 0}</span>
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setSelectedCampId(camp.id)}
-                        className="px-2.5 py-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-md text-[10px] font-semibold text-neutral-300 transition-colors"
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-800 transition-colors cursor-pointer"
                       >
                         Manage
                       </button>
                       <button
                         onClick={() => handleDeleteCampaign(camp.id, camp.name)}
-                        className="p-1.5 bg-neutral-900 hover:bg-rose-950/30 border border-neutral-800 hover:border-rose-800/40 text-neutral-400 hover:text-rose-400 rounded-md transition-colors"
+                        className="p-1.5 bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-500 hover:text-rose-700 rounded-xl transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -599,7 +576,7 @@ Best regards,
                   {campaignDetails.status !== 'SENDING' ? (
                     <button
                       onClick={() => triggerAction('start')}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-md text-[10px] uppercase tracking-wider transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow-xs"
                     >
                       <Play className="w-3.5 h-3.5" />
                       Start Send
@@ -607,7 +584,7 @@ Best regards,
                   ) : (
                     <button
                       onClick={() => triggerAction('pause')}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-950/20 border border-amber-800/40 text-amber-400 font-bold rounded-md text-[10px] uppercase tracking-wider transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
                     >
                       <Pause className="w-3.5 h-3.5" />
                       Pause
@@ -616,24 +593,24 @@ Best regards,
 
                   <button
                     onClick={() => triggerAction('generate')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-200 font-bold rounded-md text-[10px] uppercase tracking-wider transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
                   >
-                    <Cpu className="w-3.5 h-3.5" />
+                    <Cpu className="w-3.5 h-3.5 text-slate-600" />
                     Generate Emails
                   </button>
 
                   <button
                     onClick={() => triggerAction('retry')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-200 font-bold rounded-md text-[10px] uppercase tracking-wider transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
                     title="Retry failures"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
+                    <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
                     Retry Fail
                   </button>
 
                   <button
                     onClick={() => triggerAction('cancel')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-rose-450 font-bold rounded-md text-[10px] uppercase tracking-wider transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-rose-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
                     title="Reset to draft"
                   >
                     Reset
@@ -642,10 +619,10 @@ Best regards,
                   <button
                     onClick={handleClearEmails}
                     disabled={campaignDetails.status === 'SENDING'}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:bg-rose-950/20 text-neutral-400 hover:text-rose-400 font-bold rounded-md text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-600 hover:text-rose-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer"
                     title="Wipe generated email subjects and bodies back to pending"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                     Clear Drafts
                   </button>
                 </div>
@@ -655,38 +632,38 @@ Best regards,
               {showSettingsEdit && (
                 <form 
                   onSubmit={handleUpdateCampaignSettings} 
-                  className="bg-zinc-900/40 border border-neutral-800 rounded-xl p-5 space-y-4 shadow-inner"
+                  className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm text-slate-900"
                 >
-                  <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">Configure Campaign Properties</h3>
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Configure Campaign Properties</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Campaign Name</label>
+                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Campaign Name</label>
                       <input
                         type="text"
                         required
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="rounded-md border border-neutral-850 bg-zinc-950 px-3 py-1.5 text-xs text-neutral-100 focus:outline-none"
+                        className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                       />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Campaign Description</label>
+                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Campaign Description</label>
                       <input
                         type="text"
                         value={editDesc}
                         onChange={(e) => setEditDesc(e.target.value)}
-                        className="rounded-md border border-neutral-850 bg-zinc-950 px-3 py-1.5 text-xs text-neutral-105 focus:outline-none"
+                        className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                       />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Outreach Template Mode</label>
+                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Outreach Template Mode</label>
                       <select
                         value={editTemplateType}
                         onChange={(e) => setEditTemplateType(e.target.value)}
-                        className="rounded-md border border-neutral-850 bg-zinc-950 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none"
+                        className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                       >
                         <option value="AI_GENERATED">AI Generated (Grok)</option>
                         <option value="SAVED_TEMPLATE">Saved Custom Template</option>
@@ -697,11 +674,11 @@ Best regards,
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Attach Resume</label>
+                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Attach Resume</label>
                       <select
                         value={editResumeId || ''}
                         onChange={(e) => setEditResumeId(e.target.value ? Number(e.target.value) : null)}
-                        className="rounded-md border border-neutral-855 bg-zinc-950 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none"
+                        className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                       >
                         <option value="">No Resume Attachment</option>
                         {resumes.map((r) => (
@@ -712,48 +689,26 @@ Best regards,
                   </div>
 
                   {editTemplateType === 'SAVED_TEMPLATE' && (
-                    <div className="space-y-4 p-4 bg-zinc-950/40 border border-neutral-850 rounded-lg">
+                    <div className="space-y-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Subject Template</label>
+                        <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Subject Template</label>
                         <input
                           type="text"
                           value={editTemplateSubject}
                           onChange={(e) => setEditTemplateSubject(e.target.value)}
                           placeholder="Opportunities at {company} - {role}"
-                          className="rounded-md border border-neutral-850 bg-zinc-950 px-3 py-1.5 text-xs text-neutral-100 focus:outline-none"
+                          className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900 transition-colors"
                         />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Body Template</label>
+                        <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Body Template</label>
                         <textarea
-                        placeholder="Hi {firstName},
-
-I hope you're doing well.
-
-I came across the opportunity at {company} and wanted to express my interest in the {role} position.
-
-I have experience in relevant technologies and have worked on projects that helped me strengthen my technical and problem-solving skills. I believe my background aligns well with the role and I'd love the opportunity to contribute to your team.
-
-I've attached my resume for your review. You can also find more about my work here:
-
-Portfolio: {portfolio}
-GitHub: {github}
-LinkedIn: {linkedin}
-
-Thank you for your time and consideration. I look forward to hearing from you.
-
-Best regards,
-{name}
-{phone}
-{location}"
+                          placeholder="Hi {firstName}, ..."
                           value={editTemplateBody}
                           onChange={(e) => setEditTemplateBody(e.target.value)}
                           rows={6}
-                          className="rounded-md border border-neutral-850 bg-zinc-950 p-3 text-xs text-neutral-100 focus:outline-none font-mono"
+                          className="rounded-xl border border-slate-300 bg-white p-3 text-xs text-slate-900 focus:outline-none focus:border-slate-900 font-mono transition-colors"
                         />
-                        <span className="text-[9px] text-neutral-500 leading-relaxed block">
-                          Supports dynamic variables: {"{firstName}, {lastName}, {company}, {role}, {name}, {portfolio}, {github}, {linkedin}, {phone}, {location}"}
-                        </span>
                       </div>
                     </div>
                   )}
@@ -762,14 +717,14 @@ Best regards,
                     <button
                       type="button"
                       onClick={() => setShowSettingsEdit(false)}
-                      className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 font-semibold rounded-md text-xs transition-colors"
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={isUpdatingSettings}
-                      className="px-4 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-semibold rounded-md text-xs transition-colors disabled:opacity-40"
+                      className="px-5 py-2 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer disabled:opacity-40"
                     >
                       {isUpdatingSettings ? 'Saving Settings...' : 'Save Settings'}
                     </button>
@@ -794,17 +749,17 @@ Best regards,
                   const completed = total - pendingAI - generating;
                   const percent = Math.min(100, Math.round((completed / total) * 100));
                   return (
-                    <div className="bg-zinc-900/30 border border-neutral-900 rounded-xl p-4 space-y-2.5">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-2.5 shadow-sm">
                       <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-wider">
-                        <span className="text-indigo-400 animate-pulse flex items-center gap-1.5 font-sans">
-                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />
+                        <span className="text-slate-800 animate-pulse flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-slate-900 animate-ping" />
                           Generative Email Drafting in Progress...
                         </span>
-                        <span className="text-neutral-450 font-mono">{completed} / {total} Completed ({percent}%)</span>
+                        <span className="text-slate-500 font-mono">{completed} / {total} Completed ({percent}%)</span>
                       </div>
-                      <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden border border-neutral-900">
+                      <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                         <div 
-                          className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-all duration-500" 
+                          className="h-full bg-slate-900 rounded-full transition-all duration-500" 
                           style={{ width: `${percent}%` }}
                         />
                       </div>
@@ -816,17 +771,17 @@ Best regards,
                   const completed = sent + failed;
                   const percent = Math.min(100, Math.round((completed / total) * 100));
                   return (
-                    <div className="bg-zinc-900/30 border border-neutral-900 rounded-xl p-4 space-y-2.5">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-2.5 shadow-sm">
                       <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-wider">
-                        <span className="text-emerald-400 animate-pulse flex items-center gap-1.5 font-sans">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                        <span className="text-emerald-700 animate-pulse flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
                           Campaign Sending Sequence Active...
                         </span>
-                        <span className="text-neutral-450 font-mono">{completed} / {total} Delivered ({percent}%)</span>
+                        <span className="text-slate-500 font-mono">{completed} / {total} Delivered ({percent}%)</span>
                       </div>
-                      <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden border border-neutral-900">
+                      <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                         <div 
-                          className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-full transition-all duration-500" 
+                          className="h-full bg-emerald-600 rounded-full transition-all duration-500" 
                           style={{ width: `${percent}%` }}
                         />
                       </div>
@@ -840,35 +795,35 @@ Best regards,
               {/* Status Metrics Ribbon */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
                 {[
-                  { label: 'Total', count: campaignDetails.contacts?.length || 0, color: 'text-neutral-400' },
-                  { label: 'Pending AI', count: campaignDetails.contacts?.filter(c => c.status === 'PENDING').length || 0, color: 'text-neutral-500' },
-                  { label: 'Generating', count: campaignDetails.contacts?.filter(c => c.status === 'GENERATING').length || 0, color: 'text-indigo-400 animate-pulse' },
-                  { label: 'Ready', count: campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND').length || 0, color: 'text-sky-400' },
-                  { label: 'Sent', count: campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0, color: 'text-emerald-400' },
-                  { label: 'Failed', count: campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0, color: 'text-rose-400' }
+                  { label: 'Total', count: campaignDetails.contacts?.length || 0, color: 'text-slate-900' },
+                  { label: 'Pending AI', count: campaignDetails.contacts?.filter(c => c.status === 'PENDING').length || 0, color: 'text-slate-500' },
+                  { label: 'Generating', count: campaignDetails.contacts?.filter(c => c.status === 'GENERATING').length || 0, color: 'text-slate-800 animate-pulse' },
+                  { label: 'Ready', count: campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND').length || 0, color: 'text-slate-900' },
+                  { label: 'Sent', count: campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0, color: 'text-emerald-700' },
+                  { label: 'Failed', count: campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0, color: 'text-rose-700' }
                 ].map((stat, idx) => (
-                  <div key={idx} className="bg-zinc-900/30 border border-neutral-900 rounded-lg p-3 text-center">
-                    <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-semibold block">{stat.label}</span>
-                    <span className={`text-base font-bold mt-1 block ${stat.color}`}>{stat.count}</span>
+                  <div key={idx} className="bg-white border border-slate-200/80 rounded-xl p-3.5 text-center shadow-xs">
+                    <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold block">{stat.label}</span>
+                    <span className={`text-lg font-black mt-1 block ${stat.color}`}>{stat.count}</span>
                   </div>
                 ))}
               </div>
 
               {/* Live Activity logs terminal */}
-              <div className="border border-neutral-800 bg-zinc-950 rounded-xl overflow-hidden shadow-inner space-y-0">
-                <div className="bg-zinc-900/60 px-4 py-2 border-b border-neutral-900 flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest flex items-center gap-1.5 font-sans">
+              <div className="border border-slate-200 bg-slate-900 rounded-2xl overflow-hidden shadow-sm space-y-0 text-white">
+                <div className="bg-slate-800/80 px-4 py-2.5 border-b border-slate-700 flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
                     Live Campaign Console
                   </span>
-                  <span className="text-[9px] text-neutral-500 font-mono font-medium">Real-time activity logs</span>
+                  <span className="text-[9px] text-slate-400 font-mono">Real-time activity logs</span>
                 </div>
-                <div className="p-4 max-h-[160px] overflow-y-auto space-y-1.5 font-mono text-[10px] leading-relaxed text-neutral-400 select-text">
+                <div className="p-4 max-h-[160px] overflow-y-auto space-y-1.5 font-mono text-[10px] leading-relaxed text-slate-300 select-text">
                   {activityLogs.length === 0 ? (
-                    <div className="text-neutral-600 text-center py-6">No recent outreach events. Start drafting or sending to stream live activity.</div>
+                    <div className="text-slate-500 text-center py-6">No recent outreach events. Start drafting or sending to stream live activity.</div>
                   ) : (
                     activityLogs.map((log) => {
                       const timeStr = new Date(log.timestamp).toLocaleTimeString();
@@ -876,11 +831,11 @@ Best regards,
                       const isWarn = log.level === 'WARN';
                       return (
                         <div key={log.id} className="flex gap-2.5 items-start">
-                          <span className="text-neutral-600 flex-shrink-0">[{timeStr}]</span>
-                          <span className={`flex-shrink-0 font-bold ${isError ? 'text-rose-500' : isWarn ? 'text-amber-500' : 'text-indigo-400'}`}>
+                          <span className="text-slate-500 flex-shrink-0">[{timeStr}]</span>
+                          <span className={`flex-shrink-0 font-bold ${isError ? 'text-rose-400' : isWarn ? 'text-amber-400' : 'text-slate-300'}`}>
                             [{log.source}]
                           </span>
-                          <span className={isError ? 'text-rose-300' : isWarn ? 'text-amber-300' : 'text-neutral-300'}>
+                          <span className={isError ? 'text-rose-300' : isWarn ? 'text-amber-300' : 'text-slate-200'}>
                             {log.message}
                           </span>
                         </div>
@@ -892,7 +847,7 @@ Best regards,
 
               {/* Import Contacts Section */}
               <div>
-                <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider mb-3">Add Contacts</h3>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3">Add Contacts</h3>
                 <ImportWizard 
                   campaignId={selectedCampId} 
                   onImportComplete={() => fetchCampaignDetails(selectedCampId)} 
@@ -900,16 +855,16 @@ Best regards,
               </div>
 
               {/* Contacts Table List */}
-              <div className="border border-neutral-800 rounded-xl overflow-hidden bg-zinc-950/20">
-                <div className="p-4 border-b border-neutral-800 flex justify-between items-center bg-zinc-950/40">
-                  <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">Contact List</h3>
-                  <span className="text-[10px] text-neutral-500 font-medium">Showing {campaignDetails.contacts?.length || 0} entries</span>
+              <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Contact List</h3>
+                  <span className="text-[10px] text-slate-500 font-medium">Showing {campaignDetails.contacts?.length || 0} entries</span>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="border-b border-neutral-900 bg-zinc-950/40 text-neutral-500 uppercase font-semibold text-[10px] tracking-wider">
+                      <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 uppercase font-bold text-[10px] tracking-wider">
                         <th className="p-4">Contact</th>
                         <th className="p-4">Company</th>
                         <th className="p-4">Role/Title</th>
@@ -919,53 +874,38 @@ Best regards,
                         <th className="p-4 text-center">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-900">
+                    <tbody className="divide-y divide-slate-100">
                       {campaignDetails.contacts?.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="p-8 text-center text-neutral-500 text-xs">
+                          <td colSpan={7} className="p-8 text-center text-slate-500 text-xs">
                             No contacts in this campaign. Upload CSV or paste email list above.
                           </td>
                         </tr>
                       ) : (
                         campaignDetails.contacts?.map((contact) => (
-                          <tr key={contact.id} className="hover:bg-neutral-900/30 transition-colors">
+                          <tr key={contact.id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="p-4">
-                              <div className="font-semibold text-neutral-200">
+                              <div className="font-bold text-slate-900">
                                 {contact.firstName ? `${contact.firstName} ${contact.lastName || ''}` : 'Recruiter'}
                               </div>
-                              <div className="text-[10px] text-neutral-500 font-medium mt-0.5">{contact.email}</div>
-                              {contact.duplicateStatus && (
-                                <span className={`inline-block text-[8px] font-bold uppercase mt-1 px-1 rounded border ${
-                                  contact.duplicateStatus === 'PREVIOUS_CAMPAIGN' 
-                                    ? 'bg-amber-950/10 border-amber-900/25 text-amber-500'
-                                    : 'bg-zinc-900 border-neutral-800 text-neutral-400'
-                                }`}>
-                                  Dup: {contact.duplicateStatus}
-                                </span>
-                              )}
+                              <div className="text-[10px] text-slate-500 font-medium mt-0.5">{contact.email}</div>
                             </td>
-                            <td className="p-4 text-neutral-300 font-medium">{contact.company || '—'}</td>
-                            <td className="p-4 text-neutral-400 font-medium">{contact.title || contact.role || '—'}</td>
+                            <td className="p-4 text-slate-800 font-medium">{contact.company || '—'}</td>
+                            <td className="p-4 text-slate-600 font-medium">{contact.title || contact.role || '—'}</td>
                             <td className="p-4">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border uppercase ${
-                                contact.isTechnical
-                                  ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-400'
-                                  : 'bg-zinc-900 border-neutral-800 text-neutral-500'
-                              }`}>
+                              <span className="px-2 py-0.5 rounded text-[9px] font-bold border border-slate-200 bg-slate-100 text-slate-700 uppercase">
                                 {contact.isTechnical ? 'Technical' : 'General'}
                               </span>
                             </td>
                             <td className="p-4">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border uppercase ${
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${
                                 contact.status === 'SENT' 
-                                  ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-400'
+                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                                   : contact.status === 'READY_TO_SEND'
-                                  ? 'bg-sky-950/20 border-sky-800/40 text-sky-400'
+                                  ? 'bg-slate-100 border-slate-300 text-slate-900'
                                   : contact.status === 'FAILED'
-                                  ? 'bg-rose-950/20 border-rose-800/40 text-rose-400'
-                                  : contact.status === 'GENERATING'
-                                  ? 'bg-indigo-950/20 border-indigo-800/40 text-indigo-400 animate-pulse'
-                                  : 'bg-zinc-900 border-neutral-800 text-neutral-400'
+                                  ? 'bg-rose-50 border-rose-200 text-rose-800'
+                                  : 'bg-slate-100 border-slate-200 text-slate-600'
                               }`}>
                                 {contact.status}
                               </span>
@@ -975,32 +915,32 @@ Best regards,
                                 <div className="flex items-center gap-3">
                                   <button
                                     onClick={() => openContactEditor(contact)}
-                                    className="flex items-center gap-1.5 text-[10px] text-neutral-400 hover:text-neutral-200 transition-colors"
+                                    className="flex items-center gap-1.5 text-[10px] text-slate-700 hover:text-slate-900 font-bold transition-colors cursor-pointer"
                                   >
-                                    <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                                    <Sparkles className="w-3.5 h-3.5 text-slate-700" />
                                     <span>Review Email</span>
                                   </button>
                                   <button
                                     onClick={() => handleRegenerateContactDirect(contact.id)}
-                                    className="flex items-center gap-1.5 text-[10px] text-neutral-450 hover:text-indigo-400 transition-colors"
+                                    className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-slate-800 font-medium transition-colors cursor-pointer"
                                     title="Regenerate this specific email using AI"
                                   >
-                                    <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+                                    <Cpu className="w-3.5 h-3.5 text-slate-600" />
                                     <span>Regen</span>
                                   </button>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-3">
-                                  <span className="flex items-center gap-1 text-[10px] text-neutral-600">
+                                  <span className="flex items-center gap-1 text-[10px] text-slate-400">
                                     <MailQuestion className="w-3 h-3" />
                                     <span>No Email Gen</span>
                                   </span>
                                   <button
                                     onClick={() => handleRegenerateContactDirect(contact.id)}
-                                    className="flex items-center gap-1.5 text-[10px] text-neutral-450 hover:text-indigo-400 transition-colors"
+                                    className="flex items-center gap-1.5 text-[10px] text-slate-700 hover:text-slate-900 font-bold transition-colors cursor-pointer"
                                     title="Generate email for this contact using AI"
                                   >
-                                    <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+                                    <Cpu className="w-3.5 h-3.5 text-slate-700" />
                                     <span>Generate</span>
                                   </button>
                                 </div>
@@ -1009,7 +949,7 @@ Best regards,
                             <td className="p-4 text-center">
                               <button
                                 onClick={() => handleDeleteContact(contact.id)}
-                                className="p-1 text-neutral-500 hover:text-rose-400 hover:bg-rose-950/25 border border-transparent hover:border-rose-900/30 rounded transition-all"
+                                className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                               >
                                 <UserMinus className="w-3.5 h-3.5" />
                               </button>
@@ -1024,53 +964,53 @@ Best regards,
 
               {/* Edit Contact / Email Preview modal overlay */}
               {editContact && (
-                <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-                  <div className="w-full max-w-2xl border border-neutral-800 bg-zinc-900/95 rounded-xl p-6 space-y-4 shadow-xl">
-                    <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
+                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="w-full max-w-2xl border border-slate-200 bg-white rounded-2xl p-6 space-y-4 shadow-xl text-slate-900">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                       <div>
-                        <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">Review Generated Outreach Email</h3>
-                        <p className="text-[10px] text-neutral-500">Contact: {editContact.email}</p>
+                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Review Generated Outreach Email</h3>
+                        <p className="text-[10px] text-slate-500">Contact: {editContact.email}</p>
                       </div>
                       <button
                         onClick={() => handleRegenerateContactAI()}
                         disabled={isSavingContact}
-                        className="flex items-center gap-1 px-2.5 py-1 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-[10px] text-neutral-300 font-semibold rounded-md transition-colors disabled:opacity-40"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-[10px] text-slate-800 font-bold rounded-xl transition-colors cursor-pointer disabled:opacity-40"
                       >
-                        <Cpu className="w-3.5 h-3.5 text-sky-400" />
+                        <Cpu className="w-3.5 h-3.5 text-slate-700" />
                         Regen with AI
                       </button>
                     </div>
 
                     <div className="space-y-4">
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Subject Line</label>
+                        <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Subject Line</label>
                         <input
                           type="text"
                           value={contactSubject}
                           onChange={(e) => setContactSubject(e.target.value)}
-                          className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                          className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                         />
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Body Email (HTML/Text)</label>
+                        <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Body Email (HTML/Text)</label>
                         <textarea
                           value={contactBody}
                           onChange={(e) => setContactBody(e.target.value)}
                           rows={10}
-                          className="rounded-md border border-neutral-800 bg-zinc-950/40 p-3 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700 font-mono leading-relaxed"
+                          className="rounded-xl border border-slate-300 bg-slate-50 p-3.5 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono leading-relaxed transition-colors"
                         />
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center pt-2 border-t border-neutral-800">
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(`Subject: ${contactSubject}\n\n${contactBody}`);
                           alert('Email details copied to clipboard!');
                         }}
                         type="button"
-                        className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-400 font-medium rounded-md text-[10px] transition-colors"
+                        className="px-3.5 py-2 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-[10px] transition-colors cursor-pointer"
                       >
                         Copy to Clipboard
                       </button>
@@ -1079,7 +1019,7 @@ Best regards,
                         <button
                           type="button"
                           onClick={() => setEditContact(null)}
-                          className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 font-semibold rounded-md text-xs transition-colors"
+                          className="px-4 py-2 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
                         >
                           Cancel
                         </button>
@@ -1087,7 +1027,7 @@ Best regards,
                           type="button"
                           onClick={saveContactEdits}
                           disabled={isSavingContact}
-                          className="px-4 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-semibold rounded-md text-xs transition-colors disabled:opacity-40"
+                          className="px-5 py-2 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer disabled:opacity-40"
                         >
                           {isSavingContact ? 'Saving...' : 'Save & Set Ready'}
                         </button>

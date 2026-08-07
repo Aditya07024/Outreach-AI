@@ -67,22 +67,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Backdrop for mobile screens */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-20 bg-zinc-950/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-20 bg-slate-900/40 backdrop-blur-sm md:hidden"
           onClick={onClose}
         />
       )}
 
-      <aside className={`w-64 border-r border-neutral-800 bg-zinc-950 flex flex-col justify-between h-screen fixed left-0 top-0 z-30 transition-transform duration-300 ease-in-out md:translate-x-0 ${
+      <aside className={`w-64 border-r border-slate-200/80 bg-white flex flex-col justify-between h-screen fixed left-0 top-0 z-30 transition-transform duration-300 ease-in-out shadow-sm md:translate-x-0 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="p-6 flex flex-col gap-6">
+        <div className="p-5 flex flex-col gap-6">
           {/* App Title */}
-          <div className="flex items-center gap-2 px-2">
-            <img src={logo} alt="Outreach AI" className="h-8 object-contain rounded-md" />
+          <div className="flex items-center gap-3 px-2 pt-1">
+            <img src={logo} alt="Outreach AI" className="h-8 object-contain rounded-lg shadow-sm" />
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex flex-col gap-1" aria-label="Sidebar Navigation">
+          <nav className="flex flex-col gap-1.5" aria-label="Sidebar Navigation">
             {activeLinks.map((link) => {
               const isLinkDisabled = false;
 
@@ -98,12 +98,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }
                   }}
                   className={({ isActive }) =>
-                    `flex items-center justify-between px-3 py-2 text-xs font-medium rounded-md transition-colors ${
+                    `flex items-center justify-between px-3.5 py-2.5 text-xs font-medium rounded-xl transition-all duration-150 ${
                       isLinkDisabled
-                        ? 'text-neutral-600 cursor-not-allowed opacity-50'
+                        ? 'text-slate-400 cursor-not-allowed opacity-50'
                         : isActive
-                        ? 'bg-neutral-900 text-neutral-100'
-                        : 'text-neutral-400 hover:bg-neutral-900/50 hover:text-neutral-200'
+                        ? 'bg-slate-900 text-white font-bold shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`
                   }
                 >
@@ -111,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <link.icon className="w-4 h-4" />
                     {link.name}
                   </div>
-                  {isLinkDisabled && <Lock className="w-3.5 h-3.5 text-neutral-650" />}
+                  {isLinkDisabled && <Lock className="w-3.5 h-3.5 text-slate-400" />}
                 </NavLink>
               );
             })}
@@ -120,25 +120,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Trial Status Warning Badge */}
         {currentUser && !currentUser.paid && currentUser.role !== 'admin' && currentUser.role !== 'super_admin' && (
-          <div className="mx-6 px-3 py-2.5 rounded-lg bg-purple-950/20 border border-purple-900/40 text-[11px] space-y-1">
+          <div className="mx-5 px-3.5 py-3 rounded-xl bg-slate-100 border border-slate-200 text-[11px] space-y-1">
             {(() => {
               const trialEndsAt = currentUser.trialEndsAt;
-              if (!trialEndsAt) return <span className="text-neutral-500">No active trial</span>;
+              if (!trialEndsAt) return <span className="text-slate-500">No active trial</span>;
               const ends = new Date(trialEndsAt);
               const diffMs = ends.getTime() - Date.now();
               const hoursLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)));
               if (hoursLeft > 0) {
                 return (
                   <>
-                    <div className="font-semibold text-purple-300">Free Trial Active</div>
-                    <div className="text-neutral-400">{hoursLeft} hours remaining</div>
+                    <div className="font-bold text-slate-900">Free Trial Active</div>
+                    <div className="text-slate-600 font-medium">{hoursLeft} hours remaining</div>
                   </>
                 );
               } else {
                 return (
                   <>
-                    <div className="font-semibold text-rose-450">Trial Expired</div>
-                    <div className="text-neutral-550">Please subscribe to link Gmail.</div>
+                    <div className="font-bold text-slate-900">Trial Expired</div>
+                    <div className="text-slate-600">Please subscribe to link Gmail.</div>
                   </>
                 );
               }
@@ -146,15 +146,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
-        {/* Gmail Connection Status Footer */}
-        {/* <div className="p-4 border-t border-neutral-900 bg-zinc-950/40 space-y-2">
-          <div className="flex items-center gap-3 px-2 py-1.5 rounded-lg bg-neutral-900/30 border border-neutral-900">
+        {/* Connection & Sign Out Footer */}
+        <div className="p-4 border-t border-slate-200/80 bg-slate-50/50 space-y-2.5">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs">
             <div className="relative flex">
-              <span className={`h-2.5 w-2.5 rounded-full ${gmailStatus?.connected ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
+              <span className={`h-2.5 w-2.5 rounded-full ${gmailStatus?.connected ? 'bg-emerald-500 ring-2 ring-emerald-200' : 'bg-rose-500 animate-pulse ring-2 ring-rose-200'}`} />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Gmail Status</span>
-              <span className="text-xs text-neutral-200 font-medium truncate">
+              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Gmail Status</span>
+              <span className="text-xs text-slate-800 font-bold truncate">
                 {gmailStatus?.connected ? gmailStatus.email : 'Not Connected'}
               </span>
             </div>
@@ -163,12 +163,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {onLogout && (
             <button
               onClick={onLogout}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-850 text-neutral-400 hover:text-neutral-300 rounded-md text-[10px] font-semibold transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-[0.98]"
             >
               Sign Out
             </button>
           )}
-        </div> */}
+        </div>
       </aside>
     </>
   );

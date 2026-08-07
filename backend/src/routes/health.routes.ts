@@ -38,4 +38,27 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Public Waitlist Email Capture Endpoint
+router.post('/waitlist', async (req, res) => {
+  const { email, rolePack, notes } = req.body;
+
+  if (!email || typeof email !== 'string' || !email.includes('@')) {
+    return res.status(400).json({ error: 'Valid email address is required.' });
+  }
+
+  try {
+    const lead = await prisma.waitlistLead.create({
+      data: {
+        email: email.trim().toLowerCase(),
+        rolePack: rolePack || 'All Roles',
+        notes: notes || null
+      }
+    });
+
+    return res.json({ success: true, lead });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Failed to join waitlist' });
+  }
+});
+
 export default router;

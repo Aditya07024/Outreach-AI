@@ -187,19 +187,19 @@ export const Outbox: React.FC = () => {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold text-neutral-100 tracking-tight">Outbox Queue Review</h2>
-          <p className="text-xs text-neutral-400 mt-1">
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Outbox Queue Review</h2>
+          <p className="text-xs text-slate-500 mt-1">
             Review, edit, copy, or step through your generated emails before sending them.
           </p>
         </div>
 
         {/* Campaign Filter Selector */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Filter Campaign:</span>
+          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Filter Campaign:</span>
           <select
             value={selectedCampId}
             onChange={(e) => setSelectedCampId(e.target.value)}
-            className="rounded-md border border-neutral-850 bg-zinc-950 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-700"
+            className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
           >
             <option value="all">All Campaigns</option>
             {campaigns.map((c) => (
@@ -211,19 +211,19 @@ export const Outbox: React.FC = () => {
 
       {isLoading ? (
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-neutral-400 mx-auto"></div>
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-slate-300 border-t-slate-800 mx-auto"></div>
         </div>
       ) : queue.length === 0 ? (
-        <div className="border border-dashed border-neutral-800 rounded-xl p-12 text-center text-neutral-500 text-xs">
-          <MailWarning className="w-8 h-8 text-neutral-600 mx-auto mb-3" />
+        <div className="border border-dashed border-slate-300 bg-white rounded-2xl p-12 text-center text-slate-500 text-xs shadow-sm">
+          <MailWarning className="w-8 h-8 text-slate-400 mx-auto mb-3" />
           No emails in the outbox queue. Import contacts and click "AI Gen Email" in Campaigns.
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* QUEUE NAVIGATION LIST */}
-          <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-5 space-y-4 h-fit max-h-[600px] overflow-y-auto">
-            <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">
+          <div className="border border-slate-200 bg-white rounded-2xl p-5 space-y-4 h-fit max-h-[600px] overflow-y-auto shadow-sm">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Pending Queue ({queue.length})
             </h3>
             
@@ -232,51 +232,47 @@ export const Outbox: React.FC = () => {
                 <button
                   key={contact.id}
                   onClick={() => setCurrentIndex(index)}
-                  className={`w-full text-left p-3 rounded-lg border text-xs transition-all ${
+                  className={`w-full text-left p-3.5 rounded-xl border text-xs transition-all cursor-pointer ${
                     index === currentIndex
-                      ? 'bg-neutral-900 border-neutral-700 text-neutral-100 font-semibold'
-                      : 'bg-zinc-950/20 border-neutral-900/40 text-neutral-400 hover:bg-neutral-900/40 hover:text-neutral-200'
+                      ? 'bg-slate-900 border-slate-900 text-white font-bold shadow-xs'
+                      : 'bg-slate-50 border-slate-200/80 text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >
                   <div className="flex justify-between items-start">
-                    <span className="font-semibold truncate max-w-[150px]">
+                    <span className="font-bold truncate max-w-[150px]">
                       {contact.firstName ? `${contact.firstName} ${contact.lastName || ''}` : 'Recruiter'}
                     </span>
-                    <span className={`text-[8px] font-bold px-1 rounded border uppercase ${
+                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border uppercase ${
                       contact.status === 'FAILED' 
-                        ? 'bg-rose-950/25 border-rose-800/40 text-rose-400' 
-                        : 'bg-neutral-900 border-neutral-800 text-sky-400'
+                        ? 'bg-rose-100 border-rose-200 text-rose-800' 
+                        : 'bg-slate-200 border-slate-300 text-slate-800'
                     }`}>
                       {contact.status}
                     </span>
                   </div>
-                  <div className="text-[10px] text-neutral-500 truncate mt-1">{contact.email}</div>
-                  <div className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">{contact.company || 'Unknown Company'}</div>
+                  <div className="text-[10px] text-slate-400 truncate mt-1">{contact.email}</div>
+                  <div className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{contact.company || 'Unknown Company'}</div>
                 </button>
               ))}
             </div>
           </div>
 
           {/* EMAIL PREVIEW AND EDITOR */}
-          <div className="lg:col-span-2 border border-neutral-800 bg-zinc-900/10 rounded-xl p-6 flex flex-col gap-5 justify-between">
+          <div className="lg:col-span-2 border border-slate-200 bg-white rounded-2xl p-6 flex flex-col gap-5 justify-between shadow-sm text-slate-900">
             {/* Header info */}
-            <div className="border-b border-neutral-900 pb-4">
+            <div className="border-b border-slate-100 pb-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-200">
+                  <h3 className="text-sm font-bold text-slate-900">
                     To: {currentContact.firstName ? `${currentContact.firstName} ${currentContact.lastName || ''}` : 'Recruiter'} ({currentContact.email})
                   </h3>
-                  <p className="text-[10px] text-neutral-500 mt-1">
-                    Company: <span className="text-neutral-400 font-medium">{currentContact.company || '—'}</span> | Role: <span className="text-neutral-400 font-medium">{currentContact.title || currentContact.role || '—'}</span>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Company: <span className="text-slate-800 font-bold">{currentContact.company || '—'}</span> | Role: <span className="text-slate-800 font-bold">{currentContact.title || currentContact.role || '—'}</span>
                   </p>
                 </div>
                 
                 {/* Tech Badge */}
-                <span className={`px-2 py-0.5 rounded text-[8px] font-bold border uppercase ${
-                  currentContact.isTechnical
-                    ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-400'
-                    : 'bg-zinc-900 border-neutral-800 text-neutral-500'
-                }`}>
+                <span className="px-2.5 py-0.5 rounded text-[8px] font-bold border border-slate-200 bg-slate-100 text-slate-700 uppercase">
                   {currentContact.isTechnical ? 'Technical' : 'General'}
                 </span>
               </div>
@@ -285,32 +281,32 @@ export const Outbox: React.FC = () => {
             {/* Editor fields */}
             <div className="space-y-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Subject Line</label>
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Subject Line</label>
                 <input
                   type="text"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Body Email (HTML/Text)</label>
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Body Email (HTML/Text)</label>
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={12}
-                  className="rounded-md border border-neutral-800 bg-zinc-950/40 p-4 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700 font-mono leading-relaxed"
+                  className="rounded-xl border border-slate-300 bg-slate-50 p-3.5 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono leading-relaxed transition-colors"
                 />
               </div>
             </div>
 
             {/* Quick Actions Panel */}
-            <div className="flex flex-wrap gap-3 justify-between items-center border-t border-neutral-900 pt-4 mt-2">
+            <div className="flex flex-wrap gap-3 justify-between items-center border-t border-slate-100 pt-4 mt-2">
               <div className="flex gap-2">
                 <button
                   onClick={handleCopyToClipboard}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-850 rounded-md text-[10px] font-semibold text-neutral-400 hover:text-neutral-200 transition-all"
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-800 transition-colors cursor-pointer"
                   title="Copy subject and body"
                 >
                   <Copy className="w-3.5 h-3.5" />

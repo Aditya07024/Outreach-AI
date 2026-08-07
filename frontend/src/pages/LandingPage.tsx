@@ -46,6 +46,52 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   // FAQ Accordion State
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
+  // Waitlist Modal State
+  const [showWaitlistModal, setShowWaitlistModal] = useState(false);
+  const [selectedRolePack, setSelectedRolePack] = useState('Founders & CEOs');
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
+  const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
+  const [waitlistError, setWaitlistError] = useState('');
+
+  const handleOpenWaitlist = (rolePackName: string) => {
+    setSelectedRolePack(rolePackName);
+    setWaitlistSubmitted(false);
+    setWaitlistError('');
+    setShowWaitlistModal(true);
+  };
+
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waitlistEmail.trim() || !waitlistEmail.includes('@')) {
+      setWaitlistError('Please enter a valid email address.');
+      return;
+    }
+
+    setIsSubmittingWaitlist(true);
+    setWaitlistError('');
+
+    try {
+      const res = await fetch('/api/waitlist/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: waitlistEmail,
+          rolePack: selectedRolePack,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit request');
+
+      setWaitlistSubmitted(true);
+    } catch (err: any) {
+      setWaitlistError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmittingWaitlist(false);
+    }
+  };
+
   // Load Razorpay standard script dynamically
   useEffect(() => {
     const script = document.createElement('script');
@@ -59,10 +105,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   // Update dynamic SEO title and description
   useEffect(() => {
-    document.title = "Outreach AI – AI Job Application Email Automation";
+    document.title = "Outreach AI – Smart B2B Cold Outreach & Career Email Automation";
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
-      metaDesc.setAttribute('content', 'Outreach AI helps job seekers automate personalized Gmail job application emails using secure Google OAuth, AI-generated drafts, recruiter management, and campaign tracking.');
+      metaDesc.setAttribute('content', 'Outreach AI helps businesses, sales teams, startup founders, and job seekers automate personalized cold emails using secure Google OAuth, Grok-2 AI, lead lists, and campaign tracking.');
     }
   }, []);
 
@@ -309,15 +355,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="space-y-6 lg:col-span-7 text-left text-white animate-fade-in-up">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-sm font-mono font-bold tracking-widest uppercase">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Outreach AI Made Simple</span>
+                  <span>Outreach AI for Business & Career</span>
                 </div>
 
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white animate-fade-in-up animation-delay-100">
-                  Automate Your Job <br/>Application Emails
+                  Send Personalized Cold Emails <br/>to Anyone on Autopilot
                 </h1>
 
                 <p className="text-sm md:text-base text-white/90 max-w-md leading-relaxed animate-fade-in-up animation-delay-200">
-                  Upload your resume, connect your Gmail, and send personalized emails to recruiter lists automatically. Review and edit drafts in one place before sending them out safely one-by-one.
+                  Built for businesses, agency founders, sales reps, and job seekers. Connect your Gmail, import verified prospect lists, and let AI generate & send personalized emails safely.
                 </p>
 
                 <div className="flex flex-wrap gap-3.5 items-center pt-2 animate-fade-in-up animation-delay-300">
@@ -566,14 +612,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section className="py-12 border-b border-neutral-100 bg-[#f8faff] z-10 relative">
         <div className="max-w-[1000px] mx-auto px-6">
           <p className="text-sm font-mono tracking-[0.2em] text-neutral-400 text-center uppercase mb-8">
-            Designed for students and professionals applying to companies like
+            Designed for businesses, agencies, founders & job seekers at
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500 text-xs font-black tracking-tighter text-neutral-500">
-            <span>TECH STARTUPS</span>
-            <span>FORTUNE 500</span>
-            <span>DESIGN AGENCIES</span>
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-70 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500 text-xs font-black tracking-tighter text-neutral-600">
+            <span>B2B AGENCIES</span>
+            <span>STARTUP FOUNDERS</span>
+            <span>SALES & PROSPECTING</span>
             <span>CONSULTING FIRMS</span>
-            <span>SOFTWARE COMPANIES</span>
+            <span>JOB SEEKERS & RECRUITERS</span>
           </div>
         </div>
       </section>
@@ -903,6 +949,147 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
+      {/* UPCOMING FEATURE: ROLE-BASED CONTACT PACKS */}
+      <section className="py-20 px-6 max-w-[1000px] mx-auto z-10 relative">
+        <div className="bg-[#f8faff] border border-neutral-200/60 rounded-3xl p-8 md:p-12 space-y-10 shadow-xs">
+          
+          {/* Header */}
+          <div className="text-center space-y-3 max-w-2xl mx-auto">
+            <span className="text-sm font-mono tracking-widest text-[#2563eb] uppercase font-bold">Upcoming Feature</span>
+            <h2 className="text-3xl font-black tracking-tight text-neutral-900">
+              Role-Based Contact Packs (Coming Soon)
+            </h2>
+            <p className="text-sm text-neutral-500 leading-relaxed">
+              Spend less time searching for email addresses. Soon, you'll be able to browse verified contact lists by job role and import them straight into your campaigns with a single click.
+            </p>
+          </div>
+
+          {/* Role Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            
+            <div className="bg-white border border-neutral-200/80 rounded-2xl p-5 space-y-3 shadow-2xs hover:border-blue-400/40 transition-all hover:scale-[1.01] flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                    💼
+                  </div>
+                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full">
+                    B2B Prospecting
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-neutral-900">Founders &amp; CEOs</h4>
+                  <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
+                    Decision makers at tech startups, SMBs, and high-growth companies.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleOpenWaitlist('Founders & CEOs')}
+                className="w-full py-2 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+              >
+                <span>Get Data Access</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="bg-white border border-neutral-200/80 rounded-2xl p-5 space-y-3 shadow-2xs hover:border-blue-400/40 transition-all hover:scale-[1.01] flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-sm">
+                    💻
+                  </div>
+                  <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full">
+                    Engineering
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-neutral-900">Tech Leads &amp; CTOs</h4>
+                  <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
+                    Engineering VPs, Lead Architects, and IT decision makers.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleOpenWaitlist('Tech Leads & CTOs')}
+                className="w-full py-2 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+              >
+                <span>Get Data Access</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="bg-white border border-neutral-200/80 rounded-2xl p-5 space-y-3 shadow-2xs hover:border-blue-400/40 transition-all hover:scale-[1.01] flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm">
+                    📣
+                  </div>
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full">
+                    Growth &amp; Sales
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-neutral-900">Marketing Directors</h4>
+                  <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
+                    CMOs, VP Marketing, Agency Buyers, and Brand Managers.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleOpenWaitlist('Marketing Directors')}
+                className="w-full py-2 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+              >
+                <span>Get Data Access</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="bg-white border border-neutral-200/80 rounded-2xl p-5 space-y-3 shadow-2xs hover:border-blue-400/40 transition-all hover:scale-[1.01] flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+                    🤝
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                    Career Outreach
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-neutral-900">HR &amp; Recruiters</h4>
+                  <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
+                    Heads of People, Senior Recruiters, and Talent Acquisition Leads.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleOpenWaitlist('HR & Recruiters')}
+                className="w-full py-2 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+              >
+                <span>Get Data Access</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+          </div>
+
+          {/* Bottom Callout banner */}
+          <div className="p-4 bg-white border border-neutral-200/80 rounded-2xl text-center text-xs text-neutral-600 font-medium flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <span>Contact packs will integrate directly into your Outreach AI campaign dashboard.</span>
+            </div>
+            <button
+              onClick={() => handleOpenWaitlist('All Roles')}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-xs shrink-0"
+            >
+              Get Access to Data
+            </button>
+          </div>
+
+        </div>
+      </section>
+
       {/* Trust & Security details panel */}
       <section className="py-24 px-6 max-w-[1000px] mx-auto z-10 relative">
         <div className="rounded-3xl p-8 bg-[#f8faff] border border-neutral-200/60 text-center space-y-8 shadow-sm">
@@ -942,59 +1129,80 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             Simple, Growth-Focused Pricing
           </h2>
           <p className="text-sm text-neutral-500 max-w-xl mx-auto leading-relaxed">
-            Scale your search at the pace you need with our simple licensing.
+            Scale your outreach at the pace you need with our simple, transparent licensing.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-          {/* Option 1: Yearly */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {/* Plan 1: Monthly */}
           <div className="rounded-2xl p-6 bg-white border border-neutral-200/80 hover:border-neutral-300 transition-all duration-300 flex flex-col justify-between min-h-[280px] hover:scale-[1.02] hover:shadow-lg">
             <div className="space-y-4">
-              <span className="text-sm font-mono tracking-widest text-neutral-400 uppercase block font-bold">Yearly Access</span>
+              <span className="text-sm font-mono tracking-widest text-neutral-400 uppercase block font-bold">Monthly Plan</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-neutral-900">₹100</span>
-                <span className="text-sm text-neutral-400 font-semibold">/year</span>
+                <span className="text-3xl font-black text-neutral-900">₹299</span>
+                <span className="text-sm text-neutral-400 font-semibold">/month</span>
               </div>
               <ul className="space-y-3 pt-2 text-sm text-neutral-500">
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-500" /> Unlimited AI Drafts</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-500" /> Gmail OAuth Integration</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-500" /> Review Queue panel</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-500" /> Outbox Review Queue</li>
               </ul>
             </div>
             <button 
-              onClick={() => handleStartPurchase('yearly')}
-              className="mt-6 w-full py-3 rounded-xl border border-neutral-200 hover:bg-neutral-50 text-sm font-bold text-neutral-700 transition-colors cursor-pointer"
-              aria-label="Purchase Yearly Access Plan for 100 Rupees per year"
+              onClick={() => handleStartPurchase('monthly' as any)}
+              className="mt-6 w-full py-3 rounded-xl border border-neutral-300 hover:bg-neutral-900 hover:text-white text-sm font-bold text-neutral-800 transition-colors cursor-pointer"
             >
-              Start Yearly Access
+              Start Monthly
             </button>
           </div>
 
-          {/* Option 2: Lifetime */}
-          <div className="rounded-2xl p-6 bg-blue-50/50 border border-blue-300 hover:border-blue-400 transition-all duration-300 flex flex-col justify-between min-h-[280px] relative hover:scale-[1.02] hover:shadow-lg">
-            <div className="absolute top-0 right-4 translate-y-[-50%] bg-blue-600 text-white font-bold text-sm font-mono px-3 py-1 rounded-full uppercase tracking-wider">
-              POPULAR
+          {/* Plan 2: 6-Month */}
+          <div className="rounded-2xl p-6 bg-blue-50/50 border border-blue-300 hover:border-blue-400 transition-all duration-300 flex flex-col justify-between min-h-[280px] relative hover:scale-[1.02] hover:shadow-lg ring-2 ring-blue-500/30">
+            <div className="absolute top-0 right-4 translate-y-[-50%] bg-blue-600 text-white font-bold text-xs font-mono px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
+              MOST POPULAR
             </div>
-            <div className="space-y-4">
-              <span className="text-sm font-mono tracking-widest text-blue-600 uppercase block font-bold">Lifetime License</span>
+            <div className="space-y-4 pt-1">
+              <span className="text-sm font-mono tracking-widest text-blue-600 uppercase block font-bold">6-Month Plan</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-neutral-900">₹300</span>
-                <span className="text-sm text-neutral-555 font-semibold">/once</span>
+                <span className="text-3xl font-black text-neutral-900">₹1,599</span>
+                <span className="text-sm text-neutral-555 font-semibold">/6 months</span>
               </div>
               <ul className="space-y-3 pt-2 text-sm text-neutral-600">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> Permanent ownership license</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> CSV outreach campaign upload</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> Lifetime releases & updates</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> Everything in Monthly</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> Save 11% semi-annually</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600" /> Priority email queueing</li>
               </ul>
             </div>
             <button 
-              onClick={() => handleStartPurchase('lifetime')}
+              onClick={() => handleStartPurchase('six_months' as any)}
               className="mt-6 w-full py-3 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all cursor-pointer shadow-md shadow-blue-500/10"
-              aria-label="Purchase Lifetime License Plan for 300 Rupees once"
             >
-              Go Lifetime License
+              Select 6-Month Plan
             </button>
           </div>
+
+          {/* Plan 3: Yearly */}
+          <div className="rounded-2xl p-6 bg-white border border-neutral-200/80 hover:border-neutral-300 transition-all duration-300 flex flex-col justify-between min-h-[280px] hover:scale-[1.02] hover:shadow-lg">
+            <div className="space-y-4">
+              <span className="text-sm font-mono tracking-widest text-neutral-400 uppercase block font-bold">Yearly Plan</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-black text-neutral-900">₹2,999</span>
+                <span className="text-sm text-neutral-400 font-semibold">/year</span>
+              </div>
+              <ul className="space-y-3 pt-2 text-sm text-neutral-500">
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-500" /> Full 12 months access</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-500" /> Maximum annual savings</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-500" /> Priority features &amp; support</li>
+              </ul>
+            </div>
+            <button 
+              onClick={() => handleStartPurchase('yearly' as any)}
+              className="mt-6 w-full py-3 rounded-xl border border-neutral-300 hover:bg-neutral-900 hover:text-white text-sm font-bold text-neutral-800 transition-colors cursor-pointer"
+            >
+              Select Yearly Plan
+            </button>
+          </div>
+
         </div>
       </section>
 
@@ -1154,6 +1362,110 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 Confirm Payment
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* INTERACTIVE DATA STORE WAITLIST MODAL */}
+      {showWaitlistModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div 
+            className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden text-slate-900 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 font-bold text-xs">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Request Data Access</h3>
+                  <p className="text-[10px] text-slate-500">Contact Pack: <span className="font-bold text-slate-800">{selectedRolePack}</span></p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowWaitlistModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            {!waitlistSubmitted ? (
+              <form onSubmit={handleWaitlistSubmit} className="p-6 space-y-4">
+                {waitlistError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-medium flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{waitlistError}</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Your Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    value={waitlistEmail}
+                    onChange={(e) => setWaitlistEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                  />
+                  <span className="text-[10px] text-slate-500 block mt-1">
+                    We will notify you the exact moment the <strong className="text-slate-800">{selectedRolePack}</strong> contact pack is ready for download.
+                  </span>
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowWaitlistModal(false)}
+                    className="w-1/2 py-2.5 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingWaitlist}
+                    className="w-1/2 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer shadow-xs active:scale-[0.98] flex items-center justify-center gap-2"
+                  >
+                    {isSubmittingWaitlist ? (
+                      <>
+                        <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-900/30 border-t-slate-900 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      'Get Access'
+                    )}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* Success View */
+              <div className="p-6 text-center space-y-4 animate-in fade-in duration-200">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto shadow-xs">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-extrabold text-slate-900">Spot Reserved on Priority List!</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Thanks for your interest in <span className="font-bold text-slate-900">{selectedRolePack}</span> contact data!
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium leading-relaxed">
+                  ⏳ <strong>Coming Soon!</strong> This contact pack is currently being compiled &amp; verified. We will email <strong>{waitlistEmail}</strong> the moment it drops!
+                </div>
+
+                <button
+                  onClick={() => setShowWaitlistModal(false)}
+                  className="px-6 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer shadow-xs"
+                >
+                  Done
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

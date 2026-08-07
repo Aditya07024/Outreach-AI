@@ -60,6 +60,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // Dashboard Stats & Users
   const [users, setUsers] = useState<UserDetail[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
+  const [waitlistLeads, setWaitlistLeads] = useState<{ id: number; email: string; rolePack: string; createdAt: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,17 +72,38 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     setIsLoading(true);
     setDashboardError(null);
     try {
-      const response = await fetch('/api/admin/users');
-      if (!response.ok) {
+      const [usersRes, waitlistRes] = await Promise.all([
+        fetch('/api/admin/users'),
+        fetch('/api/admin/waitlist')
+      ]);
+
+      if (!usersRes.ok) {
         throw new Error('Failed to retrieve administrative data.');
       }
-      const data = await response.json();
+      const data = await usersRes.json();
       setUsers(data.users);
       setStats(data.stats);
+
+      if (waitlistRes.ok) {
+        const waitlistData = await waitlistRes.json();
+        setWaitlistLeads(waitlistData.leads || []);
+      }
     } catch (err: any) {
       setDashboardError(err.message || 'Failed to fetch admin data.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteWaitlistLead = async (id: number) => {
+    if (!confirm('Are you sure you want to remove this lead from the waitlist?')) return;
+    try {
+      const res = await fetch(`/api/admin/waitlist/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setWaitlistLeads(prev => prev.filter(item => item.id !== id));
+      }
+    } catch (err) {
+      alert('Failed to delete waitlist lead.');
     }
   };
 
@@ -453,6 +475,67 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Captured Data Store Waitlist Leads Table */}
+      <div className="border border-neutral-800 bg-zinc-900/20 rounded-xl p-6 space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              Data Store Early Access Leads ({waitlistLeads.length})
+            </h3>
+            <p className="text-[10px] text-neutral-550">Captured email addresses &amp; role preferences from the landing page data store preview.</p>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold">
+            {waitlistLeads.length} Leads Collected
+          </span>
+        </div>
+
+        <div className="overflow-x-auto border border-neutral-900 rounded-lg">
+          {waitlistLeads.length === 0 ? (
+            <div className="text-center py-8 text-xs text-neutral-550">
+              No waitlist lead submissions yet.
+            </div>
+          ) : (
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-zinc-950 text-neutral-450 border-b border-neutral-850">
+                  <th className="p-3.5 font-bold">ID</th>
+                  <th className="p-3.5 font-bold">Email Address</th>
+                  <th className="p-3.5 font-bold">Requested Role Pack</th>
+                  <th className="p-3.5 font-bold">Submitted Date</th>
+                  <th className="p-3.5 font-bold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-900">
+                {waitlistLeads.map((lead) => (
+                  <tr key={lead.id} className="hover:bg-neutral-900/20 transition-colors">
+                    <td className="p-3.5 text-neutral-500 font-mono">#{lead.id}</td>
+                    <td className="p-3.5 font-bold text-neutral-100">{lead.email}</td>
+                    <td className="p-3.5">
+                      <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold">
+                        {lead.rolePack}
+                      </span>
+                    </td>
+                    <td className="p-3.5 text-neutral-450 text-[11px]">
+                      {new Date(lead.createdAt).toLocaleString()}
+                    </td>
+                    <td className="p-3.5 text-right">
+                      <button
+                        onClick={() => handleDeleteWaitlistLead(lead.id)}
+                        className="px-2.5 py-1 bg-rose-950/20 hover:bg-rose-950/40 border border-rose-900/30 text-rose-400 rounded text-[10px] font-bold transition-colors cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 };

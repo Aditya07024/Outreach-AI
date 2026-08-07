@@ -25,56 +25,49 @@ import { AdminPortal } from './pages/AdminPortal';
 // Global dynamic token resolver for fetch interceptor
 let activeTokenResolver: () => Promise<string | null> = async () => localStorage.getItem('token');
 
-// Global fetch interceptor to append authorization token & handle 401s
+// Global fetch interceptor to append authorization token & handle 401s for backend API calls
 const originalFetch = window.fetch;
 window.fetch = async (input, init) => {
-  const token = await activeTokenResolver();
-  if (token) {
-    init = init || {};
-    init.headers = init.headers || {};
-    if (init.headers instanceof Headers) {
-      if (!init.headers.has('Authorization')) {
-        init.headers.set('Authorization', `Bearer ${token}`);
+  const urlString = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
+  const isInternalApi = urlString.startsWith('/api') || urlString.includes('/api/') || urlString.startsWith(window.location.origin + '/api');
+  const isClerk = urlString.includes('clerk');
+
+  let newInit = init;
+  let didAttachToken = false;
+
+  if (isInternalApi && !isClerk) {
+    try {
+      const rawToken = await activeTokenResolver();
+      const token = rawToken?.trim();
+      if (token && token !== 'null' && token !== 'undefined') {
+        const existingHeaders = init?.headers || (input instanceof Request ? input.headers : undefined);
+        const headers = new Headers(existingHeaders || {});
+        if (!headers.has('Authorization')) {
+          headers.set('Authorization', `Bearer ${token}`);
+          didAttachToken = true;
+        }
+        newInit = { ...init, headers };
       }
-    } else if (Array.isArray(init.headers)) {
-      const hasAuth = init.headers.some(([k]) => k.toLowerCase() === 'authorization');
-      if (!hasAuth) {
-        init.headers.push(['Authorization', `Bearer ${token}`]);
-      }
-    } else {
-      const headersRecord = init.headers as Record<string, string>;
-      if (!headersRecord['Authorization'] && !headersRecord['authorization']) {
-        headersRecord['Authorization'] = `Bearer ${token}`;
-      }
+    } catch (err) {
+      console.warn('Error setting auth header in fetch interceptor:', err);
     }
   }
 
-  const response = await originalFetch(input, init);
-  if (response.status === 401) {
-    localStorage.removeItem('token');
-    window.dispatchEvent(new Event('unauthorized'));
+  try {
+    const response = await originalFetch(input, newInit);
+    // Only trigger unauthorized if we actually sent a token and it was rejected.
+    // If no token was attached, the 401 is expected (token not ready yet) — don't logout.
+    if (response.status === 401 && isInternalApi && !isClerk && didAttachToken) {
+      localStorage.removeItem('token');
+      window.dispatchEvent(new Event('unauthorized'));
+    }
+    return response;
+  } catch (err) {
+    if (isInternalApi && !isClerk) {
+      console.error(`[Fetch Interceptor Error] Request to ${urlString} failed:`, err);
+    }
+    throw err;
   }
-
-  // Make .json() resilient to non-JSON error responses (e.g., proxy/gateway error pages).
-  const _safeClone = response.clone();
-  Object.defineProperty(response, 'json', {
-    value: async () => {
-      const text = await _safeClone.text();
-      try {
-        return JSON.parse(text);
-      } catch {
-        throw new Error(
-          response.ok
-            ? `Unexpected response format: ${text.substring(0, 100) || '(empty)'}`
-            : `Server error (${response.status}): ${text.substring(0, 100) || '(empty)'}`
-        );
-      }
-    },
-    configurable: true,
-    writable: true,
-  });
-
-  return response;
 };
 
 export const App: React.FC = () => {
@@ -106,32 +99,59 @@ export const App: React.FC = () => {
   useEffect(() => {
     activeTokenResolver = async () => {
       if (clerkSignedIn) {
-        try {
-          const t = await getToken();
-          if (t) return t;
-        } catch (err) {
-          console.warn('Failed to retrieve Clerk session token', err);
+        // Retry getToken() a few times — on initial load the session token
+        // may not be available immediately even though clerkSignedIn is true
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const t = await getToken();
+            if (t) return t;
+          } catch (err) {
+            console.warn(`Failed to retrieve Clerk session token (attempt ${attempt + 1})`, err);
+          }
+          // Wait before retrying
+          if (attempt < 2) {
+            await new Promise(r => setTimeout(r, 500));
+          }
         }
       }
       return localStorage.getItem('token');
     };
   }, [clerkSignedIn, getToken]);
 
-  const handleLogout = useCallback(async () => {
-    localStorage.removeItem('token');
-    setAdminToken(null);
-    if (clerkSignedIn) {
-      try {
-        await signOut();
-      } catch (err) {
-        console.warn('Clerk sign out error', err);
-      }
+  // Ensure local state and tokens are wiped ONLY when transitioning from Clerk signed-in to signed-out
+  const wasClerkSignedInRef = React.useRef(clerkSignedIn);
+  useEffect(() => {
+    if (wasClerkSignedInRef.current && !clerkSignedIn) {
+      localStorage.removeItem('token');
+      setAdminToken(null);
+      setCurrentUser(null);
+      setGmailStatus(null);
     }
-    setGmailStatus(null);
-    setCurrentUser(null);
+    wasClerkSignedInRef.current = clerkSignedIn;
+  }, [clerkSignedIn]);
+
+  const isLoggingOutRef = React.useRef(false);
+  const handleLogout = useCallback(async () => {
+    if (isLoggingOutRef.current) return;
+    isLoggingOutRef.current = true;
+    try {
+      localStorage.removeItem('token');
+      setAdminToken(null);
+      setCurrentUser(null);
+      setGmailStatus(null);
+      if (clerkSignedIn) {
+        try {
+          await signOut();
+        } catch (err) {
+          console.warn('Clerk sign out error', err);
+        }
+      }
+    } finally {
+      isLoggingOutRef.current = false;
+    }
   }, [clerkSignedIn, signOut]);
 
-  const fetchUserProfile = useCallback(async () => {
+  const fetchUserProfile = useCallback(async (retryCount = 0) => {
     if (!clerkSignedIn && !localStorage.getItem('token')) {
       setLoadingUser(false);
       return;
@@ -148,7 +168,15 @@ export const App: React.FC = () => {
           console.warn('Failed to parse user profile JSON. Response was:', text, jsonErr);
         }
       } else if (response.status === 401) {
-        handleLogout();
+        // If Clerk says we're signed in, the token may just not be ready yet — retry once
+        if (clerkSignedIn && retryCount < 2) {
+          await new Promise(r => setTimeout(r, 1500));
+          return fetchUserProfile(retryCount + 1);
+        }
+        // Only logout for non-Clerk sessions or after retries exhausted
+        if (!clerkSignedIn) {
+          handleLogout();
+        }
       }
     } catch (err) {
       console.error('Failed to retrieve user profile', err);
@@ -252,11 +280,16 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const handleUnauthorized = () => {
-      handleLogout();
+      // Clear local state only — don't call signOut() which triggers network requests to Clerk
+      // that cascade into repeated "Load failed" errors. Clerk will detect the invalid session itself.
+      localStorage.removeItem('token');
+      setAdminToken(null);
+      setCurrentUser(null);
+      setGmailStatus(null);
     };
     window.addEventListener('unauthorized', handleUnauthorized);
     return () => window.removeEventListener('unauthorized', handleUnauthorized);
-  }, [handleLogout]);
+  }, []);
 
   if (!clerkLoaded || (loadingUser && isAuthenticated)) {
     return (
@@ -312,7 +345,7 @@ export const App: React.FC = () => {
           <Route 
             path="*" 
             element={
-              <div className="flex min-h-screen bg-zinc-950 text-neutral-100">
+              <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans">
                 {/* Nav Sidebar */}
                 <Sidebar 
                   gmailStatus={gmailStatus} 

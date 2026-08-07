@@ -20,7 +20,7 @@ export const Subscription: React.FC<SubscriptionProps> = ({ user, onPaymentSucce
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-[60vh] text-neutral-400">
+      <div className="flex items-center justify-center h-[60vh] text-slate-500 font-medium">
         Loading subscription data...
       </div>
     );
@@ -32,8 +32,21 @@ export const Subscription: React.FC<SubscriptionProps> = ({ user, onPaymentSucce
     return <PricingPage user={user} onPaymentSuccess={onPaymentSuccess} />;
   }
 
-  const planName = user.plan === 'yearly' ? 'Yearly Subscription' : user.plan === 'lifetime' ? 'Lifetime Access License' : 'No Active Plan';
-  const planPrice = user.plan === 'yearly' ? '₹100/year' : user.plan === 'lifetime' ? '₹300 one-time' : 'N/A';
+  const planName = user.plan === 'monthly' 
+    ? 'Monthly Subscription' 
+    : user.plan === 'six_months' 
+    ? '6-Month Plan' 
+    : user.plan === 'yearly' 
+    ? 'Yearly Plan' 
+    : 'No Active Plan';
+
+  const planPrice = user.plan === 'monthly' 
+    ? '₹299/month' 
+    : user.plan === 'six_months' 
+    ? '₹1,599 / 6 months' 
+    : user.plan === 'yearly' 
+    ? '₹2,999/year' 
+    : 'N/A';
 
   const formatExpiryDate = (dateStr: string | null) => {
     if (!dateStr) return 'Never expires';
@@ -50,37 +63,30 @@ export const Subscription: React.FC<SubscriptionProps> = ({ user, onPaymentSucce
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12 space-y-8 animate-fade-in relative">
+    <div className="max-w-5xl mx-auto px-6 py-8 space-y-8 animate-in fade-in duration-200">
       
-      {/* Decorative Gradients */}
-      <div className="absolute top-1/4 left-1/3 w-[250px] h-[250px] rounded-full bg-purple-900/5 blur-[80px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/3 w-[250px] h-[250px] rounded-full bg-cyan-900/5 blur-[80px] pointer-events-none" />
-
       {/* Title Header */}
       <div>
-        <h2 className="text-xl font-bold text-neutral-100 tracking-tight">Subscription Billing</h2>
-        <p className="text-xs text-neutral-450 mt-1">Manage your license status, active subscription plan, and billing history.</p>
+        <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Subscription Billing</h2>
+        <p className="text-xs text-slate-500 mt-1">Manage your license status, active subscription plan, and billing history.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         
         {/* Plan Overview Card */}
-        <div className="md:col-span-2 border border-neutral-800 bg-zinc-900/40 backdrop-blur-md rounded-xl p-6 shadow-xl space-y-6 relative overflow-hidden">
-          {isPaid && (
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-500 to-cyan-500" />
-          )}
+        <div className="md:col-span-2 border border-slate-200 bg-white rounded-2xl p-6 shadow-sm space-y-6 relative overflow-hidden text-slate-900">
 
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-neutral-900 pb-5">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-100 pb-5">
             <div className="space-y-1">
-              <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Current Account Plan</span>
-              <h3 className="text-lg font-bold text-neutral-200">{planName}</h3>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Current Account Plan</span>
+              <h3 className="text-lg font-bold text-slate-900">{planName}</h3>
             </div>
             
             <div className="flex items-center gap-2">
-              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+              <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                 isPaid 
-                  ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/40' 
-                  : 'bg-rose-950/40 text-rose-450 border-rose-900/40 animate-pulse'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                  : 'bg-rose-50 text-rose-800 border-rose-200 animate-pulse'
               }`}>
                 {isPaid ? 'Active' : 'Payment Required'}
               </span>
@@ -89,40 +95,40 @@ export const Subscription: React.FC<SubscriptionProps> = ({ user, onPaymentSucce
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
             <div className="space-y-1.5">
-              <span className="text-neutral-500 font-medium">Pricing Plan</span>
-              <p className="text-neutral-250 font-bold text-sm flex items-center gap-1.5">
-                <CreditCard className="w-4 h-4 text-purple-400" />
+              <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Pricing Plan</span>
+              <p className="text-slate-900 font-bold text-sm flex items-center gap-1.5">
+                <CreditCard className="w-4 h-4 text-slate-700" />
                 {planPrice}
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <span className="text-neutral-500 font-medium">License Expiration</span>
-              <p className="text-neutral-250 font-bold text-sm flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-cyan-400" />
+              <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">License Expiration</span>
+              <p className="text-slate-900 font-bold text-sm flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-slate-700" />
                 {isPaid ? formatExpiryDate(user.paidUntil) : 'No subscription active'}
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <span className="text-neutral-500 font-medium">Billing Email</span>
-              <p className="text-neutral-350 font-mono">{user.email || 'Local Owner Account'}</p>
+              <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Billing Email</span>
+              <p className="text-slate-800 font-mono font-medium">{user.email || 'Local Owner Account'}</p>
             </div>
 
             <div className="space-y-1.5">
-              <span className="text-neutral-500 font-medium">Payment Gateway</span>
-              <p className="text-neutral-350">{isPaid ? 'Razorpay Secure Checkout' : 'Not Connected'}</p>
+              <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Payment Gateway</span>
+              <p className="text-slate-800 font-medium">{isPaid ? 'Razorpay Secure Checkout' : 'Not Connected'}</p>
             </div>
           </div>
 
           {!isPaid && (
-            <div className="pt-4 border-t border-neutral-900 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <p className="text-[11px] text-neutral-450 text-center sm:text-left">
+            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <p className="text-[11px] text-slate-500 text-center sm:text-left">
                 Unlock all features including career outreach, Grok AI generators, campaigns, and resumes.
               </p>
               <button
                 onClick={() => navigate('/')}
-                className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-lg text-xs transition-colors shrink-0 shadow-lg shadow-white/5"
+                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-xs active:scale-[0.98]"
               >
                 Go to Dashboard & Pay
               </button>
@@ -131,13 +137,13 @@ export const Subscription: React.FC<SubscriptionProps> = ({ user, onPaymentSucce
         </div>
 
         {/* Features Lock Status side block */}
-        <div className="border border-neutral-850 bg-zinc-950/50 rounded-xl p-6 space-y-4">
-          <h4 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-purple-400" />
+        <div className="border border-slate-200 bg-white rounded-2xl p-6 space-y-4 shadow-sm text-slate-900">
+          <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-slate-700" />
             Plan Benefits
           </h4>
           
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {[
               { name: 'Dashboard Analytics', unlocked: true },
               { name: 'Profile Configuration', unlocked: true },
@@ -148,15 +154,15 @@ export const Subscription: React.FC<SubscriptionProps> = ({ user, onPaymentSucce
               { name: 'Anti-Spam Sequential Sending', unlocked: true },
               { name: 'System Performance Logs', unlocked: true },
               { name: 'Gmail API OAuth 2.0 Connection', unlocked: isPaid }
-            ].map((feat, idx) => (
-              <div key={idx} className="flex items-center justify-between text-[11px]">
-                <span className={feat.unlocked ? 'text-neutral-300' : 'text-neutral-550 line-through'}>
-                  {feat.name}
+            ].map((feature, idx) => (
+              <div key={idx} className="flex items-center justify-between text-xs py-1">
+                <span className={feature.unlocked ? 'text-slate-800 font-medium' : 'text-slate-400 line-through'}>
+                  {feature.name}
                 </span>
-                {feat.unlocked ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-450 shrink-0" />
+                {feature.unlocked ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 ) : (
-                  <AlertCircle className="w-3.5 h-3.5 text-neutral-600 shrink-0" />
+                  <AlertCircle className="w-4 h-4 text-slate-300" />
                 )}
               </div>
             ))}

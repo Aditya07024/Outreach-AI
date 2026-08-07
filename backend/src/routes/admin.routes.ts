@@ -145,4 +145,29 @@ router.post('/cancel/:id', requireSuperAdmin, async (req: AuthenticatedRequest, 
   }
 });
 
+// Get all captured waitlist leads
+router.get('/waitlist', requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const leads = await prisma.waitlistLead.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ leads });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch waitlist leads' });
+  }
+});
+
+// Delete a waitlist lead
+router.delete('/waitlist/:id', requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const leadId = Number(req.params.id);
+    await prisma.waitlistLead.delete({
+      where: { id: leadId }
+    });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to delete waitlist lead' });
+  }
+});
+
 export default router;

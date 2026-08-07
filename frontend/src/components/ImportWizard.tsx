@@ -163,15 +163,15 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
   };
 
   return (
-    <div className="w-full bg-zinc-900/40 border border-neutral-800 rounded-xl overflow-hidden">
+    <div className="w-full bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
       {/* Tabs list */}
-      <div className="flex border-b border-neutral-800 bg-zinc-950/40">
+      <div className="flex border-b border-slate-200 bg-slate-50">
         <button
           onClick={() => handleTabChange('csv')}
-          className={`flex items-center gap-2 px-5 py-3 text-xs font-semibold border-b ${
+          className={`flex items-center gap-2 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
             activeTab === 'csv'
-              ? 'border-neutral-200 text-neutral-200 bg-neutral-900/20'
-              : 'border-transparent text-neutral-400 hover:text-neutral-200'
+              ? 'border-slate-900 text-slate-900 bg-white'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
           <FileSpreadsheet className="w-4 h-4" />
@@ -179,10 +179,10 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
         </button>
         <button
           onClick={() => handleTabChange('paste')}
-          className={`flex items-center gap-2 px-5 py-3 text-xs font-semibold border-b ${
+          className={`flex items-center gap-2 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
             activeTab === 'paste'
-              ? 'border-neutral-200 text-neutral-200 bg-neutral-900/20'
-              : 'border-transparent text-neutral-400 hover:text-neutral-200'
+              ? 'border-slate-900 text-slate-900 bg-white'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
           <ClipboardList className="w-4 h-4" />
@@ -190,10 +190,10 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
         </button>
         <button
           onClick={() => handleTabChange('manual')}
-          className={`flex items-center gap-2 px-5 py-3 text-xs font-semibold border-b ${
+          className={`flex items-center gap-2 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
             activeTab === 'manual'
-              ? 'border-neutral-200 text-neutral-200 bg-neutral-900/20'
-              : 'border-transparent text-neutral-400 hover:text-neutral-200'
+              ? 'border-slate-900 text-slate-900 bg-white'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
           <UserPlus className="w-4 h-4" />
@@ -205,28 +205,25 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
         {/* Results Toast Alerts */}
         {statusMsg && (
           <div
-            className={`mb-6 p-4 rounded-lg flex items-start gap-3 border text-xs leading-relaxed ${
+            className={`mb-6 p-4 rounded-xl flex items-start gap-3 border text-xs leading-relaxed ${
               statusMsg.type === 'success'
-                ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-300'
-                : 'bg-rose-950/20 border-rose-800/40 text-rose-300'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                : 'bg-rose-50 border-rose-200 text-rose-900'
             }`}
           >
             {statusMsg.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
             ) : (
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
             )}
             <div className="flex-1">
-              <span className="font-semibold">{statusMsg.text}</span>
+              <span className="font-bold">{statusMsg.text}</span>
               {statusMsg.details && (
-                <div className="mt-2 grid grid-cols-3 gap-4 border-t border-neutral-800/50 pt-2 font-medium text-[10px] text-neutral-400 uppercase tracking-wider">
-                  <div>Added: <span className="text-neutral-200 font-bold">{statusMsg.details.imported}</span></div>
-                  <div>Duplicates: <span className="text-neutral-200 font-bold">{statusMsg.details.duplicates}</span></div>
+                <div className="mt-2 grid grid-cols-3 gap-4 border-t border-slate-200 pt-2 font-semibold text-[10px] text-slate-600 uppercase tracking-wider">
+                  <div>Added: <span className="text-slate-900 font-bold">{statusMsg.details.imported}</span></div>
+                  <div>Duplicates: <span className="text-slate-900 font-bold">{statusMsg.details.duplicates}</span></div>
                   {statusMsg.details.skipped !== undefined && (
-                    <div>Skipped / Filtered: <span className="text-neutral-200 font-bold">{statusMsg.details.skipped}</span></div>
-                  )}
-                  {statusMsg.details.errors !== undefined && (
-                    <div>Errors: <span className="text-neutral-200 font-bold">{statusMsg.details.errors}</span></div>
+                    <div>Skipped: <span className="text-slate-900 font-bold">{statusMsg.details.skipped}</span></div>
                   )}
                 </div>
               )}
@@ -237,7 +234,7 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
         {/* CSV File Upload Form */}
         {activeTab === 'csv' && (
           <form onSubmit={handleCsvSubmit} className="space-y-4">
-            <div className="border border-dashed border-neutral-700 hover:border-neutral-500 rounded-lg p-8 flex flex-col items-center justify-center gap-3 bg-zinc-950/20 cursor-pointer relative group transition-colors">
+            <div className="border border-dashed border-slate-300 hover:border-slate-500 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-slate-50 cursor-pointer relative group transition-colors">
               <input
                 type="file"
                 accept=".csv"
@@ -245,12 +242,12 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 required
               />
-              <Upload className="w-8 h-8 text-neutral-400 group-hover:text-neutral-300 transition-colors" />
+              <Upload className="w-8 h-8 text-slate-400 group-hover:text-slate-600 transition-colors" />
               <div className="text-center">
-                <p className="text-xs font-medium text-neutral-200">
+                <p className="text-xs font-bold text-slate-800">
                   {csvFile ? csvFile.name : 'Click or drag CSV file to upload'}
                 </p>
-                <p className="text-[10px] text-neutral-400 mt-1">
+                <p className="text-[10px] text-slate-500 mt-1">
                   Supported columns: First Name, Last Name, Company, Title, Active Email, Phone, LinkedIn, Country
                 </p>
               </div>
@@ -259,7 +256,7 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
               <button
                 type="submit"
                 disabled={isSubmitting || !csvFile}
-                className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-semibold rounded-md text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-5 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-[0.98]"
               >
                 {isSubmitting ? 'Importing CSV...' : 'Start Import'}
               </button>
@@ -271,7 +268,7 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
         {activeTab === 'paste' && (
           <form onSubmit={handlePasteSubmit} className="space-y-4">
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
+              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                 Recruiter Emails
               </label>
               <textarea
@@ -279,10 +276,10 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
                 onChange={(e) => setPasteText(e.target.value)}
                 placeholder="hr@company.com&#10;jobs@company.com&#10;careers@company.com, engineering@company.com"
                 rows={5}
-                className="w-full rounded-md border border-neutral-800 bg-zinc-950/40 p-3 text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-neutral-700"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 required
               />
-              <span className="text-[10px] text-neutral-500">
+              <span className="text-[10px] text-slate-500">
                 You can separate emails using newlines, commas, semicolons or spaces.
               </span>
             </div>
@@ -290,7 +287,7 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
               <button
                 type="submit"
                 disabled={isSubmitting || !pasteText.trim()}
-                className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-semibold rounded-md text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-5 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-[0.98]"
               >
                 {isSubmitting ? 'Importing...' : 'Import Emails'}
               </button>
@@ -303,94 +300,94 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
           <form onSubmit={handleSubmit(onSubmitManual)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                   Active Email *
                 </label>
                 <input
                   type="email"
                   {...register('email', { required: 'Email address is required' })}
-                  className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 />
-                {errors.email && <span className="text-[10px] text-rose-400">{errors.email.message}</span>}
+                {errors.email && <span className="text-[10px] text-rose-600 font-bold">{errors.email.message}</span>}
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                   Company Name
                 </label>
                 <input
                   type="text"
                   {...register('company')}
-                  className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 />
               </div>
 
               <div className="flex grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                     First Name
                   </label>
                   <input
                     type="text"
                     {...register('firstName')}
-                    className="w-full rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                     Last Name
                   </label>
                   <input
                     type="text"
                     {...register('lastName')}
-                    className="w-full rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                   Job Title / Role
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. Technical Recruiter"
                   {...register('title')}
-                  className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                   Phone Number
                 </label>
                 <input
                   type="text"
                   {...register('phone')}
-                  className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                   LinkedIn URL
                 </label>
                 <input
                   type="text"
                   placeholder="https://linkedin.com/in/..."
                   {...register('linkedin')}
-                  className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                   Country
                 </label>
                 <input
                   type="text"
                   {...register('country')}
-                  className="rounded-md border border-neutral-800 bg-zinc-950/40 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 />
               </div>
             </div>
@@ -399,7 +396,7 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-semibold rounded-md text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-5 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-[0.98]"
               >
                 {isSubmitting ? 'Saving Contact...' : 'Save Contact'}
               </button>

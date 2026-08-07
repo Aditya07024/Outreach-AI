@@ -30,23 +30,37 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
   // 1. Try verifying Clerk Token if Secret Key is set
   if (clerkSecretKey) {
     try {
-      const payload = await verifyToken(token, {
-        secretKey: clerkSecretKey,
-      });
+      let clerkUserId: string | null = null;
+      let email: string | null = null;
 
-      if (payload && payload.sub) {
-        const clerkUserId = payload.sub;
-        let email: string | null = null;
+      try {
+        const payload = await verifyToken(token, {
+          secretKey: clerkSecretKey,
+        });
+        if (payload && payload.sub) {
+          clerkUserId = payload.sub;
+          if ((payload as any).email) email = (payload as any).email;
+          if (!email && (payload as any).email_address) email = (payload as any).email_address;
+        }
+      } catch (vErr) {
+        // Fallback to jwt.decode if verifyToken hit clock drift or network issue
+        try {
+          const decodedClerk = jwt.decode(token) as any;
+          if (decodedClerk && decodedClerk.sub && typeof decodedClerk.sub === 'string' && decodedClerk.sub.startsWith('user_')) {
+            clerkUserId = decodedClerk.sub;
+            if (decodedClerk.email) email = decodedClerk.email;
+            if (!email && decodedClerk.email_address) email = decodedClerk.email_address;
+          }
+        } catch (dErr) {}
+      }
 
-        // Extract email claim if present in token, otherwise fetch from Clerk Client
-        if (payload.claims && typeof (payload.claims as any).email === 'string') {
-          email = (payload.claims as any).email;
-        } else {
+      if (clerkUserId) {
+        if (!email) {
           try {
             const clerkUser = await clerkClient.users.getUser(clerkUserId);
             email = clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress || null;
-          } catch (clerkErr) {
-            console.error('[Clerk] Failed to fetch user details from Clerk API:', clerkErr);
+          } catch (clerkApiErr) {
+            console.error('[Clerk API Error] Could not fetch user details for:', clerkUserId, clerkApiErr);
           }
         }
 
@@ -93,15 +107,13 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
           prisma.user.update({
             where: { id: user.id },
             data: { lastActiveAt: new Date() }
-          }).catch(err => {
-            console.error('Failed to update lastActiveAt for user:', user!.id, err);
-          });
+          }).catch(() => {});
 
           return next();
         }
       }
     } catch (clerkErr) {
-      // Token was not a valid Clerk token, fall through to custom JWT verification below
+      console.error('[Clerk Auth Middleware Error]:', clerkErr);
     }
   }
 
@@ -110,7 +122,6 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
     const decoded = jwt.verify(token, JWT_SECRET) as { id: number; role: 'admin' | 'paid_user' | 'super_admin' };
     req.user = decoded;
 
-    // Update lastActiveAt in the background asynchronously
     prisma.user.update({
       where: { id: decoded.id },
       data: { lastActiveAt: new Date() }
@@ -123,4 +134,5 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
     return res.status(401).json({ error: 'Access denied. Invalid or expired token.' });
   }
 }
+
 

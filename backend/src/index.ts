@@ -36,7 +36,12 @@ app.use(
       const cleanOrigin = origin.replace(/\/$/, '');
       const cleanFrontend = frontendUrl.replace(/\/$/, '');
       
-      // Allow frontend URL or custom subdomains (including Vercel preview/prod links)
+      // Allow local development origins (localhost & 127.0.0.1 on any port)
+      if (cleanOrigin.includes('localhost') || cleanOrigin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+
+      // Allow production frontend URL or custom subdomains (including Vercel preview/prod links)
       if (cleanOrigin === cleanFrontend || 
           cleanOrigin === 'https://outreach.aditya07.me' || 
           cleanOrigin === 'http://outreach.aditya07.me' ||
@@ -50,8 +55,8 @@ app.use(
         return callback(null, true);
       }
       
-      // Block other origins
-      callback(new Error('Not allowed by CORS'));
+      // Block other origins gracefully without crashing Express error handler
+      callback(null, false);
     },
     credentials: true,
   })
@@ -75,6 +80,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Register Public Routes
 app.use('/health', healthRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api/waitlist', healthRoutes);
 
 // Register Protected Routes
 app.use('/api/auth/google', authRoutes);
@@ -138,7 +144,7 @@ async function startServer() {
     // Start background queue scheduler
     SendingEngine.startScheduler();
 
-    app.listen(PORT, () => {
+    app.listen(Number(PORT), '0.0.0.0', () => {
       console.log(`[Server] Running on http://localhost:${PORT}`);
     });
   } catch (error: any) {

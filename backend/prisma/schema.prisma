@@ -129,3 +129,11 @@ model Log {
   userId    Int?
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model WaitlistLead {
+  id        Int      @id @default(autoincrement())
+  email     String
+  rolePack  String   @default("All Roles")
+  notes     String?
+  createdAt DateTime @default(now())
+}

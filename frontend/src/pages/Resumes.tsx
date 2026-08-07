@@ -138,8 +138,8 @@ export const Resumes: React.FC = () => {
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
       <div>
-        <h2 className="text-xl font-bold text-neutral-100 tracking-tight">Resume Attachments</h2>
-        <p className="text-xs text-neutral-400 mt-1">
+        <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Resume Attachments</h2>
+        <p className="text-xs text-slate-500 mt-1">
           Upload and manage multiple resume profiles (e.g., Full Stack, Backend, React) to attach to campaigns.
         </p>
       </div>
@@ -147,8 +147,8 @@ export const Resumes: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* RESUMES LIST PANEL */}
-        <div className="lg:col-span-2 border border-neutral-800 bg-zinc-900/10 rounded-xl p-6 flex flex-col gap-4">
-          <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">Uploaded Resumes</h3>
+        <div className="lg:col-span-2 border border-slate-200/80 bg-white rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
+          <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Uploaded Resumes</h3>
           
           <div className="divide-y divide-neutral-900">
             {resumes.length === 0 ? (
@@ -224,34 +224,34 @@ export const Resumes: React.FC = () => {
         </div>
 
         {/* UPLOAD FORM PANEL */}
-        <div className="border border-neutral-800 bg-zinc-900/10 rounded-xl p-6 h-fit">
-          <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider mb-4">Upload PDF Resume</h3>
+        <div className="border border-slate-200/80 bg-white rounded-2xl p-6 h-fit shadow-sm">
+          <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4">Upload PDF Resume</h3>
 
           <form onSubmit={handleUpload} className="space-y-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Profile Label Name</label>
+              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Profile Label Name</label>
               <input
                 type="text"
                 value={uploadName}
                 onChange={(e) => setUploadName(e.target.value)}
                 placeholder="e.g. Backend Developer"
-                className="rounded-md border border-neutral-850 bg-zinc-950 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                 required
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Profile Description (Optional)</label>
+              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Profile Description (Optional)</label>
               <textarea
                 value={uploadDescription}
                 onChange={(e) => setUploadDescription(e.target.value)}
                 placeholder="e.g. Tailored for Go, NodeJS, PostgreSQL backend roles..."
                 rows={2}
-                className="rounded-md border border-neutral-850 bg-zinc-950 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700 resize-none font-sans"
+                className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors resize-none font-sans"
               />
             </div>
 
-            <div className="border border-dashed border-neutral-700 hover:border-neutral-500 rounded-lg p-6 flex flex-col items-center justify-center gap-2 bg-zinc-950/20 cursor-pointer relative group transition-colors">
+            <div className="border border-dashed border-slate-300 hover:border-slate-500 rounded-xl p-6 flex flex-col items-center justify-center gap-2 bg-slate-50 cursor-pointer relative group transition-colors">
               <input
                 type="file"
                 accept=".pdf"
@@ -259,19 +259,19 @@ export const Resumes: React.FC = () => {
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 required
               />
-              <Upload className="w-6 h-6 text-neutral-500 group-hover:text-neutral-400 transition-colors" />
+              <Upload className="w-6 h-6 text-slate-400 group-hover:text-slate-600 transition-colors" />
               <div className="text-center">
-                <span className="text-[11px] font-semibold text-neutral-300 block truncate max-w-[180px]">
+                <span className="text-[11px] font-bold text-slate-800 block truncate max-w-[180px]">
                   {uploadFile ? uploadFile.name : 'Choose PDF File'}
                 </span>
-                <span className="text-[9px] text-neutral-500 block mt-0.5">PDF format, up to 5MB</span>
+                <span className="text-[9px] text-slate-500 block mt-0.5">PDF format, up to 5MB</span>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isUploading || !uploadFile}
-              className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-md text-xs transition-colors disabled:opacity-40"
+              className="w-full py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer disabled:opacity-40 shadow-xs active:scale-[0.98]"
             >
               {isUploading ? 'Uploading PDF...' : 'Upload Resume'}
             </button>
@@ -282,43 +282,42 @@ export const Resumes: React.FC = () => {
 
       {/* RENAME / EDIT RESUME DETAILS MODAL */}
       {editingResume && (
-        <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md border border-neutral-800 bg-zinc-900 rounded-xl p-6 space-y-4 shadow-xl relative">
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-500 to-cyan-500" />
-            <h3 className="text-sm font-semibold text-neutral-250 uppercase tracking-wider">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md border border-slate-200 bg-white rounded-2xl p-6 space-y-4 shadow-xl relative text-slate-900">
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
               Edit Resume Details
             </h3>
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Resume Name</label>
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Resume Name</label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="rounded-md border border-neutral-800 bg-zinc-950 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   required
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-455 font-semibold uppercase tracking-wider">Description</label>
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Description</label>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   rows={3}
-                  className="rounded-md border border-neutral-800 bg-zinc-950 px-3 py-2 text-xs text-neutral-100 focus:outline-none focus:border-neutral-700 resize-none font-sans"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors resize-none font-sans"
                 />
               </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setEditingResume(null)}
-                  className="w-1/2 py-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 font-semibold rounded-lg text-xs transition-colors"
+                  className="w-1/2 py-2 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="w-1/2 py-2 bg-neutral-100 hover:bg-neutral-200 text-zinc-950 font-bold rounded-lg text-xs transition-colors"
+                  className="w-1/2 py-2 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer"
                 >
                   Save Changes
                 </button>
