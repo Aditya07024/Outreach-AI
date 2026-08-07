@@ -23,7 +23,22 @@ import { Subscription } from './pages/Subscription';
 import { AdminPortal } from './pages/AdminPortal';
 
 // Global dynamic token resolver for fetch interceptor
-let activeTokenResolver: () => Promise<string | null> = async () => localStorage.getItem('token');
+let activeTokenResolver: () => Promise<string | null> = async () => {
+  try {
+    const clerkGetToken = (window as any).__clerkGetToken;
+    const clerkSignedIn = (window as any).__clerkSignedIn;
+    if (clerkSignedIn && typeof clerkGetToken === 'function') {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const t = await clerkGetToken();
+          if (t) return t;
+        } catch (e) {}
+        if (attempt < 2) await new Promise(r => setTimeout(r, 200));
+      }
+    }
+  } catch (err) {}
+  return localStorage.getItem('token');
+};
 
 // Global fetch interceptor to append authorization token & handle 401s for backend API calls
 const originalFetch = window.fetch;
@@ -74,6 +89,10 @@ export const App: React.FC = () => {
   const { isLoaded: clerkLoaded, isSignedIn: clerkSignedIn, getToken } = useAuth();
   const { signOut } = useClerk();
   
+  // Attach Clerk references to window for immediate global fetch interceptor availability
+  (window as any).__clerkSignedIn = clerkSignedIn;
+  (window as any).__clerkGetToken = getToken;
+
   const [adminToken, setAdminToken] = useState<string | null>(localStorage.getItem('token'));
   const [gmailStatus, setGmailStatus] = useState<{ connected: boolean; email?: string } | null>(null);
   const [currentTitle, setCurrentTitle] = useState('Dashboard');
@@ -97,25 +116,8 @@ export const App: React.FC = () => {
 
   // Sync token resolver with Clerk auth state
   useEffect(() => {
-    activeTokenResolver = async () => {
-      if (clerkSignedIn) {
-        // Retry getToken() a few times — on initial load the session token
-        // may not be available immediately even though clerkSignedIn is true
-        for (let attempt = 0; attempt < 3; attempt++) {
-          try {
-            const t = await getToken();
-            if (t) return t;
-          } catch (err) {
-            console.warn(`Failed to retrieve Clerk session token (attempt ${attempt + 1})`, err);
-          }
-          // Wait before retrying
-          if (attempt < 2) {
-            await new Promise(r => setTimeout(r, 500));
-          }
-        }
-      }
-      return localStorage.getItem('token');
-    };
+    (window as any).__clerkSignedIn = clerkSignedIn;
+    (window as any).__clerkGetToken = getToken;
   }, [clerkSignedIn, getToken]);
 
   // Ensure local state and tokens are wiped ONLY when transitioning from Clerk signed-in to signed-out
