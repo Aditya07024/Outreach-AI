@@ -30,9 +30,13 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
   // 1. Check if token is a Clerk JWT token by decoding payload
   try {
     const decodedAny = jwt.decode(token) as any;
-    const clerkUserId = (decodedAny && typeof decodedAny.sub === 'string' && decodedAny.sub.startsWith('user_')) 
-      ? decodedAny.sub 
-      : null;
+    const isClerkToken = decodedAny && (
+      (typeof decodedAny.iss === 'string' && decodedAny.iss.includes('clerk')) ||
+      (typeof decodedAny.sub === 'string' && decodedAny.sub.startsWith('user_')) ||
+      decodedAny.azp ||
+      decodedAny.clerk_user_id
+    );
+    const clerkUserId = isClerkToken ? (decodedAny.sub || decodedAny.clerk_user_id) : null;
 
     if (clerkUserId) {
       let email: string | null = decodedAny.email || decodedAny.email_address || null;

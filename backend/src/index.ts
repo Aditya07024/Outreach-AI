@@ -26,38 +26,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Enable CORS for frontend and Chrome Extension origins
-const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
-      
-      const cleanOrigin = origin.replace(/\/$/, '');
-      const cleanFrontend = frontendUrl.replace(/\/$/, '');
-      
-      // Allow local development origins (localhost & 127.0.0.1 on any port)
-      if (cleanOrigin.includes('localhost') || cleanOrigin.includes('127.0.0.1')) {
-        return callback(null, true);
-      }
-
-      // Allow production frontend URL or custom subdomains (including Vercel preview/prod links)
-      if (cleanOrigin === cleanFrontend || 
-          cleanOrigin === 'https://outreach.aditya07.me' || 
-          cleanOrigin === 'http://outreach.aditya07.me' ||
-          cleanOrigin.endsWith('.aditya07.me') ||
-          cleanOrigin.endsWith('.vercel.app')) {
-        return callback(null, true);
-      }
-      
-      // Allow Chrome Extension origins (chrome-extension://...)
-      if (origin.startsWith('chrome-extension://')) {
-        return callback(null, true);
-      }
-      
-      // Block other origins gracefully without crashing Express error handler
-      callback(null, false);
-    },
+    origin: true,
     credentials: true,
   })
 );
