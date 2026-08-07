@@ -14,10 +14,15 @@ export const Logs: React.FC = () => {
     try {
       const url = `/api/logs?limit=${limit}&source=${source}&level=${level}`;
       const response = await fetch(url);
+      if (!response.ok) {
+        setLogs([]);
+        return;
+      }
       const data = await response.json();
-      setLogs(data);
+      setLogs(Array.isArray(data) ? data : (data?.logs && Array.isArray(data.logs) ? data.logs : []));
     } catch (err) {
       console.error(err);
+      setLogs([]);
     } finally {
       setIsLoading(false);
     }

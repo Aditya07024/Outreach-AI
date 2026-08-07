@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Eye, AlertOctagon, CheckCircle2 } from 'lucide-react';
+import { Search, Eye, AlertOctagon, CheckCircle2, RefreshCw, Mail } from 'lucide-react';
 import { EmailHistory } from '../types';
 
 export const History: React.FC = () => {
@@ -12,10 +12,21 @@ export const History: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/history?search=${encodeURIComponent(search)}`);
+      if (!response.ok) {
+        setHistory([]);
+        return;
+      }
       const data = await response.json();
-      setHistory(data);
+      if (Array.isArray(data)) {
+        setHistory(data);
+      } else if (data && Array.isArray(data.history)) {
+        setHistory(data.history);
+      } else {
+        setHistory([]);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching email history:', err);
+      setHistory([]);
     } finally {
       setIsLoading(false);
     }
@@ -26,27 +37,39 @@ export const History: React.FC = () => {
   }, [search]);
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+      
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Outreach Log History</h2>
-          <p className="text-xs text-slate-500 mt-1">Audit log of all individual cold emails sent to recruiters.</p>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Outreach Log History</h1>
+          <p className="text-xs text-slate-500 mt-1">Audit log of all individual cold emails sent to recruiters and clients.</p>
         </div>
 
-        <div className="relative w-full sm:w-72">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search company, email, or campaign..."
-            className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-300 bg-slate-50 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
-          />
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchHistory}
+            className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
+            title="Refresh History Log"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+          
+          <div className="relative w-full sm:w-72">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search company, email, or campaign..."
+              className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-900 shadow-2xs transition-colors"
+            />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+          </div>
         </div>
       </div>
 
       {/* Main List */}
-      <div className="border border-slate-200 bg-white rounded-2xl overflow-hidden shadow-sm">
+      <div className="border border-slate-200 bg-white rounded-2xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
@@ -56,20 +79,23 @@ export const History: React.FC = () => {
                 <th className="p-4">Email Subject</th>
                 <th className="p-4">Sent Date</th>
                 <th className="p-4">Status</th>
-                <th className="p-4 text-center">Inspect</th>
+                <th className="p-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-300 border-t-slate-800 mx-auto"></div>
+                  <td colSpan={6} className="p-12 text-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-slate-300 border-t-slate-900 mx-auto mb-2"></div>
+                    <span className="text-xs text-slate-500 font-medium">Loading history logs...</span>
                   </td>
                 </tr>
-              ) : history.length === 0 ? (
+              ) : !Array.isArray(history) || history.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">
-                    No matching outreach records found in history.
+                  <td colSpan={6} className="p-12 text-center text-slate-500">
+                    <Mail className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    <p className="font-bold text-slate-800">No Outreach History Found</p>
+                    <p className="text-[11px] text-slate-400 mt-1">Sent emails will automatically populate here after dispatching campaigns.</p>
                   </td>
                 </tr>
               ) : (
@@ -77,7 +103,7 @@ export const History: React.FC = () => {
                   <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="p-4">
                       <div className="font-bold text-slate-900">
-                        {item.contact?.firstName ? `${item.contact.firstName} ${item.contact.lastName || ''}` : 'Recruiter'}
+                        {item.contact?.firstName ? `${item.contact.firstName} ${item.contact.lastName || ''}` : 'Recruiter / Client'}
                       </div>
                       <div className="text-[10px] text-slate-500">{item.contact?.email || '—'}</div>
                       <div className="text-[10px] text-slate-400 font-medium">{item.contact?.company || '—'}</div>
@@ -90,21 +116,23 @@ export const History: React.FC = () => {
                       {new Date(item.sentAt).toLocaleString()}
                     </td>
                     <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
                         item.status === 'SENT' 
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
-                          : 'bg-rose-100 text-rose-800 border border-rose-200'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                          : 'bg-rose-50 text-rose-800 border border-rose-200'
                       }`}>
+                        {item.status === 'SENT' ? <CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <AlertOctagon className="w-3 h-3 text-rose-600" />}
                         {item.status}
                       </span>
                     </td>
                     <td className="p-4 text-center">
                       <button
                         onClick={() => setSelectedItem(item)}
-                        className="p-1.5 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-lg transition-colors cursor-pointer"
+                        className="px-3 py-1.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 rounded-xl text-[11px] font-bold transition-all shadow-2xs cursor-pointer inline-flex items-center gap-1"
                         title="View Full Sent Email"
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-3.5 h-3.5" />
+                        View
                       </button>
                     </td>
                   </tr>
@@ -115,50 +143,58 @@ export const History: React.FC = () => {
         </div>
       </div>
 
-      {/* INSPECTION MODAL */}
+      {/* Modal Inspector */}
       {selectedItem && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl border border-slate-200 bg-white rounded-2xl p-6 space-y-4 shadow-xl text-slate-900">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full overflow-hidden shadow-xl text-slate-900 space-y-0">
+            <div className="p-5 bg-slate-50 border-b border-slate-200 flex justify-between items-start">
               <div>
-                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Outreach Details</h3>
-                <p className="text-[10px] text-slate-500">Sent to: {selectedItem.contact?.email}</p>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">Email Log Inspection</span>
+                <h3 className="text-base font-extrabold text-slate-900 mt-0.5">{selectedItem.subject}</h3>
               </div>
               <button 
                 onClick={() => setSelectedItem(null)}
-                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg transition-colors cursor-pointer text-sm font-bold"
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200 transition-colors"
               >
                 ✕
               </button>
             </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+            
+            <div className="p-6 space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
                 <div>
-                  <span className="text-[10px] text-slate-500 uppercase font-bold block">To Recipient</span>
-                  <span className="text-slate-900 font-bold block">{selectedItem.contact?.firstName ? `${selectedItem.contact.firstName} ${selectedItem.contact.lastName || ''}` : 'Recruiter'}</span>
-                  <span className="text-slate-500 font-mono text-[11px] block">{selectedItem.contact?.email}</span>
+                  <span className="text-slate-400 block text-[10px] uppercase font-mono font-bold">Recipient Email</span>
+                  <span className="font-bold text-slate-900">{selectedItem.contact?.email || 'N/A'}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Campaign Batch</span>
-                  <span className="text-slate-900 font-bold block">{selectedItem.campaign?.name || 'Direct Outreach'}</span>
-                  <span className="text-slate-500 font-mono text-[11px] block">{new Date(selectedItem.sentAt).toLocaleString()}</span>
+                  <span className="text-slate-400 block text-[10px] uppercase font-mono font-bold">Sent Date & Time</span>
+                  <span className="font-mono text-slate-800">{new Date(selectedItem.sentAt).toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-mono font-bold">Target Company / Role</span>
+                  <span className="font-medium text-slate-800">{selectedItem.contact?.company || 'N/A'} {selectedItem.contact?.role ? `(${selectedItem.contact.role})` : ''}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-mono font-bold">Delivery Status</span>
+                  <span className="font-bold text-emerald-700">{selectedItem.status}</span>
                 </div>
               </div>
 
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Subject Header</span>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-slate-900 font-semibold">
-                  {selectedItem.subject}
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Sent Email Body</span>
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-slate-800 leading-relaxed font-mono whitespace-pre-wrap max-h-[250px] overflow-y-auto">
+              <div className="space-y-1.5">
+                <span className="text-slate-400 block text-[10px] uppercase font-mono font-bold">Delivered Message Body</span>
+                <div className="p-4 bg-white border border-slate-200 rounded-xl text-slate-800 font-sans whitespace-pre-wrap leading-relaxed shadow-inner max-h-60 overflow-y-auto">
                   {selectedItem.body}
                 </div>
               </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Close Log
+              </button>
             </div>
           </div>
         </div>

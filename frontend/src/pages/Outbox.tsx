@@ -27,10 +27,15 @@ export const Outbox: React.FC = () => {
   const fetchCampaigns = async () => {
     try {
       const res = await fetch('/api/campaigns');
+      if (!res.ok) {
+        setCampaigns([]);
+        return;
+      }
       const data = await res.json();
-      setCampaigns(data);
+      setCampaigns(Array.isArray(data) ? data : (data?.campaigns && Array.isArray(data.campaigns) ? data.campaigns : []));
     } catch (err) {
       console.error(err);
+      setCampaigns([]);
     }
   };
 
@@ -42,22 +47,32 @@ export const Outbox: React.FC = () => {
       // If we filtered by campaign, fetch that campaign's contacts, otherwise we query all campaigns
       if (selectedCampId !== 'all') {
         const res = await fetch(`/api/campaigns/${selectedCampId}`);
+        if (!res.ok) {
+          setQueue([]);
+          return;
+        }
         const data = await res.json();
         // Filter out only contacts in READY_TO_SEND or PENDING status
-        const filtered = (data.contacts || []).filter(
+        const filtered = (Array.isArray(data.contacts) ? data.contacts : []).filter(
           (c: Contact) => c.status === 'READY_TO_SEND' || c.status === 'FAILED'
         );
         setQueue(filtered);
       } else {
         // Fetch all campaigns and aggregate their ready contacts
         const res = await fetch('/api/campaigns');
-        const data: Campaign[] = await res.json();
+        if (!res.ok) {
+          setQueue([]);
+          return;
+        }
+        const data = await res.json();
+        const campList: Campaign[] = Array.isArray(data) ? data : (data?.campaigns && Array.isArray(data.campaigns) ? data.campaigns : []);
         
         let allReady: Contact[] = [];
-        for (const camp of data) {
+        for (const camp of campList) {
           const detailsRes = await fetch(`/api/campaigns/${camp.id}`);
+          if (!detailsRes.ok) continue;
           const details = await detailsRes.json();
-          const ready = (details.contacts || []).filter(
+          const ready = (Array.isArray(details?.contacts) ? details.contacts : []).filter(
             (c: Contact) => c.status === 'READY_TO_SEND' || c.status === 'FAILED'
           );
           allReady = [...allReady, ...ready];
@@ -67,6 +82,7 @@ export const Outbox: React.FC = () => {
       setCurrentIndex(0);
     } catch (err) {
       console.error('Failed to load outbox queue', err);
+      setQueue([]);
     } finally {
       setIsLoading(false);
     }

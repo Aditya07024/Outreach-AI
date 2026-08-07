@@ -56,34 +56,47 @@ export const Campaigns: React.FC = () => {
       const res = await fetch('/api/logs?limit=30');
       if (res.ok) {
         const data = await res.json();
-        const filtered = data.filter((l: any) => l.source === 'EMAIL_GENERATION' || l.source === 'EMAIL_SENDING');
+        const arr = Array.isArray(data) ? data : [];
+        const filtered = arr.filter((l: any) => l.source === 'EMAIL_GENERATION' || l.source === 'EMAIL_SENDING');
         setActivityLogs(filtered);
       }
     } catch (err) {
       console.error('Failed to load activity logs', err);
+      setActivityLogs([]);
     }
   };
 
   const fetchCampaigns = async () => {
     try {
       const response = await fetch('/api/campaigns');
+      if (!response.ok) {
+        setCampaigns([]);
+        return;
+      }
       const data = await response.json();
-      setCampaigns(data);
+      setCampaigns(Array.isArray(data) ? data : (data?.campaigns && Array.isArray(data.campaigns) ? data.campaigns : []));
     } catch (err) {
       console.error('Failed to load campaigns list', err);
+      setCampaigns([]);
     }
   };
 
   const fetchResumes = async () => {
     try {
       const response = await fetch('/api/resumes');
+      if (!response.ok) {
+        setResumes([]);
+        return;
+      }
       const data = await response.json();
-      setResumes(data);
-      if (data.length > 0 && !newResumeId) {
-        setNewResumeId(data[0].id);
+      const list = Array.isArray(data) ? data : (data?.resumes && Array.isArray(data.resumes) ? data.resumes : []);
+      setResumes(list);
+      if (list.length > 0 && !newResumeId) {
+        setNewResumeId(list[0].id);
       }
     } catch (err) {
       console.error('Failed to load resumes', err);
+      setResumes([]);
     }
   };
 

@@ -19,15 +19,22 @@ export const Resumes: React.FC = () => {
     try {
       // Fetch resumes
       const resRes = await fetch('/api/resumes');
-      const resData = await resRes.json();
-      setResumes(resData);
+      if (resRes.ok) {
+        const resData = await resRes.json();
+        setResumes(Array.isArray(resData) ? resData : (resData?.resumes && Array.isArray(resData.resumes) ? resData.resumes : []));
+      } else {
+        setResumes([]);
+      }
 
       // Fetch settings to know default resume
       const setRes = await fetch('/api/settings');
-      const setData = await setRes.json();
-      setSettings(setData);
+      if (setRes.ok) {
+        const setData = await setRes.json();
+        setSettings(setData);
+      }
     } catch (err) {
       console.error(err);
+      setResumes([]);
     }
   };
 

@@ -27,19 +27,27 @@ export const Compose: React.FC<ComposeProps> = ({ gmailStatus }) => {
   const loadResumes = async () => {
     try {
       const res = await fetch('/api/resumes');
-      const data = await res.json();
-      setResumes(data);
-      
-      // Select default resume if settings set it
-      const settingsRes = await fetch('/api/settings');
-      const settingsData = await settingsRes.json();
-      if (settingsData?.defaultResumeId) {
-        setResumeId(settingsData.defaultResumeId);
-      } else if (data.length > 0) {
-        setResumeId(data[0].id);
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data?.resumes && Array.isArray(data.resumes) ? data.resumes : []);
+        setResumes(list);
+        
+        // Select default resume if settings set it
+        const settingsRes = await fetch('/api/settings');
+        if (settingsRes.ok) {
+          const settingsData = await settingsRes.json();
+          if (settingsData?.defaultResumeId) {
+            setResumeId(settingsData.defaultResumeId);
+          } else if (list.length > 0) {
+            setResumeId(list[0].id);
+          }
+        }
+      } else {
+        setResumes([]);
       }
     } catch (err) {
       console.error(err);
+      setResumes([]);
     }
   };
 
