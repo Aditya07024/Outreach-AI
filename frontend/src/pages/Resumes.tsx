@@ -157,9 +157,9 @@ export const Resumes: React.FC = () => {
         <div className="lg:col-span-2 border border-slate-200/80 bg-white rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
           <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Uploaded Resumes</h3>
           
-          <div className="divide-y divide-neutral-900">
+          <div className="divide-y divide-slate-100">
             {resumes.length === 0 ? (
-              <div className="text-center py-12 text-xs text-neutral-500">
+              <div className="text-center py-12 text-xs text-slate-500">
                 No resumes uploaded. Drag and drop a PDF on the right to upload.
               </div>
             ) : (
@@ -169,15 +169,15 @@ export const Resumes: React.FC = () => {
                 return (
                   <div key={resume.id} className="flex justify-between items-center py-4 first:pt-0 last:pb-0 gap-4">
                     <div className="flex items-start gap-3">
-                      <FileText className="w-8 h-8 text-neutral-500 flex-shrink-0 mt-0.5" />
+                      <FileText className="w-8 h-8 text-indigo-600 flex-shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-semibold text-neutral-200 text-xs block">{resume.name}</span>
+                        <span className="font-bold text-slate-900 text-sm block">{resume.name}</span>
                         {resume.description && (
-                          <p className="text-[10px] text-neutral-450 mt-1 italic leading-relaxed max-w-md">
+                          <p className="text-[11px] text-slate-600 mt-1 italic leading-relaxed max-w-md">
                             {resume.description}
                           </p>
                         )}
-                        <span className="text-[9px] text-neutral-500 font-medium block mt-1.5">
+                        <span className="text-[10px] text-slate-400 font-medium block mt-1.5">
                           Uploaded on {new Date(resume.uploadedAt).toLocaleDateString()}
                         </span>
                       </div>
