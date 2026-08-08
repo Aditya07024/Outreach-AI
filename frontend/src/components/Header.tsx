@@ -44,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({ title, gmailStatus, onMenuClick 
           )}
         </Link>
 
-        {isSignedIn && (
+        {/* {isSignedIn && (
           <UserButton 
             appearance={{
               elements: {
@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({ title, gmailStatus, onMenuClick 
               }
             }}
           />
-        )}
+        )} */}
       </div>
     </header>
   );
