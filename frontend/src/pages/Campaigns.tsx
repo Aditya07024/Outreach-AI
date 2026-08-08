@@ -550,23 +550,23 @@ export const Campaigns: React.FC = () => {
           {campaignDetails ? (
             <div className="space-y-6">
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-neutral-900 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
                 <div className="flex items-center gap-3 min-w-0">
                   <button 
                     onClick={() => {
                       setSelectedCampId(null);
                       setShowSettingsEdit(false);
                     }}
-                    className="p-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 rounded-md transition-colors flex-shrink-0"
+                    className="p-2 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 rounded-xl transition-all flex-shrink-0 cursor-pointer shadow-xs"
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
                   <div className="min-w-0">
-                    <h2 className="text-base font-bold text-neutral-100 tracking-tight truncate">{campaignDetails.name}</h2>
-                    <span className="text-[10px] text-neutral-550 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                      <span>Resume: <strong className="text-neutral-450 font-medium">{campaignDetails.resume?.name || 'None'}</strong></span>
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight truncate">{campaignDetails.name}</h2>
+                    <span className="text-[11px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                      <span>Resume: <strong className="text-slate-800 font-bold">{campaignDetails.resume?.name || 'None'}</strong></span>
                       <span className="hidden sm:inline">•</span>
-                      <span>Mode: <strong className="text-neutral-450 font-medium">{campaignDetails.templateType === 'AI_GENERATED' ? 'AI (Grok)' : campaignDetails.templateType === 'SAVED_TEMPLATE' ? 'Saved Template' : 'Manual'}</strong></span>
+                      <span>Mode: <strong className="text-slate-800 font-bold">{campaignDetails.templateType === 'AI_GENERATED' ? 'AI (Grok)' : campaignDetails.templateType === 'SAVED_TEMPLATE' ? 'Saved Template' : 'Manual'}</strong></span>
                     </span>
                   </div>
                 </div>
@@ -575,10 +575,10 @@ export const Campaigns: React.FC = () => {
                   {/* Edit Settings Toggle */}
                   <button
                     onClick={() => setShowSettingsEdit(!showSettingsEdit)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                    className={`flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs ${
                       showSettingsEdit 
-                        ? 'bg-neutral-800 border-neutral-700 text-neutral-100'
-                        : 'bg-neutral-900 border-neutral-800 hover:bg-neutral-800 text-neutral-300'
+                        ? 'bg-slate-900 border-slate-900 text-white'
+                        : 'bg-white border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white'
                     }`}
                   >
                     <Edit className="w-3.5 h-3.5" />
