@@ -6,7 +6,8 @@ import './index.css';
 
 const PUBLISHABLE_KEY = 
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 
-  import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+  'pk_live_Y2xlcmsuYWRpdHlhMDcubWUk';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
