@@ -79,6 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* App Title */}
           <div className="flex items-center gap-3 px-2 pt-1">
             <img src={logo} alt="Outreach AI" className="h-8 object-contain rounded-lg shadow-sm" />
+            <h3 className="text-base font-semibold text-slate-900">Outreach Ai</h3>
           </div>
 
           {/* Navigation Links */}
