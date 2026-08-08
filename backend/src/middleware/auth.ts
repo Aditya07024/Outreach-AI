@@ -70,15 +70,48 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
           const trialEndsAt = new Date();
           trialEndsAt.setDate(trialEndsAt.getDate() + 3);
 
-          user = await prisma.user.create({
-            data: {
-              clerkId: clerkUserId,
-              email: effectiveEmail,
-              paid: isAdminEmail,
-              role: isAdminEmail ? 'admin' : 'paid_user',
-              trialEndsAt
+          try {
+            user = await prisma.user.create({
+              data: {
+                clerkId: clerkUserId,
+                email: effectiveEmail,
+                paid: isAdminEmail,
+                role: isAdminEmail ? 'admin' : 'paid_user',
+                trialEndsAt
+              }
+            });
+          } catch (createErr) {
+            // Handle unique constraint failure: find existing user by email or clerkId
+            user = await prisma.user.findFirst({
+              where: {
+                OR: [
+                  { email: effectiveEmail },
+                  { clerkId: clerkUserId }
+                ]
+              }
+            });
+
+            if (user && !user.clerkId) {
+              user = await prisma.user.update({
+                where: { id: user.id },
+                data: { clerkId: clerkUserId }
+              }).catch(() => user);
             }
-          });
+
+            if (!user) {
+              // Create user with unique fallback email
+              const uniqueFallbackEmail = `${clerkUserId}_${Date.now()}@user.clerk`;
+              user = await prisma.user.create({
+                data: {
+                  clerkId: clerkUserId,
+                  email: uniqueFallbackEmail,
+                  paid: isAdminEmail,
+                  role: isAdminEmail ? 'admin' : 'paid_user',
+                  trialEndsAt
+                }
+              }).catch(() => null);
+            }
+          }
         } else {
           // Link clerkId if not linked yet
           if (!user.clerkId) {
