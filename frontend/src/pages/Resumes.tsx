@@ -187,20 +187,20 @@ export const Resumes: React.FC = () => {
                       {/* Default Toggle Button */}
                       <button
                         onClick={() => handleSetDefault(resume.id)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[10px] font-semibold transition-all ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all ${
                           isDefault
-                            ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-400 font-bold'
-                            : 'bg-zinc-950/20 border-neutral-900 text-neutral-400 hover:text-neutral-200'
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                            : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
                         }`}
                       >
                         {isDefault ? (
                           <>
-                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             <span>Default</span>
                           </>
                         ) : (
                           <>
-                            <Circle className="w-3.5 h-3.5 text-neutral-600" />
+                            <Circle className="w-3.5 h-3.5 text-slate-400" />
                             <span>Set Default</span>
                           </>
                         )}
@@ -209,7 +209,7 @@ export const Resumes: React.FC = () => {
                       {/* Rename / Edit Button */}
                       <button
                         onClick={() => handleStartEdit(resume)}
-                        className="p-1.5 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 rounded-md transition-all"
+                        className="p-1.5 bg-white border border-slate-300 hover:bg-slate-900 hover:text-white text-slate-700 rounded-xl transition-all shadow-2xs"
                         title="Rename or edit description"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
@@ -218,7 +218,8 @@ export const Resumes: React.FC = () => {
                       {/* Delete Button */}
                       <button
                         onClick={() => handleDelete(resume.id)}
-                        className="p-1.5 bg-neutral-900 hover:bg-rose-950/20 border border-rose-900/30 hover:border-rose-900/35 text-neutral-500 hover:text-rose-400 rounded-md transition-all"
+                        className="p-1.5 bg-white border border-rose-200 hover:bg-rose-600 hover:text-white text-rose-600 rounded-xl transition-all shadow-2xs"
+                        title="Delete resume"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

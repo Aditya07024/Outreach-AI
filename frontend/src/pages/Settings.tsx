@@ -201,11 +201,11 @@ export const Settings: React.FC<SettingsProps> = ({
             <div className="space-y-3">
               {!isPaid ? (
                 <div className="space-y-3">
-                  <div className="p-3 bg-rose-950/20 border border-rose-900/40 rounded-lg flex items-start gap-2 text-xs text-rose-300">
-                    <Lock className="w-4 h-4 flex-shrink-0 text-rose-400 animate-pulse mt-0.5" />
+                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-900 shadow-2xs">
+                    <Lock className="w-4 h-4 flex-shrink-0 text-rose-600 animate-pulse mt-0.5" />
                     <div className="space-y-1">
-                      <span className="font-semibold text-rose-200 block">3-Day Free Trial Expired</span>
-                      <span className="leading-relaxed text-[11px] text-rose-300/80 block">
+                      <span className="font-extrabold text-rose-950 block">3-Day Free Trial Expired</span>
+                      <span className="leading-relaxed text-[11px] text-rose-800 font-medium block">
                         Your 3-day free trial has ended. Please upgrade your plan to link your Gmail account and continue sending automated outreach emails.
                       </span>
                     </div>
@@ -213,7 +213,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   <button
                     type="button"
                     onClick={() => window.location.href = '/subscription'}
-                    className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-neutral-100 font-bold rounded-md text-xs transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-purple-950/30 cursor-pointer hover:scale-[0.99]"
+                    className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer hover:scale-[0.99]"
                   >
                     <Sparkles className="w-4 h-4" />
                     Upgrade Plan to Link Gmail
@@ -221,11 +221,11 @@ export const Settings: React.FC<SettingsProps> = ({
                 </div>
               ) : gmailStatus?.connected ? (
                 <div className="space-y-3">
-                  <div className="p-3 bg-emerald-950/10 border border-emerald-900/40 rounded-lg flex items-start gap-2 text-xs text-emerald-300">
-                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5 text-xs text-emerald-900 shadow-2xs">
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600 mt-0.5" />
                     <div>
-                      <span className="font-semibold block">Connected Account</span>
-                      <span className="text-[10px] text-emerald-400 mt-0.5 truncate block max-w-[180px]">
+                      <span className="font-extrabold text-emerald-950 block">Connected Account</span>
+                      <span className="text-[11px] font-bold text-emerald-700 mt-0.5 truncate block max-w-[200px]">
                         {gmailStatus.email}
                       </span>
                     </div>
@@ -233,7 +233,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   <button
                     type="button"
                     onClick={handleDisconnectGmail}
-                    className="w-full py-1.5 border border-rose-900/30 hover:border-rose-800/60 bg-rose-950/10 hover:bg-rose-950/20 text-rose-400 font-semibold rounded-md text-xs transition-colors cursor-pointer"
+                    className="w-full py-2 border border-rose-300 hover:bg-rose-50 text-rose-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
                   >
                     Disconnect Gmail
                   </button>
@@ -241,26 +241,26 @@ export const Settings: React.FC<SettingsProps> = ({
               ) : (
                 <div className="space-y-3">
                   {currentUser && !currentUser.paid && currentUser.trialEndsAt && (
-                    <div className="p-3 bg-purple-950/20 border border-purple-900/40 rounded-lg text-xs text-purple-300 flex items-start gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
-                      <div className="space-y-0.5">
-                        <span className="font-semibold text-purple-200 block">3-Day Free Trial Active</span>
-                        <span className="text-[11px] text-purple-300/80 leading-relaxed block">
+                    <div className="p-3.5 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-950 flex items-start gap-2.5 shadow-2xs">
+                      <Sparkles className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <span className="font-extrabold text-purple-950 block">3-Day Free Trial Active</span>
+                        <span className="text-[11px] text-purple-800 font-medium leading-relaxed block">
                           You can link your Gmail account now during your 3-day free trial. After trial expires, upgrade will be required.
                         </span>
                       </div>
                     </div>
                   )}
-                  <div className="p-3 bg-amber-950/15 border border-amber-900/30 rounded-lg flex items-start gap-2 text-xs text-amber-300">
-                    <AlertTriangle className="w-4 h-4 flex-shrink-0 animate-pulse text-amber-500" />
-                    <span className="leading-relaxed">
+                  <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-950 shadow-2xs">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 animate-pulse text-amber-600 mt-0.5" />
+                    <span className="leading-relaxed font-medium text-amber-900">
                       Connect your Google Account to authorize sending emails using the secure Gmail API.
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={handleConnectGmail}
-                    className="w-full py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                    className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-xs active:scale-[0.98]"
                   >
                     Connect Gmail Account
                   </button>
