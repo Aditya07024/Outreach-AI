@@ -300,7 +300,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ isPaid, user, onPaymentSuc
           </div>
 
           {/* Quick Launcher Banner */}
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-md flex flex-col sm:flex-row items-center justify-between gap-6">
+          {/* <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-md flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="space-y-1 text-center sm:text-left">
               <span className="text-[10px] font-mono uppercase tracking-widest text-indigo-300 font-bold">Cold Email Automation</span>
               <h3 className="text-lg font-black tracking-tight text-white">Generate High-Converting Cold Email Drafts</h3>
@@ -313,7 +313,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ isPaid, user, onPaymentSuc
               <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
               <span>Launch Draft Studio</span>
             </Link>
-          </div>
+          </div> */}
 
         </div>
 
