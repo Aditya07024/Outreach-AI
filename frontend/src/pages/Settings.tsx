@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send, Lock, Sparkles } from 'lucide-react';
+import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send, Lock, Sparkles, Copy, Check } from 'lucide-react';
 import { Settings as SettingsType, Resume } from '../types';
 import { GoogleVerificationModal } from '../components/GoogleVerificationModal';
 
@@ -20,6 +20,34 @@ interface SettingsProps {
   } | null;
 }
 
+const copyToClipboard = async (text: string): Promise<boolean> => {
+  if (!text) return false;
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('navigator.clipboard failed, using fallback:', err);
+    }
+  }
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (fallbackErr) {
+    console.error('Fallback execCommand failed:', fallbackErr);
+    return false;
+  }
+};
+
 export const Settings: React.FC<SettingsProps> = ({ 
   gmailStatus, 
   onRefreshGmailStatus, 
@@ -31,6 +59,52 @@ export const Settings: React.FC<SettingsProps> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+
+  // Chrome Extension Token state
+  const [extensionToken, setExtensionToken] = useState('');
+  const [copiedToken, setCopiedToken] = useState(false);
+
+  useEffect(() => {
+    const resolveToken = async () => {
+      let t = '';
+      if ((window as any).__clerkGetToken) {
+        try {
+          t = await (window as any).__clerkGetToken() || '';
+        } catch (e) {}
+      }
+      if (!t) {
+        t = localStorage.getItem('token') || '';
+      }
+      setExtensionToken(t);
+    };
+    resolveToken();
+  }, []);
+
+  const handleCopyToken = async () => {
+    let token = extensionToken;
+    if (!token) {
+      if ((window as any).__clerkGetToken) {
+        try {
+          token = await (window as any).__clerkGetToken() || '';
+        } catch (e) {}
+      }
+      if (!token) {
+        token = localStorage.getItem('token') || '';
+      }
+      setExtensionToken(token);
+    }
+    if (!token) {
+      alert('Authentication token is still loading. Please refresh and try again.');
+      return;
+    }
+    const ok = await copyToClipboard(token);
+    if (ok) {
+      setCopiedToken(true);
+      setTimeout(() => setCopiedToken(false), 2500);
+    } else {
+      alert('Unable to copy token automatically. Please copy the token manually.');
+    }
+  };
 
   // Test Email Sender state variables
   const [testTo, setTestTo] = useState('');
@@ -372,17 +446,25 @@ export const Settings: React.FC<SettingsProps> = ({
                   <input
                     type="password"
                     readOnly
-                    value={localStorage.getItem('token') || ''}
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none pr-16 font-mono"
+                    value={extensionToken || 'Resolving access token...'}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none pr-24 font-mono"
                   />
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(localStorage.getItem('token') || '');
-                      alert('Token copied to clipboard!');
-                    }}
-                    className="absolute right-1 top-1 bottom-1 px-3 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+                    type="button"
+                    onClick={handleCopyToken}
+                    className="absolute right-1 top-1 bottom-1 px-3 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
                   >
-                    Copy
+                    {copiedToken ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

@@ -194,8 +194,27 @@ export const Outbox: React.FC = () => {
     }
   };
 
-  const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
+  const handleCopyToClipboard = async () => {
+    const text = `Subject: ${subject}\n\n${body}`;
+    if (!navigator.clipboard) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    } else {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (e) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+    }
     alert('Subject and body copied to clipboard!');
   };
 

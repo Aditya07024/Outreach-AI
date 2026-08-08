@@ -1018,8 +1018,27 @@ export const Campaigns: React.FC = () => {
 
                     <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                       <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(`Subject: ${contactSubject}\n\n${contactBody}`);
+                        onClick={async () => {
+                          const text = `Subject: ${contactSubject}\n\n${contactBody}`;
+                          if (!navigator.clipboard) {
+                            const textArea = document.createElement('textarea');
+                            textArea.value = text;
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textArea);
+                          } else {
+                            try {
+                              await navigator.clipboard.writeText(text);
+                            } catch (e) {
+                              const textArea = document.createElement('textarea');
+                              textArea.value = text;
+                              document.body.appendChild(textArea);
+                              textArea.select();
+                              document.execCommand('copy');
+                              document.body.removeChild(textArea);
+                            }
+                          }
                           alert('Email details copied to clipboard!');
                         }}
                         type="button"
