@@ -31,7 +31,7 @@ jobs:
 
             cd backend
 
-            npm install --omit=dev
+            npm install
 
             npx prisma generate
 
