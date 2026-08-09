@@ -1,0 +1,44 @@
+name: Deploy Outreach AI Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "Starting Outreach AI backend deployment..."
+
+            cd /var/www/outreachai-backend/Outreach-AI
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            cd backend
+
+            npm install --omit=dev
+
+            npx prisma generate
+
+            npm run build
+
+            pm2 restart outreachai-backend --update-env
+
+            pm2 save
+
+            echo "Deployment completed successfully!"
