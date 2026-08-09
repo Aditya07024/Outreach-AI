@@ -39,13 +39,37 @@ let activeTokenResolver: () => Promise<string | null> = async () => {
   } catch (err) {}
   return localStorage.getItem('token');
 };
-
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'https://api.outreachai.aditya07.me';
 // Global fetch interceptor to append authorization token & handle 401s for backend API calls
 const originalFetch = window.fetch;
+
 window.fetch = async (input, init) => {
-  const urlString = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
-  const isInternalApi = urlString.startsWith('/api') || urlString.includes('/api/') || urlString.startsWith(window.location.origin + '/api');
-  const isClerk = urlString.includes('clerk');
+  const originalUrl =
+    typeof input === 'string'
+      ? input
+      : input instanceof Request
+        ? input.url
+        : String(input);
+
+  // Detect requests intended for our backend
+  const isInternalApi =
+    originalUrl.startsWith('/api') ||
+    originalUrl.startsWith(`${window.location.origin}/api`) ||
+    originalUrl.startsWith(`${API_BASE_URL}/api`);
+
+  const isClerk = originalUrl.includes('clerk');
+
+  // Convert relative /api/... requests to VPS backend URL
+  let apiUrl = originalUrl;
+
+  if (isInternalApi && !isClerk) {
+    if (originalUrl.startsWith('/api')) {
+      apiUrl = `${API_BASE_URL}${originalUrl}`;
+    } else if (originalUrl.startsWith(`${window.location.origin}/api`)) {
+      apiUrl = originalUrl.replace(window.location.origin, API_BASE_URL);
+    }
+  }
 
   let newInit = init;
   let didAttachToken = false;
@@ -54,33 +78,54 @@ window.fetch = async (input, init) => {
     try {
       const rawToken = await activeTokenResolver();
       const token = rawToken?.trim();
+
       if (token && token !== 'null' && token !== 'undefined') {
-        const existingHeaders = init?.headers || (input instanceof Request ? input.headers : undefined);
+        const existingHeaders =
+          init?.headers ||
+          (input instanceof Request ? input.headers : undefined);
+
         const headers = new Headers(existingHeaders || {});
+
         if (!headers.has('Authorization')) {
           headers.set('Authorization', `Bearer ${token}`);
           didAttachToken = true;
         }
-        newInit = { ...init, headers };
+
+        newInit = {
+          ...init,
+          headers,
+        };
       }
     } catch (err) {
-      console.warn('Error setting auth header in fetch interceptor:', err);
+      console.warn(
+        'Error setting auth header in fetch interceptor:',
+        err
+      );
     }
   }
 
   try {
-    const response = await originalFetch(input, newInit);
-    // Only trigger unauthorized if we actually sent a token and it was rejected.
-    // If no token was attached, the 401 is expected (token not ready yet) — don't logout.
-    if (response.status === 401 && isInternalApi && !isClerk && didAttachToken) {
+    const response = await originalFetch(apiUrl, newInit);
+
+    if (
+      response.status === 401 &&
+      isInternalApi &&
+      !isClerk &&
+      didAttachToken
+    ) {
       localStorage.removeItem('token');
       window.dispatchEvent(new Event('unauthorized'));
     }
+
     return response;
   } catch (err) {
     if (isInternalApi && !isClerk) {
-      console.error(`[Fetch Interceptor Error] Request to ${urlString} failed:`, err);
+      console.error(
+        `[Fetch Interceptor Error] Request to ${apiUrl} failed:`,
+        err
+      );
     }
+
     throw err;
   }
 };
