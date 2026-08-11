@@ -955,7 +955,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           
           {/* Header */}
           <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span className="text-sm font-mono tracking-widest text-[#2563eb] uppercase font-bold">Upcoming Feature</span>
+            {/* <span className="text-sm font-mono tracking-widest text-[#2563eb] uppercase font-bold">Upcoming Feature</span> */}
             <h2 className="text-3xl font-black tracking-tight text-neutral-900">
               Role-Based Contact Packs
             </h2>
