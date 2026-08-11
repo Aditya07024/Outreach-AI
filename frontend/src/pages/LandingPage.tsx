@@ -1412,9 +1412,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     placeholder="name@company.com"
                     className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   />
-                  <span className="text-[10px] text-slate-500 block mt-1">
+                  {/* <span className="text-[10px] text-slate-500 block mt-1">
                     We will notify you the exact moment the <strong className="text-slate-800">{selectedRolePack}</strong> contact pack is ready for download.
-                  </span>
+                  </span> */}
                 </div>
 
                 <div className="pt-2 flex gap-3">
