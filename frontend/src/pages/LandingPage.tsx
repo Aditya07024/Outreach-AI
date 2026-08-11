@@ -957,10 +957,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="text-center space-y-3 max-w-2xl mx-auto">
             <span className="text-sm font-mono tracking-widest text-[#2563eb] uppercase font-bold">Upcoming Feature</span>
             <h2 className="text-3xl font-black tracking-tight text-neutral-900">
-              Role-Based Contact Packs (Coming Soon)
+              Role-Based Contact Packs
             </h2>
             <p className="text-sm text-neutral-500 leading-relaxed">
-              Spend less time searching for email addresses. Soon, you'll be able to browse verified contact lists by job role and import them straight into your campaigns with a single click.
+              Spend less time searching for email addresses. Now you can able to browse verified contact lists by job role and import them straight into your campaigns with a single click.
             </p>
           </div>
 
