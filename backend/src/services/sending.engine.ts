@@ -200,10 +200,20 @@ export class SendingEngine {
         );
       } else {
         // Failure
+        const previousFailures = await prisma.emailHistory.count({
+          where: {
+            contactId: contact.id,
+            status: 'FAILED',
+          },
+        });
+
+        const newFailureCount = previousFailures + 1;
+        const newStatus = newFailureCount >= 2 ? 'SKIPPED' : 'FAILED';
+
         await prisma.$transaction([
           prisma.contact.update({
             where: { id: contact.id },
-            data: { status: 'FAILED' },
+            data: { status: newStatus },
           }),
           prisma.emailHistory.create({
             data: {
@@ -218,12 +228,21 @@ export class SendingEngine {
           }),
         ]);
 
-        await logger.error(
-          'EMAIL_SENDING',
-          `Email failed for ${contact.email}. Error: ${sendError}`,
-          null,
-          campaign.userId || undefined
-        );
+        if (newStatus === 'SKIPPED') {
+          await logger.warn(
+            'EMAIL_SENDING',
+            `Email failed ${newFailureCount} times for ${contact.email}. Setting status to SKIPPED to proceed with remaining queue. Error: ${sendError}`,
+            null,
+            campaign.userId || undefined
+          );
+        } else {
+          await logger.error(
+            'EMAIL_SENDING',
+            `Email failed for ${contact.email} (Attempt ${newFailureCount}/2). Error: ${sendError}`,
+            null,
+            campaign.userId || undefined
+          );
+        }
 
         // If it's a Gmail authentication/session failure, auto-pause the campaign to avoid repeat errors
         if (sendError && (sendError.includes('auth') || sendError.includes('expired') || sendError.includes('login') || sendError.includes('connect'))) {
@@ -339,7 +358,7 @@ export class SendingEngine {
   }
 
   /**
-   * Reset failed items in a campaign back to READY_TO_SEND so they will retry
+   * Reset failed & skipped items in a campaign back to READY_TO_SEND so they will retry
    */
   static async retryFailures(campaignId: number): Promise<void> {
     const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
@@ -348,7 +367,7 @@ export class SendingEngine {
     const result = await prisma.contact.updateMany({
       where: {
         campaignId,
-        status: 'FAILED',
+        status: { in: ['FAILED', 'SKIPPED'] },
       },
       data: {
         status: 'READY_TO_SEND',
@@ -357,7 +376,7 @@ export class SendingEngine {
 
     await logger.info(
       'EMAIL_SENDING',
-      `Reset ${result.count} failed contacts in "${campaign.name}" to retry sending.`,
+      `Reset ${result.count} failed/skipped contacts in "${campaign.name}" to retry sending.`,
       null,
       campaign.userId || undefined
     );

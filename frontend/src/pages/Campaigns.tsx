@@ -806,16 +806,17 @@ export const Campaigns: React.FC = () => {
               })()}
 
               {/* Status Metrics Ribbon */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
                 {[
                   { label: 'Total', count: campaignDetails.contacts?.length || 0, color: 'text-slate-900' },
                   { label: 'Pending AI', count: campaignDetails.contacts?.filter(c => c.status === 'PENDING').length || 0, color: 'text-slate-500' },
                   { label: 'Generating', count: campaignDetails.contacts?.filter(c => c.status === 'GENERATING').length || 0, color: 'text-slate-800 animate-pulse' },
                   { label: 'Ready', count: campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND').length || 0, color: 'text-slate-900' },
                   { label: 'Sent', count: campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0, color: 'text-emerald-700' },
-                  { label: 'Failed', count: campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0, color: 'text-rose-700' }
+                  { label: 'Failed', count: campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0, color: 'text-rose-700' },
+                  { label: 'Skipped', count: campaignDetails.contacts?.filter(c => c.status === 'SKIPPED').length || 0, color: 'text-amber-700' }
                 ].map((stat, idx) => (
-                  <div key={idx} className="bg-white border border-slate-200/80 rounded-xl p-3.5 text-center shadow-xs">
+                  <div key={idx} className="bg-white border border-slate-200/80 rounded-xl p-3 text-center shadow-xs">
                     <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold block">{stat.label}</span>
                     <span className={`text-lg font-black mt-1 block ${stat.color}`}>{stat.count}</span>
                   </div>
@@ -918,6 +919,8 @@ export const Campaigns: React.FC = () => {
                                   ? 'bg-slate-100 border-slate-300 text-slate-900'
                                   : contact.status === 'FAILED'
                                   ? 'bg-rose-50 border-rose-200 text-rose-800'
+                                  : contact.status === 'SKIPPED'
+                                  ? 'bg-amber-50 border-amber-200 text-amber-800'
                                   : 'bg-slate-100 border-slate-200 text-slate-600'
                               }`}>
                                 {contact.status}
