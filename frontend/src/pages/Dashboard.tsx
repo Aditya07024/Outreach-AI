@@ -38,31 +38,62 @@ export const Dashboard: React.FC<DashboardProps> = ({ isPaid, user, onPaymentSuc
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [history, setHistory] = useState<EmailHistory[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
+  const [todaySentCount, setTodaySentCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [retryAttempt, setRetryAttempt] = useState<number>(0);
 
   const fetchDashboardData = async () => {
-    try {
-      const [campRes, histRes, logsRes] = await Promise.allSettled([
-        fetch('/api/campaigns'),
-        fetch('/api/history'),
-        fetch('/api/logs?limit=8')
-      ]);
+    setIsLoading(true);
+    setFetchError(null);
+    const maxRetries = 3;
+    const baseDelay = 1000;
 
-      const campData = campRes.status === 'fulfilled' && campRes.value.ok ? await campRes.value.json().catch(() => []) : [];
-      const histData = histRes.status === 'fulfilled' && histRes.value.ok ? await histRes.value.json().catch(() => []) : [];
-      const logsData = logsRes.status === 'fulfilled' && logsRes.value.ok ? await logsRes.value.json().catch(() => []) : [];
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        setRetryAttempt(attempt);
 
-      setCampaigns(Array.isArray(campData) ? campData : (campData?.campaigns && Array.isArray(campData.campaigns) ? campData.campaigns : []));
-      setHistory(Array.isArray(histData) ? histData : (histData?.history && Array.isArray(histData.history) ? histData.history : []));
-      setLogs(Array.isArray(logsData) ? logsData : (logsData?.logs && Array.isArray(logsData.logs) ? logsData.logs : []));
-    } catch (err) {
-      console.error('Failed to load dashboard data', err);
-      setCampaigns([]);
-      setHistory([]);
-      setLogs([]);
-    } finally {
-      setIsLoading(false);
+        // Try the fast single batch endpoint first
+        const res = await fetch('/api/campaigns/dashboard-stats');
+        if (res.ok) {
+          const data = await res.json();
+          setCampaigns(Array.isArray(data.campaigns) ? data.campaigns : []);
+          setLogs(Array.isArray(data.logs) ? data.logs : []);
+          if (typeof data.todaySentCount === 'number') {
+            setTodaySentCount(data.todaySentCount);
+          }
+          setIsLoading(false);
+          setFetchError(null);
+          return;
+        }
+
+        // Fallback to individual endpoints if needed
+        const [campRes, histRes, logsRes] = await Promise.allSettled([
+          fetch('/api/campaigns'),
+          fetch('/api/history'),
+          fetch('/api/logs?limit=8')
+        ]);
+
+        const campData = campRes.status === 'fulfilled' && campRes.value.ok ? await campRes.value.json().catch(() => []) : [];
+        const histData = histRes.status === 'fulfilled' && histRes.value.ok ? await histRes.value.json().catch(() => []) : [];
+        const logsData = logsRes.status === 'fulfilled' && logsRes.value.ok ? await logsRes.value.json().catch(() => []) : [];
+
+        setCampaigns(Array.isArray(campData) ? campData : (campData?.campaigns && Array.isArray(campData.campaigns) ? campData.campaigns : []));
+        setHistory(Array.isArray(histData) ? histData : (histData?.history && Array.isArray(histData.history) ? histData.history : []));
+        setLogs(Array.isArray(logsData) ? logsData : (logsData?.logs && Array.isArray(logsData.logs) ? logsData.logs : []));
+        setIsLoading(false);
+        setFetchError(null);
+        return;
+      } catch (err: any) {
+        console.warn(`[Dashboard] Data fetch attempt ${attempt} failed:`, err);
+        if (attempt < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, baseDelay * attempt));
+        } else {
+          setFetchError('Database or server connection is waking up. Please retry.');
+        }
+      }
     }
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -86,10 +117,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ isPaid, user, onPaymentSuc
 
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
-  const todaySentCount = safeHistory.filter(h => {
-    const sentDate = new Date(h.sentAt);
-    return h.status === 'SENT' && sentDate >= startOfToday;
-  }).length;
+  const effectiveTodaySent = safeHistory.length > 0
+    ? safeHistory.filter(h => {
+        const sentDate = new Date(h.sentAt);
+        return h.status === 'SENT' && sentDate >= startOfToday;
+      }).length
+    : todaySentCount;
 
   const overallProgress = totalContacts > 0 ? Math.round((totalSent / totalContacts) * 100) : 0;
 
@@ -98,7 +131,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ isPaid, user, onPaymentSuc
       <div className="flex-1 flex items-center justify-center min-h-[600px] bg-slate-50">
         <div className="flex flex-col items-center gap-3">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-slate-900"></div>
-          <span className="text-xs font-bold text-slate-600">Loading Outreach Dashboard...</span>
+          <span className="text-xs font-bold text-slate-600">
+            {retryAttempt > 1 ? `Waking up server engine... (Attempt ${retryAttempt}/3)` : 'Loading Outreach Dashboard...'}
+          </span>
         </div>
       </div>
     );
@@ -123,7 +158,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ isPaid, user, onPaymentSuc
     },
     { 
       title: 'Sent Today', 
-      value: todaySentCount.toLocaleString(), 
+      value: effectiveTodaySent.toLocaleString(), 
       badge: 'Last 24 Hours', 
       icon: CalendarDays, 
       color: 'text-blue-600', 
@@ -181,6 +216,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ isPaid, user, onPaymentSuc
           </Link>
         </div>
       </div>
+
+      {fetchError && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertOctagon className="w-5 h-5 text-amber-600" />
+            <span className="text-xs font-semibold">{fetchError}</span>
+          </div>
+          <button
+            onClick={fetchDashboardData}
+            className="px-3 py-1 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Retry Now</span>
+          </button>
+        </div>
+      )}
 
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -1,0 +1,18 @@
+name: Server Keep-Alive Cron Job
+
+on:
+  schedule:
+    # Run every 10 minutes (to prevent 15-minute host sleep timeouts)
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Keep-Alive HTTP Probe
+        run: |
+          TARGET_URL="${{ secrets.SERVER_URL }}"
+          if [ -z "$TARGET_URL" ]; return 0; fi
+          echo "Pinging server keep-alive endpoint: ${TARGET_URL}/health/ping"
+          curl -s -f -m 15 "${TARGET_URL}/health/ping" || curl -s -f -m 15 "${TARGET_URL}/health" || echo "Server ping attempted."

@@ -45,8 +45,11 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
       ];
     }
 
+    const limit = req.query.limit ? Number(req.query.limit) : 100;
+
     const history = await prisma.emailHistory.findMany({
       where: whereClause,
+      take: limit,
       include: {
         contact: true,
         campaign: true,

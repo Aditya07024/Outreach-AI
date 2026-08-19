@@ -20,6 +20,7 @@ import extensionRoutes from './routes/extension.routes';
 
 // Services
 import { SendingEngine } from './services/sending.engine';
+import { KeepAliveService } from './services/keepalive.service';
 import prisma from './utils/prisma';
 
 const app = express();
@@ -112,8 +113,9 @@ async function startServer() {
       console.warn('Could not sync User id sequence (this is normal if using a different DB provider like SQLite):', seqError);
     }
 
-    // Start background queue scheduler
+    // Start background queue scheduler and keep-alive engine
     SendingEngine.startScheduler();
+    KeepAliveService.start();
 
     app.listen(Number(PORT), '0.0.0.0', () => {
       console.log(`[Server] Running on http://localhost:${PORT}`);

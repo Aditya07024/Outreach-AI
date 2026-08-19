@@ -104,6 +104,8 @@ model Contact {
   emailHistory    EmailHistory[]
 
   @@unique([campaignId, email])
+  @@index([campaignId, status])
+  @@index([status])
 }
 
 model EmailHistory {
@@ -118,6 +120,9 @@ model EmailHistory {
   errorMsg       String?
   gmailMessageId String?
   sentAt         DateTime @default(now())
+
+  @@index([campaignId, status, sentAt])
+  @@index([sentAt])
 }
 
 model Log {
@@ -129,6 +134,8 @@ model Log {
   timestamp DateTime @default(now())
   userId    Int?
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
 }
 
 model WaitlistLead {

@@ -32,7 +32,7 @@ function replacePlaceholders(text: string | null, contact: any, settings: any): 
   return result;
 }
 
-// Get all campaigns with contact metrics
+// Get all campaigns with contact metrics (Optimized bulk query)
 router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.id;
@@ -47,59 +47,161 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
       },
     });
 
-    // Compute status metrics for each campaign
-    const enrichedCampaigns = await Promise.all(
-      campaigns.map(async (c) => {
-        const counts = await prisma.contact.groupBy({
-          by: ['status'],
-          where: { campaignId: c.id },
-          _count: { _all: true },
-        });
+    const campaignIds = campaigns.map((c) => c.id);
 
-        const metrics = {
-          total: c._count.contacts,
+    const counts = campaignIds.length > 0
+      ? await prisma.contact.groupBy({
+          by: ['campaignId', 'status'],
+          where: { campaignId: { in: campaignIds } },
+          _count: { _all: true },
+        })
+      : [];
+
+    const metricsMap = new Map<number, { total: number; pending: number; generating: number; ready: number; sent: number; failed: number; skipped: number }>();
+
+    counts.forEach((group) => {
+      if (!metricsMap.has(group.campaignId)) {
+        metricsMap.set(group.campaignId, {
+          total: 0,
           pending: 0,
           generating: 0,
           ready: 0,
           sent: 0,
           failed: 0,
           skipped: 0,
-        };
-
-        counts.forEach((group) => {
-          const count = group._count._all;
-          switch (group.status) {
-            case 'PENDING':
-              metrics.pending += count;
-              break;
-            case 'GENERATING':
-              metrics.generating += count;
-              break;
-            case 'READY_TO_SEND':
-              metrics.ready += count;
-              break;
-            case 'SENT':
-              metrics.sent += count;
-              break;
-            case 'FAILED':
-              metrics.failed += count;
-              break;
-            case 'SKIPPED':
-              metrics.skipped += count;
-              break;
-          }
         });
+      }
+      const m = metricsMap.get(group.campaignId)!;
+      const count = group._count._all;
+      switch (group.status) {
+        case 'PENDING': m.pending += count; break;
+        case 'GENERATING': m.generating += count; break;
+        case 'READY_TO_SEND': m.ready += count; break;
+        case 'SENT': m.sent += count; break;
+        case 'FAILED': m.failed += count; break;
+        case 'SKIPPED': m.skipped += count; break;
+      }
+    });
 
-        return {
-          ...c,
-          metrics,
-        };
-      })
-    );
+    const enrichedCampaigns = campaigns.map((c) => {
+      const m = metricsMap.get(c.id) || {
+        total: c._count.contacts,
+        pending: 0,
+        generating: 0,
+        ready: 0,
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+      };
+      m.total = c._count.contacts;
+      return {
+        ...c,
+        metrics: m,
+      };
+    });
 
     res.json(enrichedCampaigns);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch campaigns' });
+  }
+});
+
+// Get aggregated dashboard stats in a single ultra-fast call
+router.get('/dashboard-stats', async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [campaigns, todaySentCount, recentLogs] = await Promise.all([
+      prisma.campaign.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          resume: true,
+          _count: {
+            select: { contacts: true },
+          },
+        },
+      }),
+      prisma.emailHistory.count({
+        where: {
+          campaign: { userId },
+          status: 'SENT',
+          sentAt: { gte: startOfToday },
+        },
+      }),
+      prisma.log.findMany({
+        where: req.user!.role === 'super_admin' || req.user!.role === 'admin'
+          ? {}
+          : { userId },
+        take: 8,
+        orderBy: { timestamp: 'desc' },
+      }),
+    ]);
+
+    const campaignIds = campaigns.map((c) => c.id);
+
+    const counts = campaignIds.length > 0
+      ? await prisma.contact.groupBy({
+          by: ['campaignId', 'status'],
+          where: { campaignId: { in: campaignIds } },
+          _count: { _all: true },
+        })
+      : [];
+
+    const metricsMap = new Map<number, { total: number; pending: number; generating: number; ready: number; sent: number; failed: number; skipped: number }>();
+
+    counts.forEach((group) => {
+      if (!metricsMap.has(group.campaignId)) {
+        metricsMap.set(group.campaignId, {
+          total: 0,
+          pending: 0,
+          generating: 0,
+          ready: 0,
+          sent: 0,
+          failed: 0,
+          skipped: 0,
+        });
+      }
+      const m = metricsMap.get(group.campaignId)!;
+      const count = group._count._all;
+      switch (group.status) {
+        case 'PENDING': m.pending += count; break;
+        case 'GENERATING': m.generating += count; break;
+        case 'READY_TO_SEND': m.ready += count; break;
+        case 'SENT': m.sent += count; break;
+        case 'FAILED': m.failed += count; break;
+        case 'SKIPPED': m.skipped += count; break;
+      }
+    });
+
+    const enrichedCampaigns = campaigns.map((c) => {
+      const m = metricsMap.get(c.id) || {
+        total: c._count.contacts,
+        pending: 0,
+        generating: 0,
+        ready: 0,
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+      };
+      m.total = c._count.contacts;
+      return {
+        ...c,
+        metrics: m,
+      };
+    });
+
+    res.json({
+      campaigns: enrichedCampaigns,
+      todaySentCount,
+      logs: recentLogs,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch dashboard stats' });
   }
 });
 

@@ -38,6 +38,16 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Lightweight ping endpoint for keep-alive cron jobs
+router.get('/ping', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+  } catch (error: any) {
+    res.status(500).json({ status: 'ERROR', error: error.message || String(error) });
+  }
+});
+
 // Public Waitlist Email Capture Endpoint
 router.post('/waitlist', async (req, res) => {
   const { email, rolePack, notes } = req.body;
