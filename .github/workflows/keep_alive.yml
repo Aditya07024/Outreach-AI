@@ -13,6 +13,9 @@ jobs:
       - name: Send Keep-Alive HTTP Probe
         run: |
           TARGET_URL="${{ secrets.SERVER_URL }}"
-          if [ -z "$TARGET_URL" ]; return 0; fi
+          if [ -z "$TARGET_URL" ]; then
+            echo "SERVER_URL secret is not set. Skipping external HTTP keep-alive probe."
+            exit 0
+          fi
           echo "Pinging server keep-alive endpoint: ${TARGET_URL}/health/ping"
           curl -s -f -m 15 "${TARGET_URL}/health/ping" || curl -s -f -m 15 "${TARGET_URL}/health" || echo "Server ping attempted."
