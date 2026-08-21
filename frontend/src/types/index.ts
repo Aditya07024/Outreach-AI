@@ -49,6 +49,7 @@ export interface Campaign {
   templateType?: 'AI_GENERATED' | 'SAVED_TEMPLATE' | 'MANUAL';
   templateSubject?: string | null;
   templateBody?: string | null;
+  autoSendExtension?: boolean;
   contacts?: Contact[];
   createdAt: string;
   updatedAt: string;

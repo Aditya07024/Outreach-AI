@@ -10,7 +10,9 @@ import {
   UserMinus,
   Sparkles,
   Edit,
-  MailQuestion
+  MailQuestion,
+  Zap,
+  CheckCircle2
 } from 'lucide-react';
 import { Campaign, Contact, Resume } from '../types';
 import { ImportWizard } from '../components/ImportWizard';
@@ -29,6 +31,7 @@ export const Campaigns: React.FC = () => {
   const [newTemplateType, setNewTemplateType] = useState<'AI_GENERATED' | 'SAVED_TEMPLATE' | 'MANUAL'>('AI_GENERATED');
   const [newTemplateSubject, setNewTemplateSubject] = useState('Opportunities at {company} - {role} Application');
   const [newTemplateBody, setNewTemplateBody] = useState('Hi {firstName},\n\nI have been following your engineering team at {company} and would love to express interest in the {role} role.\n\nI have attached my resume for your review. You can view my portfolio at {portfolio} and GitHub at {github}.\n\nBest regards,\n{name}');
+  const [newAutoSendExtension, setNewAutoSendExtension] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Edit campaign settings state
@@ -39,6 +42,7 @@ export const Campaigns: React.FC = () => {
   const [editTemplateType, setEditTemplateType] = useState<string>('AI_GENERATED');
   const [editTemplateSubject, setEditTemplateSubject] = useState('');
   const [editTemplateBody, setEditTemplateBody] = useState('');
+  const [editAutoSendExtension, setEditAutoSendExtension] = useState(false);
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
 
   // Edit contact modal state
@@ -159,8 +163,38 @@ export const Campaigns: React.FC = () => {
       setEditTemplateType(campaignDetails.templateType || 'AI_GENERATED');
       setEditTemplateSubject(campaignDetails.templateSubject || '');
       setEditTemplateBody(campaignDetails.templateBody || '');
+      setEditAutoSendExtension(Boolean(campaignDetails.autoSendExtension));
     }
   }, [campaignDetails?.id]);
+
+  const handleToggleAutoSendExtension = async (campaignId: number, currentVal: boolean, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const newVal = !currentVal;
+
+    // Optimistic UI updates
+    setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, autoSendExtension: newVal } : c));
+    if (campaignDetails?.id === campaignId) {
+      setCampaignDetails(prev => prev ? { ...prev, autoSendExtension: newVal } : null);
+      setEditAutoSendExtension(newVal);
+    }
+
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoSendExtension: newVal }),
+      });
+      if (!response.ok) throw new Error('Failed to toggle auto-send');
+    } catch (err: any) {
+      // Rollback
+      setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, autoSendExtension: currentVal } : c));
+      if (campaignDetails?.id === campaignId) {
+        setCampaignDetails(prev => prev ? { ...prev, autoSendExtension: currentVal } : null);
+        setEditAutoSendExtension(currentVal);
+      }
+      alert('Failed to update Auto-Send toggle settings.');
+    }
+  };
 
   const handleCreateCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,7 +211,8 @@ export const Campaigns: React.FC = () => {
           resumeId: newResumeId,
           templateType: newTemplateType,
           templateSubject: newTemplateSubject,
-          templateBody: newTemplateBody
+          templateBody: newTemplateBody,
+          autoSendExtension: newAutoSendExtension,
         }),
       });
 
@@ -186,6 +221,7 @@ export const Campaigns: React.FC = () => {
 
       setNewName('');
       setNewDesc('');
+      setNewAutoSendExtension(false);
       setShowCreateForm(false);
       fetchCampaigns();
     } catch (err) {
@@ -211,6 +247,7 @@ export const Campaigns: React.FC = () => {
           templateType: editTemplateType,
           templateSubject: editTemplateSubject,
           templateBody: editTemplateBody,
+          autoSendExtension: editAutoSendExtension,
         }),
       });
 
@@ -538,6 +575,31 @@ export const Campaigns: React.FC = () => {
                   </select>
                 </div>
 
+                <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                      Auto-Send Extension Leads
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      Automatically generate email & send via Gmail when leads added by extension.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNewAutoSendExtension(!newAutoSendExtension)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      newAutoSendExtension ? 'bg-emerald-600' : 'bg-slate-300'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                        newAutoSendExtension ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
                 {newTemplateType === 'SAVED_TEMPLATE' && (
                   <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
                     <div className="flex flex-col gap-1.5">
@@ -613,7 +675,29 @@ export const Campaigns: React.FC = () => {
                     <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{camp.description || 'No description provided.'}</p>
                   </div>
 
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center">
+                  {/* Auto-Send Extension Lead Toggle */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700">
+                      <Zap className={`w-3.5 h-3.5 ${camp.autoSendExtension ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
+                      <span>Auto-Send Extension Leads</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleAutoSendExtension(camp.id, Boolean(camp.autoSendExtension), e)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        camp.autoSendExtension ? 'bg-emerald-600' : 'bg-slate-300'
+                      }`}
+                      title={camp.autoSendExtension ? 'Auto-Send ON: Extension leads auto-generate & send mail' : 'Auto-Send OFF: Extension leads added as pending'}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          camp.autoSendExtension ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                       Contacts: <span className="text-slate-900 font-bold">{camp.metrics?.total || 0}</span> | Sent: <span className="text-slate-900 font-bold">{camp.metrics?.sent || 0}</span>
                     </div>
@@ -660,6 +744,11 @@ export const Campaigns: React.FC = () => {
                       <span>Resume: <strong className="text-slate-800 font-bold">{campaignDetails.resume?.name || 'None'}</strong></span>
                       <span className="hidden sm:inline">•</span>
                       <span>Mode: <strong className="text-slate-800 font-bold">{campaignDetails.templateType === 'AI_GENERATED' ? 'AI (Grok)' : campaignDetails.templateType === 'SAVED_TEMPLATE' ? 'Saved Template' : 'Manual'}</strong></span>
+                      <span className="hidden sm:inline">•</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Zap className={`w-3.5 h-3.5 ${campaignDetails.autoSendExtension ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
+                        <span>Auto-Send Extension: <strong className={campaignDetails.autoSendExtension ? 'text-emerald-700 font-bold' : 'text-slate-600'}>{campaignDetails.autoSendExtension ? 'ON' : 'OFF'}</strong></span>
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -801,6 +890,31 @@ export const Campaigns: React.FC = () => {
                           <option key={r.id} value={r.id}>{r.name}{r.description ? ` — ${r.description}` : ''}</option>
                         ))}
                       </select>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                          Auto-Send Extension Leads
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">
+                          Auto-generate email & send mail via Gmail when leads added by extension
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditAutoSendExtension(!editAutoSendExtension)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          editAutoSendExtension ? 'bg-emerald-600' : 'bg-slate-300'
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                            editAutoSendExtension ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
                     </div>
                   </div>
 

@@ -4,33 +4,9 @@ import { SendingEngine } from '../services/sending.engine';
 import { AIService } from '../services/ai.service';
 import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { replacePlaceholders } from '../utils/template';
 
 const router = Router();
-
-// Helper: Replace placeholders in template text
-function replacePlaceholders(text: string | null, contact: any, settings: any): string {
-  if (!text) return '';
-  let result = text;
-  
-  // Recruiter fields
-  result = result.replace(/{firstName}/g, contact.firstName || 'Recruiter');
-  result = result.replace(/{lastName}/g, contact.lastName || '');
-  result = result.replace(/{company}/g, contact.company || 'your company');
-  result = result.replace(/{role}/g, contact.role || contact.title || 'Software Engineer');
-  result = result.replace(/{title}/g, contact.title || contact.role || 'Hiring Manager');
-  result = result.replace(/{email}/g, contact.email || '');
-  
-  // Settings/Candidate fields
-  result = result.replace(/{name}/g, settings.name || '');
-  result = result.replace(/{phone}/g, settings.phone || '');
-  result = result.replace(/{portfolio}/g, settings.portfolio || '');
-  result = result.replace(/{github}/g, settings.github || '');
-  result = result.replace(/{linkedin}/g, settings.linkedin || '');
-  result = result.replace(/{preferredRole}/g, settings.preferredRole || '');
-  result = result.replace(/{location}/g, settings.location || '');
-  
-  return result;
-}
 
 // Get all campaigns with contact metrics (Optimized bulk query)
 router.get('/', async (req: AuthenticatedRequest, res) => {
@@ -209,7 +185,7 @@ router.get('/dashboard-stats', async (req: AuthenticatedRequest, res) => {
 router.post('/', async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.id;
-    const { name, description, resumeId, templateType, templateSubject, templateBody } = req.body;
+    const { name, description, resumeId, templateType, templateSubject, templateBody, autoSendExtension } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Campaign name is required.' });
     }
@@ -223,10 +199,11 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         templateType: templateType || 'AI_GENERATED',
         templateSubject: templateSubject || null,
         templateBody: templateBody || null,
+        autoSendExtension: Boolean(autoSendExtension),
       },
     });
 
-    await logger.info('API', `Created campaign: "${name}" with template type: ${campaign.templateType}`);
+    await logger.info('API', `Created campaign: "${name}" with template type: ${campaign.templateType}, autoSendExtension: ${campaign.autoSendExtension}`);
     res.status(201).json(campaign);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to create campaign' });
@@ -263,7 +240,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
     const userId = req.user!.id;
-    const { name, description, resumeId, status, templateType, templateSubject, templateBody } = req.body;
+    const { name, description, resumeId, status, templateType, templateSubject, templateBody, autoSendExtension } = req.body;
 
     const existing = await prisma.campaign.findFirst({
       where: { id, userId }
@@ -283,6 +260,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
         templateType,
         templateSubject,
         templateBody,
+        autoSendExtension: autoSendExtension !== undefined ? Boolean(autoSendExtension) : undefined,
       },
     });
 

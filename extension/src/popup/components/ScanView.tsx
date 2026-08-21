@@ -30,6 +30,7 @@ import {
   Lock,
   Play,
   Pause,
+  Zap,
 } from 'lucide-react';
 
 interface ExtractedEmail {
@@ -55,6 +56,7 @@ interface Campaign {
   name: string;
   status: string;
   contactCount: number;
+  autoSendExtension?: boolean;
 }
 
 type ScanStatus = 'idle' | 'scanning' | 'done' | 'error';
@@ -745,12 +747,21 @@ export const ScanView: React.FC = () => {
             </div>
 
             {/* Sync Feedback Message */}
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 animate-fade-in">
-              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="text-[10px] leading-relaxed">
-                All found contacts are automatically saved to your campaign.
-              </span>
-            </div>
+            {selectedCampaign?.autoSendExtension ? (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 animate-fade-in">
+                <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />
+                <span className="text-[10px] leading-relaxed font-medium">
+                  Auto-Send ON: Contacts are auto-generated & sent via Gmail!
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 animate-fade-in">
+                <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[10px] leading-relaxed">
+                  All found contacts are automatically saved to your campaign.
+                </span>
+              </div>
+            )}
 
             {/* Open Dashboard link */}
             <button

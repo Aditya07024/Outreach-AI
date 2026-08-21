@@ -75,6 +75,7 @@ model Campaign {
   templateType    String         @default("AI_GENERATED") // AI_GENERATED, SAVED_TEMPLATE, MANUAL
   templateSubject String?
   templateBody    String?
+  autoSendExtension Boolean      @default(false)
   contacts        Contact[]
   emailHistory    EmailHistory[]
   createdAt       DateTime       @default(now())
