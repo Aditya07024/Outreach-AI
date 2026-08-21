@@ -662,17 +662,15 @@ export const Campaigns: React.FC = () => {
                     Clear Drafts
                   </button>
 
-                  {(campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0) > 0 && (
-                    <button
-                      onClick={handleDeleteFailedContacts}
-                      disabled={campaignDetails.status === 'SENDING'}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-xs"
-                      title="Delete all failed mail email ids from this campaign"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                      Delete Failed ({campaignDetails.contacts?.filter(c => c.status === 'FAILED').length})
-                    </button>
-                  )}
+                  <button
+                    onClick={handleDeleteFailedContacts}
+                    disabled={campaignDetails.status === 'SENDING' || (campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0) === 0}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                    title="Delete all failed mail email ids from this campaign"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    Delete Failed ({campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0})
+                  </button>
                 </div>
               </div>
 
