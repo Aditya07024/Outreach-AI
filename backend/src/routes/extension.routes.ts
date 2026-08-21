@@ -14,15 +14,15 @@ import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { AIService } from '../services/ai.service';
 import { GmailService } from '../services/gmail.service';
+import { SendingEngine } from '../services/sending.engine';
 import { replacePlaceholders } from '../utils/template';
-import fs from 'fs';
 
 const router = Router();
 
 /**
  * POST /api/extension/sync
  * Receives extracted contacts from the Chrome Extension and inserts them into a campaign.
- * If campaign has autoSendExtension enabled, automatically generates email and sends via Gmail!
+ * If campaign has autoSendExtension enabled, automatically generates email, places contact in READY_TO_SEND queue, and triggers SendingEngine!
  */
 router.post('/sync', async (req: AuthenticatedRequest, res) => {
   const userId = req.user!.id;
@@ -108,11 +108,11 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
       `Extension sync from ${sourceUrl || 'unknown'}: ${importedCount} contacts added, ${duplicateCount} duplicates, ${errorCount} errors. Company: ${companyName || 'unknown'}`
     );
 
-    // Auto-generate & auto-send routine if autoSendExtension is enabled on this campaign
+    // Auto-generate & queue routine if autoSendExtension is enabled on this campaign
     if (campaign.autoSendExtension && insertedContacts.length > 0) {
       (async () => {
         try {
-          await logger.info('EMAIL_SENDING', `[AutoSend Extension] Triggering auto email generation and sending for ${insertedContacts.length} new extension contacts in campaign "${campaign.name}"`, null, userId);
+          await logger.info('EMAIL_GENERATION', `[AutoSend Extension] Generating email content and adding ${insertedContacts.length} extension contact(s) to sending queue for campaign "${campaign.name}"`, null, userId);
 
           const fullCampaign = await prisma.campaign.findUnique({
             where: { id: campaign.id },
@@ -130,17 +130,6 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
             preferredRole: 'Software Engineer',
             location: '',
           };
-
-          const gmailStatus = await GmailService.getConnectionStatus(userId).catch(() => ({ connected: false }));
-
-          let attachmentBase64: string | undefined = fullCampaign.resume?.fileContent || undefined;
-          if (!attachmentBase64 && fullCampaign.resume?.filePath && fs.existsSync(fullCampaign.resume.filePath)) {
-            try {
-              attachmentBase64 = fs.readFileSync(fullCampaign.resume.filePath).toString('base64');
-            } catch (e) {
-              console.error('Failed reading resume file:', e);
-            }
-          }
 
           for (const contact of insertedContacts) {
             try {
@@ -162,7 +151,7 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
                 body = generated.body;
               }
 
-              // Save generated email
+              // Save generated email and add contact to READY_TO_SEND queue
               await prisma.contact.update({
                 where: { id: contact.id },
                 data: {
@@ -172,78 +161,12 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
                 },
               });
 
-              // Send email if Gmail is connected
-              if (gmailStatus.connected) {
-                try {
-                  const messageId = await GmailService.sendEmail(
-                    userId,
-                    contact.email,
-                    subject,
-                    body,
-                    attachmentBase64,
-                    fullCampaign.resume?.name ? `${fullCampaign.resume.name}.pdf` : undefined
-                  );
-
-                  const timestamp = new Date();
-                  await prisma.$transaction([
-                    prisma.contact.update({
-                      where: { id: contact.id },
-                      data: { status: 'SENT' },
-                    }),
-                    prisma.emailHistory.create({
-                      data: {
-                        contactId: contact.id,
-                        campaignId: campaign.id,
-                        subject,
-                        body,
-                        status: 'SENT',
-                        gmailMessageId: messageId,
-                        sentAt: timestamp,
-                      },
-                    }),
-                  ]);
-
-                  await logger.info(
-                    'EMAIL_SENDING',
-                    `[AutoSend Extension] Email auto-sent successfully to ${contact.email} for campaign "${campaign.name}"`,
-                    null,
-                    userId
-                  );
-                } catch (sendErr: any) {
-                  const timestamp = new Date();
-                  await prisma.$transaction([
-                    prisma.contact.update({
-                      where: { id: contact.id },
-                      data: { status: 'FAILED' },
-                    }),
-                    prisma.emailHistory.create({
-                      data: {
-                        contactId: contact.id,
-                        campaignId: campaign.id,
-                        subject,
-                        body,
-                        status: 'FAILED',
-                        errorMsg: sendErr.message || String(sendErr),
-                        sentAt: timestamp,
-                      },
-                    }),
-                  ]);
-
-                  await logger.error(
-                    'EMAIL_SENDING',
-                    `[AutoSend Extension] Failed to auto-send email to ${contact.email}: ${sendErr.message || sendErr}`,
-                    null,
-                    userId
-                  );
-                }
-              } else {
-                await logger.warn(
-                  'EMAIL_SENDING',
-                  `[AutoSend Extension] Email auto-generated for ${contact.email} but Gmail is not connected. Saved in READY_TO_SEND queue.`,
-                  null,
-                  userId
-                );
-              }
+              await logger.info(
+                'EMAIL_GENERATION',
+                `[AutoSend Extension] Auto-generated email draft for ${contact.email} and added to outbox queue.`,
+                null,
+                userId
+              );
             } catch (genErr: any) {
               await prisma.contact.update({
                 where: { id: contact.id },
@@ -257,8 +180,36 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
               );
             }
           }
+
+          // Trigger SendingEngine to process queue if Gmail is connected
+          try {
+            const gmailStatus = await GmailService.getConnectionStatus(userId);
+            if (gmailStatus.connected) {
+              await SendingEngine.startCampaign(campaign.id);
+              await logger.info(
+                'EMAIL_SENDING',
+                `[AutoSend Extension] Enqueued ${insertedContacts.length} email(s) and auto-started sending engine for campaign "${campaign.name}"`,
+                null,
+                userId
+              );
+            } else {
+              await logger.warn(
+                'EMAIL_SENDING',
+                `[AutoSend Extension] Generated ${insertedContacts.length} email(s) in READY_TO_SEND queue, but Gmail is not connected. Connect Gmail to start sending.`,
+                null,
+                userId
+              );
+            }
+          } catch (sendEngineErr: any) {
+            await logger.warn(
+              'EMAIL_SENDING',
+              `[AutoSend Extension] Contacts enqueued in READY_TO_SEND state. SendingEngine notice: ${sendEngineErr.message || sendEngineErr}`,
+              null,
+              userId
+            );
+          }
         } catch (autoErr: any) {
-          console.error('Error in extension auto-send routine:', autoErr);
+          console.error('Error in extension auto-send queue routine:', autoErr);
         }
       })().catch((err) => console.error('Unhandled error in auto-send extension routine:', err));
     }
