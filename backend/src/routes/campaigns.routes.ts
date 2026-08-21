@@ -574,12 +574,12 @@ router.delete('/:id/failed-contacts', async (req: AuthenticatedRequest, res) => 
     const deleteResult = await prisma.contact.deleteMany({
       where: {
         campaignId: id,
-        status: 'FAILED',
+        status: { in: ['FAILED', 'SKIPPED'] },
       },
     });
 
-    await logger.info('API', `Deleted ${deleteResult.count} failed contacts for campaign "${campaign.name}"`);
-    res.json({ success: true, count: deleteResult.count, message: `Deleted ${deleteResult.count} failed contacts.` });
+    await logger.info('API', `Deleted ${deleteResult.count} failed/skipped contacts for campaign "${campaign.name}"`);
+    res.json({ success: true, count: deleteResult.count, message: `Deleted ${deleteResult.count} failed/skipped contacts.` });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to delete failed contacts' });
   }

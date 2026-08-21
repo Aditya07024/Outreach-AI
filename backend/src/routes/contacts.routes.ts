@@ -354,19 +354,19 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Delete all failed contacts across all campaigns for this user
+// Delete all failed/skipped contacts across all campaigns for this user
 router.delete('/failed', async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.id;
     const deleteResult = await prisma.contact.deleteMany({
       where: {
         campaign: { userId },
-        status: 'FAILED',
+        status: { in: ['FAILED', 'SKIPPED'] },
       },
     });
 
-    await logger.info('API', `Deleted ${deleteResult.count} failed contacts across all user campaigns`);
-    res.json({ success: true, count: deleteResult.count, message: `Deleted ${deleteResult.count} failed contacts.` });
+    await logger.info('API', `Deleted ${deleteResult.count} failed/skipped contacts across all user campaigns`);
+    res.json({ success: true, count: deleteResult.count, message: `Deleted ${deleteResult.count} failed/skipped contacts.` });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to delete failed contacts' });
   }

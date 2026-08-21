@@ -362,19 +362,19 @@ export const Campaigns: React.FC = () => {
 
   const handleDeleteFailedContacts = async () => {
     if (!selectedCampId) return;
-    const failedCount = campaignDetails?.contacts?.filter(c => c.status === 'FAILED').length || 0;
+    const failedCount = campaignDetails?.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0;
     if (failedCount === 0) {
-      alert('No failed contacts to delete.');
+      alert('No failed or skipped contacts to delete.');
       return;
     }
-    if (!confirm(`Are you sure you want to delete ${failedCount} failed contact email(s) from this campaign?`)) return;
+    if (!confirm(`Are you sure you want to delete ${failedCount} failed/skipped contact email(s) from this campaign?`)) return;
 
     try {
       const response = await fetch(`/api/campaigns/${selectedCampId}/failed-contacts`, {
         method: 'DELETE',
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to delete failed contacts');
+      if (!response.ok) throw new Error(data.error || 'Failed to delete failed/skipped contacts');
       
       fetchCampaignDetails(selectedCampId);
       fetchCampaigns();
@@ -664,12 +664,12 @@ export const Campaigns: React.FC = () => {
 
                   <button
                     onClick={handleDeleteFailedContacts}
-                    disabled={campaignDetails.status === 'SENDING' || (campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0) === 0}
+                    disabled={campaignDetails.status === 'SENDING' || (campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0) === 0}
                     className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
-                    title="Delete all failed mail email ids from this campaign"
+                    title="Delete all failed or skipped mail email ids from this campaign"
                   >
                     <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                    Delete Failed ({campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0})
+                    Delete Failed / Skipped ({campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0})
                   </button>
                 </div>
               </div>
@@ -906,13 +906,13 @@ export const Campaigns: React.FC = () => {
                 <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
                   <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Contact List</h3>
                   <div className="flex items-center gap-3">
-                    {(campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0) > 0 && (
+                    {(campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0) > 0 && (
                       <button
                         onClick={handleDeleteFailedContacts}
                         className="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1 transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3 h-3" />
-                        Remove {campaignDetails.contacts?.filter(c => c.status === 'FAILED').length} Failed Email(s)
+                        Remove {campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length} Failed/Skipped Email(s)
                       </button>
                     )}
                     <span className="text-[10px] text-slate-500 font-medium">Showing {campaignDetails.contacts?.length || 0} entries</span>

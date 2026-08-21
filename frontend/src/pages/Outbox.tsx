@@ -219,12 +219,12 @@ export const Outbox: React.FC = () => {
   };
 
   const handleDeleteAllFailed = async () => {
-    const failedCount = queue.filter(c => c.status === 'FAILED').length;
+    const failedCount = queue.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length;
     if (failedCount === 0) {
-      alert('No failed contacts in queue.');
+      alert('No failed or skipped contacts in queue.');
       return;
     }
-    if (!confirm(`Are you sure you want to delete all ${failedCount} failed contact emails?`)) return;
+    if (!confirm(`Are you sure you want to delete all ${failedCount} failed/skipped contact emails?`)) return;
 
     try {
       let url = '/api/contacts/failed';
@@ -309,14 +309,14 @@ export const Outbox: React.FC = () => {
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                 Pending Queue ({queue.length})
               </h3>
-              {queue.some(c => c.status === 'FAILED') && (
+              {queue.some(c => c.status === 'FAILED' || c.status === 'SKIPPED') && (
                 <button
                   onClick={handleDeleteAllFailed}
                   className="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                  title="Delete all failed contacts in queue"
+                  title="Delete all failed/skipped contacts in queue"
                 >
                   <Trash2 className="w-3 h-3" />
-                  Clear Failed ({queue.filter(c => c.status === 'FAILED').length})
+                  Clear Failed/Skipped ({queue.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length})
                 </button>
               )}
             </div>
