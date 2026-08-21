@@ -8,7 +8,8 @@ import {
   Check, 
   AlertTriangle,
   FileEdit,
-  MailWarning
+  MailWarning,
+  Trash2
 } from 'lucide-react';
 import { Campaign, Contact } from '../types';
 
@@ -194,6 +195,52 @@ export const Outbox: React.FC = () => {
     }
   };
 
+  const handleDeleteCurrentContact = async () => {
+    if (!currentContact) return;
+    if (!confirm(`Delete contact email ${currentContact.email}?`)) return;
+    setIsUpdating(true);
+
+    try {
+      const response = await fetch(`/api/contacts/${currentContact.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete contact');
+
+      const updatedQueue = queue.filter((_, idx) => idx !== currentIndex);
+      setQueue(updatedQueue);
+      if (currentIndex >= updatedQueue.length && currentIndex > 0) {
+        setCurrentIndex(updatedQueue.length - 1);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete contact');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteAllFailed = async () => {
+    const failedCount = queue.filter(c => c.status === 'FAILED').length;
+    if (failedCount === 0) {
+      alert('No failed contacts in queue.');
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete all ${failedCount} failed contact emails?`)) return;
+
+    try {
+      let url = '/api/contacts/failed';
+      if (selectedCampId !== 'all') {
+        url = `/api/campaigns/${selectedCampId}/failed-contacts`;
+      }
+      const response = await fetch(url, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to delete failed contacts');
+
+      fetchQueue();
+    } catch (err: any) {
+      alert(err.message || 'Operation failed.');
+    }
+  };
+
   const handleCopyToClipboard = async () => {
     const text = `Subject: ${subject}\n\n${body}`;
     if (!navigator.clipboard) {
@@ -258,9 +305,21 @@ export const Outbox: React.FC = () => {
           
           {/* QUEUE NAVIGATION LIST */}
           <div className="border border-slate-200 bg-white rounded-2xl p-5 space-y-4 h-fit max-h-[600px] overflow-y-auto shadow-sm">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              Pending Queue ({queue.length})
-            </h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Pending Queue ({queue.length})
+              </h3>
+              {queue.some(c => c.status === 'FAILED') && (
+                <button
+                  onClick={handleDeleteAllFailed}
+                  className="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Delete all failed contacts in queue"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Clear Failed ({queue.filter(c => c.status === 'FAILED').length})
+                </button>
+              )}
+            </div>
             
             <div className="flex flex-col gap-2">
               {queue.map((contact, index) => (
@@ -358,6 +417,16 @@ export const Outbox: React.FC = () => {
               </div>
 
               <div className="flex gap-2">
+                <button
+                  onClick={handleDeleteCurrentContact}
+                  disabled={isUpdating}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-semibold rounded-md text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+                  title="Delete this contact"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  Delete
+                </button>
+
                 <button
                   onClick={handleSkip}
                   disabled={isUpdating}

@@ -558,4 +558,31 @@ router.post('/:id/clear-emails', async (req: AuthenticatedRequest, res) => {
   }
 });
 
+// Delete all failed contacts in a campaign
+router.delete('/:id/failed-contacts', async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = Number(req.params.id);
+    const userId = req.user!.id;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, userId }
+    });
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
+    const deleteResult = await prisma.contact.deleteMany({
+      where: {
+        campaignId: id,
+        status: 'FAILED',
+      },
+    });
+
+    await logger.info('API', `Deleted ${deleteResult.count} failed contacts for campaign "${campaign.name}"`);
+    res.json({ success: true, count: deleteResult.count, message: `Deleted ${deleteResult.count} failed contacts.` });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to delete failed contacts' });
+  }
+});
+
 export default router;

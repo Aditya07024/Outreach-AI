@@ -360,6 +360,29 @@ export const Campaigns: React.FC = () => {
     }
   };
 
+  const handleDeleteFailedContacts = async () => {
+    if (!selectedCampId) return;
+    const failedCount = campaignDetails?.contacts?.filter(c => c.status === 'FAILED').length || 0;
+    if (failedCount === 0) {
+      alert('No failed contacts to delete.');
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete ${failedCount} failed contact email(s) from this campaign?`)) return;
+
+    try {
+      const response = await fetch(`/api/campaigns/${selectedCampId}/failed-contacts`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to delete failed contacts');
+      
+      fetchCampaignDetails(selectedCampId);
+      fetchCampaigns();
+    } catch (err: any) {
+      alert(err.message || 'Operation failed.');
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       {!selectedCampId ? (
@@ -638,6 +661,18 @@ export const Campaigns: React.FC = () => {
                     <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                     Clear Drafts
                   </button>
+
+                  {(campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0) > 0 && (
+                    <button
+                      onClick={handleDeleteFailedContacts}
+                      disabled={campaignDetails.status === 'SENDING'}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-xs"
+                      title="Delete all failed mail email ids from this campaign"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      Delete Failed ({campaignDetails.contacts?.filter(c => c.status === 'FAILED').length})
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -872,7 +907,18 @@ export const Campaigns: React.FC = () => {
               <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
                 <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
                   <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Contact List</h3>
-                  <span className="text-[10px] text-slate-500 font-medium">Showing {campaignDetails.contacts?.length || 0} entries</span>
+                  <div className="flex items-center gap-3">
+                    {(campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0) > 0 && (
+                      <button
+                        onClick={handleDeleteFailedContacts}
+                        className="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Remove {campaignDetails.contacts?.filter(c => c.status === 'FAILED').length} Failed Email(s)
+                      </button>
+                    )}
+                    <span className="text-[10px] text-slate-500 font-medium">Showing {campaignDetails.contacts?.length || 0} entries</span>
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto">
