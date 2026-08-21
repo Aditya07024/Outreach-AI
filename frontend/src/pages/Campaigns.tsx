@@ -239,8 +239,34 @@ export const Campaigns: React.FC = () => {
   const triggerAction = async (action: 'start' | 'pause' | 'cancel' | 'retry' | 'generate') => {
     if (!selectedCampId) return;
 
-    if (action === 'generate') {
+    const prevCampaignDetails = campaignDetails;
+    const prevCampaigns = campaigns;
+
+    // Instant optimistic UI updates
+    if (action === 'start') {
+      setCampaignDetails(prev => prev ? { ...prev, status: 'SENDING' } : null);
+      setCampaigns(prev => prev.map(c => c.id === selectedCampId ? { ...c, status: 'SENDING' } : c));
+    } else if (action === 'pause') {
+      setCampaignDetails(prev => prev ? { ...prev, status: 'PAUSED' } : null);
+      setCampaigns(prev => prev.map(c => c.id === selectedCampId ? { ...c, status: 'PAUSED' } : c));
+    } else if (action === 'cancel') {
+      setCampaignDetails(prev => prev ? { ...prev, status: 'DRAFT' } : null);
+      setCampaigns(prev => prev.map(c => c.id === selectedCampId ? { ...c, status: 'DRAFT' } : c));
+    } else if (action === 'generate') {
       setIsGeneratingEmails(true);
+      setCampaignDetails(prev => prev ? {
+        ...prev,
+        status: 'GENERATING',
+        contacts: prev.contacts?.map(c => (c.status === 'PENDING' || c.status === 'FAILED') ? { ...c, status: 'GENERATING' } : c)
+      } : null);
+      setCampaigns(prev => prev.map(c => c.id === selectedCampId ? { ...c, status: 'GENERATING' } : c));
+    } else if (action === 'retry') {
+      setCampaignDetails(prev => prev ? {
+        ...prev,
+        status: 'SENDING',
+        contacts: prev.contacts?.map(c => c.status === 'FAILED' ? { ...c, status: 'READY_TO_SEND' } : c)
+      } : null);
+      setCampaigns(prev => prev.map(c => c.id === selectedCampId ? { ...c, status: 'SENDING' } : c));
     }
 
     try {
@@ -253,6 +279,9 @@ export const Campaigns: React.FC = () => {
       fetchCampaignDetails(selectedCampId);
       fetchCampaigns();
     } catch (err: any) {
+      // Rollback on failure
+      setCampaignDetails(prevCampaignDetails);
+      setCampaigns(prevCampaigns);
       if (action === 'generate') {
         setIsGeneratingEmails(false);
       }
@@ -262,10 +291,22 @@ export const Campaigns: React.FC = () => {
 
   const handleDeleteContact = async (contactId: number) => {
     if (!confirm('Remove this contact from the campaign?')) return;
+    const prevCampaignDetails = campaignDetails;
+
+    // Instant local removal
+    setCampaignDetails(prev => prev ? {
+      ...prev,
+      contacts: prev.contacts?.filter(c => c.id !== contactId)
+    } : null);
+
     try {
       await fetch(`/api/contacts/${contactId}`, { method: 'DELETE' });
-      if (selectedCampId) fetchCampaignDetails(selectedCampId);
+      if (selectedCampId) {
+        fetchCampaignDetails(selectedCampId);
+        fetchCampaigns();
+      }
     } catch (err) {
+      setCampaignDetails(prevCampaignDetails);
       console.error(err);
     }
   };
@@ -346,6 +387,14 @@ export const Campaigns: React.FC = () => {
     if (!selectedCampId) return;
     if (!confirm('Are you sure you want to delete all generated email drafts for this campaign? Already sent emails will not be affected.')) return;
 
+    const prevCampaignDetails = campaignDetails;
+
+    // Instant optimistic update
+    setCampaignDetails(prev => prev ? {
+      ...prev,
+      contacts: prev.contacts?.map(c => c.status !== 'SENT' ? { ...c, emailSubject: null, emailBody: null, status: 'PENDING' } : c)
+    } : null);
+
     try {
       const response = await fetch(`/api/campaigns/${selectedCampId}/clear-emails`, {
         method: 'POST',
@@ -356,6 +405,7 @@ export const Campaigns: React.FC = () => {
       fetchCampaignDetails(selectedCampId);
       fetchCampaigns();
     } catch (err: any) {
+      setCampaignDetails(prevCampaignDetails);
       alert(err.message || 'Operation failed.');
     }
   };
@@ -369,6 +419,24 @@ export const Campaigns: React.FC = () => {
     }
     if (!confirm(`Are you sure you want to delete ${failedCount} failed/skipped contact email(s) from this campaign?`)) return;
 
+    const prevCampaignDetails = campaignDetails;
+    const prevCampaigns = campaigns;
+
+    // Instant optimistic removal from UI
+    setCampaignDetails(prev => prev ? {
+      ...prev,
+      contacts: prev.contacts?.filter(c => c.status !== 'FAILED' && c.status !== 'SKIPPED')
+    } : null);
+    setCampaigns(prev => prev.map(c => c.id === selectedCampId ? {
+      ...c,
+      metrics: c.metrics ? {
+        ...c.metrics,
+        total: Math.max(0, c.metrics.total - failedCount),
+        failed: 0,
+        skipped: 0,
+      } : undefined
+    } : c));
+
     try {
       const response = await fetch(`/api/campaigns/${selectedCampId}/failed-contacts`, {
         method: 'DELETE',
@@ -379,6 +447,8 @@ export const Campaigns: React.FC = () => {
       fetchCampaignDetails(selectedCampId);
       fetchCampaigns();
     } catch (err: any) {
+      setCampaignDetails(prevCampaignDetails);
+      setCampaigns(prevCampaigns);
       alert(err.message || 'Operation failed.');
     }
   };
