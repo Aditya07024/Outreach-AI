@@ -1300,11 +1300,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </p>
         <div className="flex flex-wrap justify-center gap-6 pt-2">
           <div className="bg-[#f8faff] border border-neutral-200/60 p-4.5 rounded-2xl min-w-[220px] space-y-1">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Support</span>
-            <a href="mailto:support@outreach.aditya07.me" className="text-sm font-bold text-blue-600 hover:underline">support@outreach.aditya07.me</a>
-          </div>
-          <div className="bg-[#f8faff] border border-neutral-200/60 p-4.5 rounded-2xl min-w-[220px] space-y-1">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Questions?</span>
+            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Email Support</span>
             <a href="mailto:adityakumar07024@gmail.com" className="text-sm font-bold text-blue-600 hover:underline">adityakumar07024@gmail.com</a>
           </div>
         </div>
