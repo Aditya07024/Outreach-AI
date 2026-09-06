@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   Plus, 
   Trash2, 
@@ -22,6 +22,10 @@ export const Campaigns: React.FC = () => {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [selectedCampId, setSelectedCampId] = useState<number | null>(null);
   const [campaignDetails, setCampaignDetails] = useState<Campaign | null>(null);
+  
+  // Contact list pagination state (50 contacts per batch for smooth scrolling)
+  const [visibleContactsCount, setVisibleContactsCount] = useState(50);
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   
   // Create campaign modal form state
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -143,6 +147,36 @@ export const Campaigns: React.FC = () => {
       setCampaignDetails(null);
     }
   }, [selectedCampId, campaignDetails?.status, campaignDetails?.contacts?.filter(c => c.status === 'GENERATING').length, isGeneratingEmails]);
+
+  // Reset pagination count when switching campaigns
+  useEffect(() => {
+    setVisibleContactsCount(50);
+  }, [selectedCampId]);
+
+  // Infinite scroll observer to append next 50 contacts when user scrolls down
+  useEffect(() => {
+    if (!selectedCampId) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleContactsCount((prev) => prev + 50);
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+
+    const currentSentinel = loadMoreSentinelRef.current;
+    if (currentSentinel) {
+      observer.observe(currentSentinel);
+    }
+
+    return () => {
+      if (currentSentinel) {
+        observer.unobserve(currentSentinel);
+      }
+    };
+  }, [selectedCampId, campaignDetails?.contacts?.length, visibleContactsCount]);
 
   // Turn off generation tracking when all pending/generating items are completed
   useEffect(() => {
@@ -1099,7 +1133,15 @@ export const Campaigns: React.FC = () => {
                         Remove {campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length} Failed/Skipped Email(s)
                       </button>
                     )}
-                    <span className="text-[10px] text-slate-500 font-medium">Showing {campaignDetails.contacts?.length || 0} entries</span>
+                    {(() => {
+                      const allContacts = campaignDetails.contacts || [];
+                      const displayedCount = Math.min(visibleContactsCount, allContacts.length);
+                      return (
+                        <span className="text-[10px] text-slate-500 font-medium font-mono">
+                          Showing {displayedCount} of {allContacts.length} contacts
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -1117,14 +1159,14 @@ export const Campaigns: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {campaignDetails.contacts?.length === 0 ? (
+                      {(!campaignDetails.contacts || campaignDetails.contacts.length === 0) ? (
                         <tr>
                           <td colSpan={7} className="p-8 text-center text-slate-500 text-xs">
                             No contacts in this campaign. Upload CSV or paste email list above.
                           </td>
                         </tr>
                       ) : (
-                        campaignDetails.contacts?.map((contact) => (
+                        campaignDetails.contacts.slice(0, visibleContactsCount).map((contact) => (
                           <tr key={contact.id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="p-4">
                               <div className="font-bold text-slate-900">
@@ -1204,6 +1246,57 @@ export const Campaigns: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Progressive Infinite Scroll Sentinel & Load Controls */}
+                {(() => {
+                  const allCount = campaignDetails.contacts?.length || 0;
+                  const displayedCount = Math.min(visibleContactsCount, allCount);
+
+                  if (allCount === 0) return null;
+
+                  if (visibleContactsCount < allCount) {
+                    return (
+                      <div 
+                        ref={loadMoreSentinelRef}
+                        className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 font-medium"
+                      >
+                        <span className="text-[11px] text-slate-500 font-mono flex items-center gap-2">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-500"></span>
+                          </span>
+                          Scroll down to load next 50 contacts ({displayedCount} / {allCount} loaded)
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setVisibleContactsCount(prev => Math.min(prev + 50, allCount))}
+                            className="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-900 hover:text-white font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow-xs"
+                          >
+                            Load 50 More (+50)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setVisibleContactsCount(allCount)}
+                            className="px-3.5 py-1.5 bg-slate-200 border border-slate-300 hover:bg-slate-300 text-slate-800 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+                          >
+                            Load All ({allCount})
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (allCount > 50) {
+                    return (
+                      <div className="p-3 bg-slate-50 border-t border-slate-200 text-center text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                        All {allCount} contacts loaded
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })()}
               </div>
 
               {/* Edit Contact / Email Preview modal overlay */}
