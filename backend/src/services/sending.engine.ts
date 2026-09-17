@@ -3,6 +3,38 @@ import { GmailService } from './gmail.service';
 import { logger } from '../utils/logger';
 import fs from 'fs';
 
+export function getEffectiveDailyLimit(settings: any): { effectiveLimit: number; warmupWeek: number; isWarmup: boolean } {
+  const maxDailyLimit = settings?.maxDailyLimit ?? 50;
+  if (!settings?.enableWarmup) {
+    return { effectiveLimit: maxDailyLimit, warmupWeek: 0, isWarmup: false };
+  }
+
+  const startDate = settings.warmupStartDate ? new Date(settings.warmupStartDate) : new Date();
+  const now = new Date();
+  const diffMs = now.getTime() - startDate.getTime();
+  const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  const warmupWeek = Math.floor(diffDays / 7) + 1; // Week 1, Week 2, ...
+
+  const startLimit = settings.warmupStartLimit ?? 5;
+  const increment = settings.warmupWeeklyIncrement ?? 5;
+  const calculatedLimit = startLimit + Math.max(0, warmupWeek - 1) * increment;
+  const effectiveLimit = Math.min(maxDailyLimit, calculatedLimit);
+
+  return { effectiveLimit, warmupWeek, isWarmup: true };
+}
+
+export async function getSentEmailsInLast24Hours(userId?: number): Promise<number> {
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const count = await prisma.emailHistory.count({
+    where: {
+      status: 'SENT',
+      sentAt: { gte: twentyFourHoursAgo },
+      ...(userId ? { campaign: { userId } } : {}),
+    },
+  });
+  return count;
+}
+
 export class SendingEngine {
   private static isRunning = false;
   private static timerId: NodeJS.Timeout | null = null;
@@ -100,6 +132,25 @@ export class SendingEngine {
       });
 
       if (!campaign) {
+        this.isRunning = false;
+        return;
+      }
+
+      // Check user safety settings & daily limits
+      const userId = campaign.userId || 1;
+      const settings = (await prisma.settings.findUnique({ where: { id: userId } }))
+        || (await prisma.settings.findUnique({ where: { id: 1 } }));
+
+      const { effectiveLimit, warmupWeek, isWarmup } = getEffectiveDailyLimit(settings);
+      const sentInLast24h = await getSentEmailsInLast24Hours(userId);
+
+      if (sentInLast24h >= effectiveLimit) {
+        await logger.warn(
+          'EMAIL_SENDING',
+          `Daily email limit reached (${sentInLast24h}/${effectiveLimit} sent in last 24h${isWarmup ? `, Warmup Week ${warmupWeek}` : ''}). Pausing queue to protect Google Account.`,
+          { sentInLast24h, effectiveLimit, isWarmup, warmupWeek },
+          userId
+        );
         this.isRunning = false;
         return;
       }
@@ -260,9 +311,8 @@ export class SendingEngine {
       }
 
       // 4. Calculate and apply random delay
-      const settings = await prisma.settings.findUnique({ where: { id: 1 } });
-      const delayMin = settings?.delayMin ?? 30;
-      const delayMax = settings?.delayMax ?? 90;
+      const delayMin = settings?.delayMin ?? 60;
+      const delayMax = settings?.delayMax ?? 180;
       const randomDelaySeconds = Math.floor(Math.random() * (delayMax - delayMin + 1)) + delayMin;
 
       await logger.info(

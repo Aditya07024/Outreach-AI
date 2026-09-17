@@ -1,3 +1,11 @@
+export interface QuotaStats {
+  sentInLast24h: number;
+  effectiveLimit: number;
+  warmupWeek: number;
+  isWarmup: boolean;
+  remainingToday: number;
+}
+
 export interface Settings {
   id: number;
   name: string;
@@ -12,7 +20,13 @@ export interface Settings {
   customPrompt: string;
   delayMin: number;
   delayMax: number;
+  maxDailyLimit: number;
+  enableWarmup: boolean;
+  warmupStartLimit: number;
+  warmupWeeklyIncrement: number;
+  warmupStartDate?: string;
   technicalFilter: boolean;
+  quotaStats?: QuotaStats;
 }
 
 export interface GmailCredentials {

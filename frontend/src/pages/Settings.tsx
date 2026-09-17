@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send, Lock, Sparkles, Copy, Check } from 'lucide-react';
-import { Settings as SettingsType, Resume } from '../types';
+import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send, Lock, Sparkles, Copy, Check, ShieldCheck, Flame, Gauge, Clock } from 'lucide-react';
+import { Settings as SettingsType, Resume, QuotaStats } from '../types';
 import { GoogleVerificationModal } from '../components/GoogleVerificationModal';
 
 interface SettingsProps {
@@ -59,6 +59,7 @@ export const Settings: React.FC<SettingsProps> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [quotaStats, setQuotaStats] = useState<QuotaStats | null>(null);
 
   // Chrome Extension Token state
   const [extensionToken, setExtensionToken] = useState('');
@@ -113,13 +114,17 @@ export const Settings: React.FC<SettingsProps> = ({
   const [testResumeId, setTestResumeId] = useState<number | null>(null);
   const [isSendingTest, setIsSendingTest] = useState(false);
 
-  const { register, handleSubmit, reset, setValue } = useForm<SettingsType>();
+  const { register, handleSubmit, reset, setValue, watch } = useForm<SettingsType>();
+  const enableWarmup = watch('enableWarmup');
 
   const loadSettings = async () => {
     try {
       const res = await fetch('/api/settings');
       if (res.ok) {
         const data = await res.json();
+        if (data.quotaStats) {
+          setQuotaStats(data.quotaStats);
+        }
         reset(data);
       }
 
@@ -177,6 +182,10 @@ export const Settings: React.FC<SettingsProps> = ({
       });
 
       if (!response.ok) throw new Error('Failed to save settings');
+      const data = await response.json();
+      if (data.quotaStats) {
+        setQuotaStats(data.quotaStats);
+      }
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
@@ -598,42 +607,185 @@ export const Settings: React.FC<SettingsProps> = ({
               </div>
             </div>
 
-            {/* SENDING CONFIGURATIONS */}
-            <div className="border border-slate-200/80 bg-white rounded-2xl p-6 space-y-4 shadow-sm">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
-                <Sliders className="w-4 h-4 text-slate-600" />
-                Queue Delays & Filters
-              </h3>
+            {/* GOOGLE SAFETY & WARMUP PROTECTION */}
+            <div className="border border-slate-200/80 bg-white rounded-2xl p-6 space-y-5 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  Google Account Protection & Warmup Safety
+                </h3>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <Shield className="w-3 h-3 text-emerald-600" /> Active Protection
+                </span>
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Min Delay (Seconds)</label>
+              {/* Live Daily Quota Usage Meter */}
+              {quotaStats && (
+                <div className="p-4 rounded-xl bg-slate-900 text-white space-y-3 shadow-inner">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold flex items-center gap-1.5 text-slate-200">
+                      <Gauge className="w-4 h-4 text-emerald-400" /> 24-Hour Send Quota
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-300">
+                      {quotaStats.sentInLast24h} / {quotaStats.effectiveLimit} emails sent
+                    </span>
+                  </div>
+
+                  <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 rounded-full ${
+                        (quotaStats.sentInLast24h / (quotaStats.effectiveLimit || 1)) >= 1 
+                          ? 'bg-rose-500' 
+                          : (quotaStats.sentInLast24h / (quotaStats.effectiveLimit || 1)) >= 0.8 
+                            ? 'bg-amber-400' 
+                            : 'bg-emerald-400'
+                      }`}
+                      style={{ width: `${Math.min(100, Math.round((quotaStats.sentInLast24h / (quotaStats.effectiveLimit || 1)) * 100))}%` }}
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-300 pt-0.5">
+                    <div className="flex items-center gap-3">
+                      <span>Remaining Today: <strong className="text-emerald-400 font-mono">{quotaStats.remainingToday}</strong></span>
+                      {quotaStats.isWarmup && (
+                        <span className="flex items-center gap-1 text-amber-300 font-medium">
+                          <Flame className="w-3 h-3 text-amber-400" /> Warmup Week {quotaStats.warmupWeek} Active
+                        </span>
+                      )}
+                    </div>
+                    {quotaStats.sentInLast24h >= quotaStats.effectiveLimit && (
+                      <span className="text-rose-400 font-bold bg-rose-950/80 border border-rose-800 px-2 py-0.5 rounded">
+                        Limit Reached - Queue Paused
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Max Daily Limit */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                    Max Daily Email Limit (Per 24h Window)
+                  </label>
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setValue('maxDailyLimit', 25)}
+                      className="text-[9px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
+                    >
+                      25 (Ultra Safe)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setValue('maxDailyLimit', 50)}
+                      className="text-[9px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
+                    >
+                      50 (Personal Gmail)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setValue('maxDailyLimit', 200)}
+                      className="text-[9px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
+                    >
+                      200 (Workspace)
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="number"
+                  min={1}
+                  max={2000}
+                  {...register('maxDailyLimit')}
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors font-mono"
+                />
+                <p className="text-[10px] text-slate-500 leading-relaxed">
+                  Personal Gmail accounts should stay under 50-100 emails/day. Google Workspace accounts can handle up to 200-500/day.
+                </p>
+              </div>
+
+              {/* Queue Delays */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-slate-500" />
+                  Random Queue Delay Interval Range
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase">Min Delay (Seconds)</span>
+                    <input
+                      type="number"
+                      min={5}
+                      {...register('delayMin')}
+                      className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors font-mono"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase">Max Delay (Seconds)</span>
+                    <input
+                      type="number"
+                      min={10}
+                      {...register('delayMax')}
+                      className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors font-mono"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 leading-relaxed">
+                  Recommended: 60 to 180 seconds. Spacing out sends with human-like delays prevents Google from detecting rapid automated bursts.
+                </p>
+              </div>
+
+              {/* Automated Warmup Schedule */}
+              <div className="space-y-3 pt-2 border-t border-slate-100">
+                <div className="flex items-center gap-3">
                   <input
-                    type="number"
-                    min={1}
-                    {...register('delayMin')}
-                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                    type="checkbox"
+                    id="enableWarmup"
+                    {...register('enableWarmup')}
+                    className="rounded border-slate-300 bg-slate-50 w-4 h-4 text-emerald-600 focus:ring-0 focus:outline-none cursor-pointer"
                   />
+                  <label htmlFor="enableWarmup" className="text-xs font-bold text-slate-800 cursor-pointer select-none flex items-center gap-1.5">
+                    <Flame className="w-4 h-4 text-amber-500" />
+                    Enable Automated Volume Warmup Schedule
+                  </label>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Max Delay (Seconds)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    {...register('delayMax')}
-                    className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
-                  />
-                </div>
+                {enableWarmup && (
+                  <div className="p-4 bg-amber-50/60 border border-amber-200/80 rounded-xl space-y-3 animate-fade-in">
+                    <p className="text-[11px] text-amber-900 leading-relaxed">
+                      Warmup starts with a low daily limit (e.g., 5-10 emails/day) and automatically ramps up your daily limit every week until reaching your Max Daily Limit.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] text-amber-900 font-bold uppercase">Starting Daily Limit (Emails/Day)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          {...register('warmupStartLimit')}
+                          className="rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-600 font-mono"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] text-amber-900 font-bold uppercase">Weekly Increase (+Emails/Week)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          {...register('warmupWeeklyIncrement')}
+                          className="rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-600 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Technical filter toggle */}
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
                 <input
                   type="checkbox"
                   id="technicalFilter"
                   {...register('technicalFilter')}
-                  className="rounded border-slate-300 bg-slate-50 w-4 h-4 text-slate-900 focus:ring-0 focus:outline-none"
+                  className="rounded border-slate-300 bg-slate-50 w-4 h-4 text-slate-900 focus:ring-0 focus:outline-none cursor-pointer"
                 />
                 <label htmlFor="technicalFilter" className="text-xs font-medium text-slate-700 cursor-pointer select-none">
                   Enable Recruiter Title Technical Filter (only import technical recruiter contacts)

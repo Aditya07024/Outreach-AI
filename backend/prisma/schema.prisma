@@ -19,8 +19,13 @@ model Settings {
   location             String   @default("")
   defaultResumeId      Int?
   customPrompt         String   @default("Write a concise and professional cold email. Mention my technical skills and internships. Keep under 150 words. Do not exaggerate.")
-  delayMin             Int      @default(30) // seconds
-  delayMax             Int      @default(90) // seconds
+  delayMin             Int      @default(60) // seconds (default min 60s for safety)
+  delayMax             Int      @default(180) // seconds (default max 180s for safety)
+  maxDailyLimit        Int      @default(50) // emails per day (default safe limit for Gmail)
+  enableWarmup         Boolean  @default(false) // automated volume warmup schedule
+  warmupStartLimit     Int      @default(5) // starting emails per day during warmup
+  warmupWeeklyIncrement Int     @default(5) // weekly email limit increase
+  warmupStartDate      DateTime @default(now()) // start timestamp for warmup week calculations
   technicalFilter      Boolean  @default(true)
 }
 

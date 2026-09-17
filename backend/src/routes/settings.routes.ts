@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { GmailService } from '../services/gmail.service';
 import { AIService } from '../services/ai.service';
+import { getEffectiveDailyLimit, getSentEmailsInLast24Hours } from '../services/sending.engine';
 import fs from 'fs';
 
 const router = Router();
@@ -23,7 +24,19 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
       });
     }
 
-    res.json(settings);
+    const { effectiveLimit, warmupWeek, isWarmup } = getEffectiveDailyLimit(settings);
+    const sentInLast24h = await getSentEmailsInLast24Hours(userId);
+
+    res.json({
+      ...settings,
+      quotaStats: {
+        sentInLast24h,
+        effectiveLimit,
+        warmupWeek,
+        isWarmup,
+        remainingToday: Math.max(0, effectiveLimit - sentInLast24h),
+      },
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to retrieve settings' });
   }
@@ -34,6 +47,14 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.id;
     const data = req.body;
+
+    const existing = await prisma.settings.findUnique({ where: { id: userId } });
+
+    // Handle warmup start date reset if warmup was previously disabled and is now enabled
+    let warmupStartDate = existing?.warmupStartDate || new Date();
+    if (data.resetWarmup || (data.enableWarmup && !existing?.enableWarmup)) {
+      warmupStartDate = new Date();
+    }
 
     const updated = await prisma.settings.upsert({
       where: { id: userId },
@@ -48,8 +69,13 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         location: data.location ?? '',
         defaultResumeId: data.defaultResumeId ? Number(data.defaultResumeId) : null,
         customPrompt: data.customPrompt ?? '',
-        delayMin: data.delayMin ? Number(data.delayMin) : 30,
-        delayMax: data.delayMax ? Number(data.delayMax) : 90,
+        delayMin: data.delayMin ? Number(data.delayMin) : 60,
+        delayMax: data.delayMax ? Number(data.delayMax) : 180,
+        maxDailyLimit: data.maxDailyLimit ? Number(data.maxDailyLimit) : 50,
+        enableWarmup: Boolean(data.enableWarmup),
+        warmupStartLimit: data.warmupStartLimit ? Number(data.warmupStartLimit) : 5,
+        warmupWeeklyIncrement: data.warmupWeeklyIncrement ? Number(data.warmupWeeklyIncrement) : 5,
+        warmupStartDate: warmupStartDate,
         technicalFilter: data.technicalFilter ?? true,
       },
       create: {
@@ -64,14 +90,31 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         location: data.location ?? '',
         defaultResumeId: data.defaultResumeId ? Number(data.defaultResumeId) : null,
         customPrompt: data.customPrompt ?? '',
-        delayMin: data.delayMin ? Number(data.delayMin) : 30,
-        delayMax: data.delayMax ? Number(data.delayMax) : 90,
+        delayMin: data.delayMin ? Number(data.delayMin) : 60,
+        delayMax: data.delayMax ? Number(data.delayMax) : 180,
+        maxDailyLimit: data.maxDailyLimit ? Number(data.maxDailyLimit) : 50,
+        enableWarmup: Boolean(data.enableWarmup),
+        warmupStartLimit: data.warmupStartLimit ? Number(data.warmupStartLimit) : 5,
+        warmupWeeklyIncrement: data.warmupWeeklyIncrement ? Number(data.warmupWeeklyIncrement) : 5,
+        warmupStartDate: warmupStartDate,
         technicalFilter: data.technicalFilter ?? true,
       },
     });
 
+    const { effectiveLimit, warmupWeek, isWarmup } = getEffectiveDailyLimit(updated);
+    const sentInLast24h = await getSentEmailsInLast24Hours(userId);
+
     await logger.info('API', 'Updated system settings successfully');
-    res.json(updated);
+    res.json({
+      ...updated,
+      quotaStats: {
+        sentInLast24h,
+        effectiveLimit,
+        warmupWeek,
+        isWarmup,
+        remainingToday: Math.max(0, effectiveLimit - sentInLast24h),
+      },
+    });
   } catch (error: any) {
     await logger.error('API', 'Failed to update settings', error);
     res.status(500).json({ error: error.message || 'Failed to update settings' });
