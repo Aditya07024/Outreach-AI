@@ -8,18 +8,61 @@ import { replacePlaceholders } from '../utils/template';
 
 const router = Router();
 
-// Get all campaigns with contact metrics (Optimized bulk query)
+// Get all campaigns with contact metrics (Optimized bulk query with optional search)
 router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.id;
+    const search = (req.query.search as string || '').trim();
+
+    const whereClause: any = { userId };
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        {
+          contacts: {
+            some: {
+              OR: [
+                { email: { contains: search, mode: 'insensitive' } },
+                { firstName: { contains: search, mode: 'insensitive' } },
+                { lastName: { contains: search, mode: 'insensitive' } },
+                { company: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
+      ];
+    }
+
     const campaigns = await prisma.campaign.findMany({
-      where: { userId },
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       include: {
         resume: true,
         _count: {
           select: { contacts: true },
         },
+        ...(search ? {
+          contacts: {
+            where: {
+              OR: [
+                { email: { contains: search, mode: 'insensitive' } },
+                { firstName: { contains: search, mode: 'insensitive' } },
+                { lastName: { contains: search, mode: 'insensitive' } },
+                { company: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              company: true,
+              status: true,
+            },
+            take: 10,
+          },
+        } : {}),
       },
     });
 
@@ -59,7 +102,7 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
       }
     });
 
-    const enrichedCampaigns = campaigns.map((c) => {
+    const enrichedCampaigns = campaigns.map((c: any) => {
       const m = metricsMap.get(c.id) || {
         total: c._count.contacts,
         pending: 0,
@@ -73,6 +116,7 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
       return {
         ...c,
         metrics: m,
+        matchingContacts: c.contacts || [],
       };
     });
 
@@ -210,16 +254,59 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Get campaign detail with contacts
+// Search contacts by email across all user campaigns
+router.get('/search-email', async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const query = (req.query.q as string || req.query.email as string || '').trim();
+    if (!query) {
+      return res.json([]);
+    }
+
+    const contacts = await prisma.contact.findMany({
+      where: {
+        campaign: { userId },
+        email: { contains: query, mode: 'insensitive' },
+      },
+      include: {
+        campaign: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+        },
+      },
+      take: 30,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json(contacts);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to search contacts by email' });
+  }
+});
+
+// Get campaign detail with contacts (with optional contact search filter)
 router.get('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
     const userId = req.user!.id;
+    const search = (req.query.search as string || '').trim();
+
     const campaign = await prisma.campaign.findFirst({
       where: { id, userId },
       include: {
         resume: true,
         contacts: {
+          where: search ? {
+            OR: [
+              { email: { contains: search, mode: 'insensitive' } },
+              { firstName: { contains: search, mode: 'insensitive' } },
+              { lastName: { contains: search, mode: 'insensitive' } },
+              { company: { contains: search, mode: 'insensitive' } },
+            ],
+          } : undefined,
           orderBy: { id: 'asc' },
         },
       },

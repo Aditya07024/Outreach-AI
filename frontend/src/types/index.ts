@@ -65,6 +65,7 @@ export interface Campaign {
   templateBody?: string | null;
   autoSendExtension?: boolean;
   contacts?: Contact[];
+  matchingContacts?: Contact[];
   createdAt: string;
   updatedAt: string;
   metrics?: CampaignMetrics;

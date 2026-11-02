@@ -12,7 +12,10 @@ import {
   Edit,
   MailQuestion,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Search,
+  X,
+  Mail
 } from 'lucide-react';
 import { Campaign, Contact, Resume } from '../types';
 import { ImportWizard } from '../components/ImportWizard';
@@ -22,6 +25,11 @@ export const Campaigns: React.FC = () => {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [selectedCampId, setSelectedCampId] = useState<number | null>(null);
   const [campaignDetails, setCampaignDetails] = useState<Campaign | null>(null);
+
+  // Search & filter states
+  const [campaignSearch, setCampaignSearch] = useState('');
+  const [contactSearch, setContactSearch] = useState('');
+  const [contactStatusFilter, setContactStatusFilter] = useState('ALL');
   
   // Contact list pagination state (50 contacts per batch for smooth scrolling)
   const [visibleContactsCount, setVisibleContactsCount] = useState(50);
@@ -74,9 +82,11 @@ export const Campaigns: React.FC = () => {
     }
   };
 
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = async (overrideSearch?: string) => {
     try {
-      const response = await fetch('/api/campaigns');
+      const q = overrideSearch !== undefined ? overrideSearch : campaignSearch;
+      const url = q.trim() ? `/api/campaigns?search=${encodeURIComponent(q.trim())}` : '/api/campaigns';
+      const response = await fetch(url);
       if (!response.ok) {
         setCampaigns([]);
         return;
@@ -88,6 +98,14 @@ export const Campaigns: React.FC = () => {
       setCampaigns([]);
     }
   };
+
+  // Debounce campaign & email search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      fetchCampaigns(campaignSearch);
+    }, 250);
+    return () => clearTimeout(handler);
+  }, [campaignSearch]);
 
   const fetchResumes = async () => {
     try {
@@ -119,7 +137,6 @@ export const Campaigns: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchCampaigns();
     fetchResumes();
   }, []);
 
@@ -138,7 +155,7 @@ export const Campaigns: React.FC = () => {
 
       const timer = setInterval(() => {
         fetchCampaignDetails(selectedCampId);
-        fetchCampaigns();
+        fetchCampaigns(campaignSearch);
         fetchActivityLogs();
       }, intervalMs);
 
@@ -146,12 +163,29 @@ export const Campaigns: React.FC = () => {
     } else {
       setCampaignDetails(null);
     }
-  }, [selectedCampId, campaignDetails?.status, campaignDetails?.contacts?.filter(c => c.status === 'GENERATING').length, isGeneratingEmails]);
+  }, [selectedCampId, campaignDetails?.status, campaignDetails?.contacts?.filter(c => c.status === 'GENERATING').length, isGeneratingEmails, campaignSearch]);
 
-  // Reset pagination count when switching campaigns
+  // Filtered contacts within the active campaign
+  const filteredContacts = (campaignDetails?.contacts || []).filter((contact) => {
+    const query = contactSearch.trim().toLowerCase();
+    const matchesSearch = !query ||
+      contact.email.toLowerCase().includes(query) ||
+      (contact.firstName && contact.firstName.toLowerCase().includes(query)) ||
+      (contact.lastName && contact.lastName.toLowerCase().includes(query)) ||
+      (`${contact.firstName || ''} ${contact.lastName || ''}`.toLowerCase().includes(query)) ||
+      (contact.company && contact.company.toLowerCase().includes(query)) ||
+      (contact.role && contact.role.toLowerCase().includes(query)) ||
+      (contact.title && contact.title.toLowerCase().includes(query));
+
+    const matchesStatus = contactStatusFilter === 'ALL' || contact.status === contactStatusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  // Reset pagination count when switching campaigns or searching contacts
   useEffect(() => {
     setVisibleContactsCount(50);
-  }, [selectedCampId]);
+  }, [selectedCampId, contactSearch, contactStatusFilter]);
 
   // Infinite scroll observer to append next 50 contacts when user scrolls down
   useEffect(() => {
@@ -176,7 +210,7 @@ export const Campaigns: React.FC = () => {
         observer.unobserve(currentSentinel);
       }
     };
-  }, [selectedCampId, campaignDetails?.contacts?.length, visibleContactsCount]);
+  }, [selectedCampId, filteredContacts.length, visibleContactsCount]);
 
   // Turn off generation tracking when all pending/generating items are completed
   useEffect(() => {
@@ -531,8 +565,8 @@ export const Campaigns: React.FC = () => {
         <>
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-              <h2 className="text-xl font-bold text-neutral-100 tracking-tight">Campaigns</h2>
-              <p className="text-xs text-neutral-400 mt-1">Manage and track your job outreach campaigns.</p>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Campaigns</h2>
+              <p className="text-xs text-slate-500 mt-1">Manage and track your job outreach campaigns.</p>
             </div>
             <button
               onClick={() => setShowCreateForm(true)}
@@ -541,6 +575,36 @@ export const Campaigns: React.FC = () => {
               <Plus className="w-4 h-4" />
               Create Campaign
             </button>
+          </div>
+
+          {/* Campaign & Email ID Search Bar */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-3 shadow-xs flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative flex-1 w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={campaignSearch}
+                onChange={(e) => setCampaignSearch(e.target.value)}
+                placeholder="Search campaigns by name, or find an email ID (e.g. recruiter@company.com)..."
+                className="w-full pl-10 pr-9 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+              />
+              {campaignSearch && (
+                <button
+                  type="button"
+                  onClick={() => setCampaignSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 rounded-full cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            {campaignSearch.trim() && (
+              <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1.5 self-start sm:self-center px-1 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>{campaigns.length} campaign{campaigns.length === 1 ? '' : 's'} matched</span>
+              </div>
+            )}
           </div>
 
           {/* New Campaign Creation Modal */}
@@ -682,8 +746,23 @@ export const Campaigns: React.FC = () => {
           {/* Campaigns Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {campaigns.length === 0 ? (
-              <div className="col-span-2 border border-dashed border-slate-300 rounded-2xl p-12 text-center text-slate-500 text-xs bg-white">
-                No outreach campaigns created yet. Click "Create Campaign" to get started.
+              <div className="col-span-2 border border-dashed border-slate-300 rounded-2xl p-12 text-center text-slate-500 text-xs bg-white space-y-2">
+                {campaignSearch.trim() ? (
+                  <>
+                    <Mail className="w-8 h-8 text-slate-300 mx-auto" />
+                    <p className="font-bold text-slate-800">No campaigns or email IDs match "{campaignSearch}"</p>
+                    <p className="text-[11px] text-slate-400">Try searching for a different email address or campaign name.</p>
+                    <button
+                      type="button"
+                      onClick={() => setCampaignSearch('')}
+                      className="mt-2 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-[10px] transition-colors cursor-pointer"
+                    >
+                      Clear Search
+                    </button>
+                  </>
+                ) : (
+                  <span>No outreach campaigns created yet. Click "Create Campaign" to get started.</span>
+                )}
               </div>
             ) : (
               campaigns.map((camp) => (
@@ -708,6 +787,45 @@ export const Campaigns: React.FC = () => {
                     </div>
                     <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{camp.description || 'No description provided.'}</p>
                   </div>
+
+                  {/* Matching Email IDs chip list if searched */}
+                  {camp.matchingContacts && camp.matchingContacts.length > 0 && (
+                    <div className="mt-3 p-2.5 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-1.5">
+                      <div className="text-[10px] font-bold text-indigo-950 flex items-center justify-between">
+                        <span className="flex items-center gap-1">
+                          <Mail className="w-3 h-3 text-indigo-600" />
+                          <span>Matching email in this campaign:</span>
+                        </span>
+                        <span className="text-[9px] text-indigo-500 font-mono">
+                          {camp.matchingContacts.length} found
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {camp.matchingContacts.map((mc: any) => (
+                          <button
+                            key={mc.id}
+                            type="button"
+                            onClick={() => {
+                              setContactSearch(mc.email);
+                              setSelectedCampId(camp.id);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-slate-900 hover:text-white border border-indigo-200 hover:border-slate-900 rounded-lg text-[10px] font-medium text-slate-800 transition-all cursor-pointer shadow-2xs group"
+                            title={`Open campaign and view contact: ${mc.email}`}
+                          >
+                            <span className="font-mono">{mc.email}</span>
+                            <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded uppercase ${
+                              mc.status === 'SENT' ? 'bg-emerald-100 text-emerald-800 group-hover:bg-emerald-800 group-hover:text-emerald-100' :
+                              mc.status === 'READY_TO_SEND' ? 'bg-slate-100 text-slate-800 group-hover:bg-slate-800 group-hover:text-slate-100' :
+                              mc.status === 'FAILED' ? 'bg-rose-100 text-rose-800 group-hover:bg-rose-800 group-hover:text-rose-100' :
+                              'bg-slate-100 text-slate-600 group-hover:bg-slate-800 group-hover:text-slate-100'
+                            }`}>
+                              {mc.status}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Auto-Send Extension Lead Toggle */}
                   <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
@@ -737,7 +855,12 @@ export const Campaigns: React.FC = () => {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setSelectedCampId(camp.id)}
+                        onClick={() => {
+                          if (campaignSearch.trim()) {
+                            setContactSearch(campaignSearch.trim());
+                          }
+                          setSelectedCampId(camp.id);
+                        }}
                         className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-800 transition-colors cursor-pointer"
                       >
                         Manage
@@ -767,6 +890,8 @@ export const Campaigns: React.FC = () => {
                     onClick={() => {
                       setSelectedCampId(null);
                       setShowSettingsEdit(false);
+                      setContactSearch('');
+                      setContactStatusFilter('ALL');
                     }}
                     className="p-2 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 rounded-xl transition-all flex-shrink-0 cursor-pointer shadow-xs"
                   >
@@ -1121,27 +1246,94 @@ export const Campaigns: React.FC = () => {
 
               {/* Contacts Table List */}
               <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
-                <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Contact List</h3>
-                  <div className="flex items-center gap-3">
-                    {(campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0) > 0 && (
-                      <button
-                        onClick={handleDeleteFailedContacts}
-                        className="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                <div className="p-4 border-b border-slate-200 bg-slate-50 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>Contact List</span>
+                      <span className="text-[10px] font-mono font-medium text-slate-500 lowercase">
+                        ({campaignDetails.contacts?.length || 0} total)
+                      </span>
+                    </h3>
+                    <div className="flex items-center gap-3">
+                      {(campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0) > 0 && (
+                        <button
+                          onClick={handleDeleteFailedContacts}
+                          className="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Remove {campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length} Failed/Skipped Email(s)
+                        </button>
+                      )}
+                      {(() => {
+                        const allContactsCount = campaignDetails.contacts?.length || 0;
+                        const filteredCount = filteredContacts.length;
+                        const displayedCount = Math.min(visibleContactsCount, filteredCount);
+                        const isFiltered = contactSearch.trim() || contactStatusFilter !== 'ALL';
+                        return (
+                          <span className="text-[10px] text-slate-500 font-medium font-mono">
+                            {isFiltered ? (
+                              <span>Showing {displayedCount} of {filteredCount} filtered ({allContactsCount} total)</span>
+                            ) : (
+                              <span>Showing {displayedCount} of {allContactsCount} contacts</span>
+                            )}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Search Email ID & Filter Controls */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
+                    <div className="relative flex-1">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={contactSearch}
+                        onChange={(e) => setContactSearch(e.target.value)}
+                        placeholder="Search email ID in campaign (e.g. name@company.com), name, or company..."
+                        className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-900 transition-colors shadow-2xs"
+                      />
+                      {contactSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setContactSearch('')}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 rounded-full cursor-pointer"
+                          title="Clear email search"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <select
+                        value={contactStatusFilter}
+                        onChange={(e) => setContactStatusFilter(e.target.value)}
+                        className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-slate-900 transition-colors shadow-2xs cursor-pointer"
                       >
-                        <Trash2 className="w-3 h-3" />
-                        Remove {campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length} Failed/Skipped Email(s)
-                      </button>
-                    )}
-                    {(() => {
-                      const allContacts = campaignDetails.contacts || [];
-                      const displayedCount = Math.min(visibleContactsCount, allContacts.length);
-                      return (
-                        <span className="text-[10px] text-slate-500 font-medium font-mono">
-                          Showing {displayedCount} of {allContacts.length} contacts
-                        </span>
-                      );
-                    })()}
+                        <option value="ALL">All Statuses ({campaignDetails.contacts?.length || 0})</option>
+                        <option value="READY_TO_SEND">Ready to Send ({campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND').length || 0})</option>
+                        <option value="PENDING">Pending AI ({campaignDetails.contacts?.filter(c => c.status === 'PENDING').length || 0})</option>
+                        <option value="GENERATING">Generating ({campaignDetails.contacts?.filter(c => c.status === 'GENERATING').length || 0})</option>
+                        <option value="SENT">Sent ({campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0})</option>
+                        <option value="FAILED">Failed ({campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0})</option>
+                        <option value="SKIPPED">Skipped ({campaignDetails.contacts?.filter(c => c.status === 'SKIPPED').length || 0})</option>
+                      </select>
+
+                      {(contactSearch.trim() || contactStatusFilter !== 'ALL') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setContactSearch('');
+                            setContactStatusFilter('ALL');
+                          }}
+                          className="px-2.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-[10px] transition-colors cursor-pointer shrink-0"
+                          title="Reset search and filters"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1165,14 +1357,40 @@ export const Campaigns: React.FC = () => {
                             No contacts in this campaign. Upload CSV or paste email list above.
                           </td>
                         </tr>
+                      ) : filteredContacts.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="p-8 text-center text-slate-500 text-xs">
+                            <Mail className="w-6 h-6 text-slate-300 mx-auto mb-1.5" />
+                            <p className="font-bold text-slate-800">
+                              No contacts match "{contactSearch}"{contactStatusFilter !== 'ALL' ? ` with status ${contactStatusFilter}` : ''}
+                            </p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">Try searching for a different email ID or resetting filters.</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setContactSearch('');
+                                setContactStatusFilter('ALL');
+                              }}
+                              className="mt-3 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold rounded-xl text-[10px] transition-colors cursor-pointer"
+                            >
+                              Clear Filter
+                            </button>
+                          </td>
+                        </tr>
                       ) : (
-                        campaignDetails.contacts.slice(0, visibleContactsCount).map((contact) => (
+                        filteredContacts.slice(0, visibleContactsCount).map((contact) => (
                           <tr key={contact.id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="p-4">
                               <div className="font-bold text-slate-900">
                                 {contact.firstName ? `${contact.firstName} ${contact.lastName || ''}` : 'Recruiter'}
                               </div>
-                              <div className="text-[10px] text-slate-500 font-medium mt-0.5">{contact.email}</div>
+                              <div className={`text-[10px] font-mono font-medium mt-0.5 inline-block ${
+                                contactSearch.trim() && contact.email.toLowerCase().includes(contactSearch.trim().toLowerCase())
+                                  ? 'text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded'
+                                  : 'text-slate-500'
+                              }`}>
+                                {contact.email}
+                              </div>
                             </td>
                             <td className="p-4 text-slate-800 font-medium">{contact.company || '—'}</td>
                             <td className="p-4 text-slate-600 font-medium">{contact.title || contact.role || '—'}</td>
@@ -1249,7 +1467,7 @@ export const Campaigns: React.FC = () => {
 
                 {/* Progressive Infinite Scroll Sentinel & Load Controls */}
                 {(() => {
-                  const allCount = campaignDetails.contacts?.length || 0;
+                  const allCount = filteredContacts.length;
                   const displayedCount = Math.min(visibleContactsCount, allCount);
 
                   if (allCount === 0) return null;
