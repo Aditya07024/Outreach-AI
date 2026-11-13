@@ -32,6 +32,7 @@ import {
   Pause,
   Zap,
 } from 'lucide-react';
+import { isGmailAddress } from '../../content/extractor';
 
 interface ExtractedEmail {
   email: string;
@@ -92,6 +93,23 @@ export const ScanView: React.FC = () => {
 
   // AutoScroll state
   const [autoScrollState, setAutoScrollState] = useState<'idle' | 'running' | 'paused' | 'stopped'>('idle');
+
+  // Exclude Gmail addresses toggle state (defaults to true)
+  const [excludeGmail, setExcludeGmail] = useState<boolean>(true);
+
+  useEffect(() => {
+    chrome.storage.local.get('exclude_gmail').then((data) => {
+      if (data.exclude_gmail !== undefined) {
+        setExcludeGmail(Boolean(data.exclude_gmail));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleToggleExcludeGmail = async () => {
+    const nextVal = !excludeGmail;
+    setExcludeGmail(nextVal);
+    await chrome.storage.local.set({ exclude_gmail: nextVal });
+  };
 
   /** Query active tab auto-scroll status via background worker */
   useEffect(() => {
@@ -400,7 +418,8 @@ export const ScanView: React.FC = () => {
 
   /** Sync selected emails to the backend */
   const handleSync = async (emailsToSync?: ExtractedEmail[]) => {
-    const contactsToSync = emailsToSync || emails.filter(e => selected.has(e.email));
+    const listToFilter = emailsToSync || emails.filter(e => selected.has(e.email));
+    const contactsToSync = excludeGmail ? listToFilter.filter(e => !isGmailAddress(e.email)) : listToFilter;
     if (contactsToSync.length === 0) return;
     if (!selectedCampaignId) return;
 
@@ -412,6 +431,7 @@ export const ScanView: React.FC = () => {
       const result = await chrome.runtime.sendMessage({
         action: 'SYNC_CONTACTS',
         campaignId: selectedCampaignId,
+        excludeGmail,
         contacts: contactsToSync.map(e => ({
           email: e.email,
           classification: e.classification,
@@ -442,6 +462,8 @@ export const ScanView: React.FC = () => {
   };
 
   const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
+  const displayedEmails = excludeGmail ? emails.filter(e => !isGmailAddress(e.email)) : emails;
+  const gmailCount = emails.filter(e => isGmailAddress(e.email)).length;
 
   if (isDomainAllowed === null) {
     return (
@@ -643,44 +665,70 @@ export const ScanView: React.FC = () => {
       {/* ─── Email Results ─── */}
       {scanStatus === 'done' && emails.length > 0 && (
         <div className="animate-fade-in">
-          {/* Results header */}
+          {/* Results header with Exclude Gmail Toggle */}
           <div className="px-4 py-2 flex items-center justify-between border-b border-zinc-800/30">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-3 h-3 text-emerald-400" />
-              <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                {emails.length} Email{emails.length !== 1 ? 's' : ''} Synced
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Sparkles className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+              <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider truncate">
+                {displayedEmails.length} Email{displayedEmails.length !== 1 ? 's' : ''} Synced
               </span>
+              {excludeGmail && gmailCount > 0 && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 font-semibold border border-rose-500/20 flex-shrink-0">
+                  {gmailCount} Gmail skipped
+                </span>
+              )}
             </div>
-            <div className="text-[9px] text-emerald-400 flex items-center gap-1 font-semibold">
-              <CheckCircle2 className="w-3 h-3" />
-              Auto-Added
+
+            {/* Exclude Gmail Toggle */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-[9px] text-zinc-400 font-medium">Skip @gmail:</span>
+              <button
+                type="button"
+                onClick={handleToggleExcludeGmail}
+                className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  excludeGmail ? 'bg-violet-600' : 'bg-zinc-700'
+                }`}
+                title={excludeGmail ? 'Skip @gmail ON: Personal Gmail addresses are filtered out' : 'Skip @gmail OFF: Gmail addresses will be included'}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
+                    excludeGmail ? 'translate-x-3' : 'translate-x-0'
+                  }`}
+                />
+              </button>
             </div>
           </div>
 
           {/* Email list */}
           <div className="max-h-[200px] overflow-y-auto">
-            {emails.map((entry, idx) => (
-              <div
-                key={entry.email}
-                className={`w-full flex items-center gap-2.5 px-4 py-2 text-left transition-colors ${
-                  idx !== emails.length - 1 ? 'border-b border-zinc-800/20' : ''
-                } hover:bg-zinc-850/30`}
-              >
-                {/* Success Sync Icon */}
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-
-                {/* Email info */}
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-medium text-zinc-200 truncate">{entry.email}</p>
-                  <p className="text-[9px] text-zinc-500 truncate">automatically synced</p>
-                </div>
-
-                {/* Classification badge */}
-                <span className={`badge badge-${entry.classification.toLowerCase()} flex-shrink-0`}>
-                  {entry.classification}
-                </span>
+            {displayedEmails.length === 0 ? (
+              <div className="px-4 py-6 text-center text-[11px] text-zinc-500">
+                All {gmailCount} detected email(s) were personal @gmail.com addresses and skipped.
               </div>
-            ))}
+            ) : (
+              displayedEmails.map((entry, idx) => (
+                <div
+                  key={entry.email}
+                  className={`w-full flex items-center gap-2.5 px-4 py-2 text-left transition-colors ${
+                    idx !== displayedEmails.length - 1 ? 'border-b border-zinc-800/20' : ''
+                  } hover:bg-zinc-850/30`}
+                >
+                  {/* Success Sync Icon */}
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+
+                  {/* Email info */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-medium text-zinc-200 truncate">{entry.email}</p>
+                    <p className="text-[9px] text-zinc-500 truncate">automatically synced</p>
+                  </div>
+
+                  {/* Classification badge */}
+                  <span className={`badge badge-${entry.classification.toLowerCase()} flex-shrink-0`}>
+                    {entry.classification}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
 
           {/* ─── Campaign Selector & Actions ─── */}

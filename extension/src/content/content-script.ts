@@ -4,7 +4,7 @@
  * Injected into whitelisted webpages for email extraction and auto-scrolling.
  */
 
-import { extractEmails, extractEmailsFromHTML, detectRelatedPages, type ExtractedEmail } from './extractor';
+import { extractEmails, extractEmailsFromHTML, detectRelatedPages, isGmailAddress, type ExtractedEmail } from './extractor';
 import { detectCompany, type DetectedCompany } from './company-detector';
 import {
   AutoScrollController,
@@ -118,10 +118,27 @@ chrome.runtime.onMessage.addListener((message: ScanRequest, _sender, sendRespons
 });
 
 /**
+ * Check if the user has enabled the toggle to exclude @gmail.com addresses.
+ * Defaults to true.
+ */
+async function shouldExcludeGmail(): Promise<boolean> {
+  try {
+    const data = await chrome.storage.local.get('exclude_gmail');
+    return data.exclude_gmail !== false;
+  } catch {
+    return true;
+  }
+}
+
+/**
  * Scan the current page for emails
  */
 async function handleScanPage(): Promise<ScanResponse> {
-  const emails = extractEmails();
+  let emails = extractEmails();
+  const excludeGmail = await shouldExcludeGmail();
+  if (excludeGmail) {
+    emails = emails.filter(e => !isGmailAddress(e.email));
+  }
   const company = detectCompany();
   const relatedPages = detectRelatedPages();
   
@@ -195,9 +212,13 @@ async function handleScanContactPages(): Promise<ScanResponse> {
     }
   }
   
+  const excludeGmail = await shouldExcludeGmail();
+  const rawList = Array.from(emailMap.values());
+  const finalEmails = excludeGmail ? rawList.filter(e => !isGmailAddress(e.email)) : rawList;
+
   return {
     action: 'SCAN_COMPLETE',
-    emails: Array.from(emailMap.values()),
+    emails: finalEmails,
     company,
     relatedPages,
     url: window.location.href,
@@ -208,9 +229,13 @@ async function handleScanContactPages(): Promise<ScanResponse> {
 /**
  * Automatically scan page and send results to the background cache.
  */
-function autoScan() {
+async function autoScan() {
   try {
-    const emails = extractEmails();
+    let emails = extractEmails();
+    const excludeGmail = await shouldExcludeGmail();
+    if (excludeGmail) {
+      emails = emails.filter(e => !isGmailAddress(e.email));
+    }
     const company = detectCompany();
     const relatedPages = detectRelatedPages();
     

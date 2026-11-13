@@ -120,6 +120,14 @@ export function classifyEmail(email: string): string {
 }
 
 /**
+ * Checks if an email is a personal Gmail address (@gmail.com or @googlemail.com)
+ */
+export function isGmailAddress(email: string): boolean {
+  const normalized = (email || '').toLowerCase().trim();
+  return normalized.endsWith('@gmail.com') || normalized.endsWith('@googlemail.com');
+}
+
+/**
  * Validates whether an email is a real business email worth collecting.
  */
 function isValidBusinessEmail(email: string): boolean {

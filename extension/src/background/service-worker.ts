@@ -196,10 +196,14 @@ async function handleMessage(message: any): Promise<any> {
     
     // ─── Sync Contacts ───
     case 'SYNC_CONTACTS': {
-      const { campaignId, contacts, companyName, companyDomain, sourceUrl } = message;
+      let { campaignId, contacts, companyName, companyDomain, sourceUrl, excludeGmail } = message;
+      if (excludeGmail === undefined) {
+        const stored = await chrome.storage.local.get('exclude_gmail');
+        excludeGmail = stored.exclude_gmail !== false;
+      }
       return await apiRequest('/api/extension/sync', {
         method: 'POST',
-        body: JSON.stringify({ campaignId, contacts, companyName, companyDomain, sourceUrl }),
+        body: JSON.stringify({ campaignId, contacts, companyName, companyDomain, sourceUrl, excludeGmail }),
       });
     }
     

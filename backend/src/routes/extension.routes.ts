@@ -26,7 +26,7 @@ const router = Router();
  */
 router.post('/sync', async (req: AuthenticatedRequest, res) => {
   const userId = req.user!.id;
-  const { campaignId, contacts, companyName, companyDomain, sourceUrl } = req.body;
+  const { campaignId, contacts, companyName, companyDomain, sourceUrl, excludeGmail } = req.body;
 
   if (!campaignId || !contacts || !Array.isArray(contacts) || contacts.length === 0) {
     return res.status(400).json({ error: 'Campaign ID and at least one contact are required.' });
@@ -44,6 +44,7 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
 
     let importedCount = 0;
     let duplicateCount = 0;
+    let skippedGmailCount = 0;
     let errorCount = 0;
     const insertedContacts: any[] = [];
 
@@ -51,6 +52,13 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
       const email = (contact.email || '').trim().toLowerCase();
       if (!email || !email.includes('@')) {
         errorCount++;
+        continue;
+      }
+
+      // If excludeGmail toggle is active, skip any @gmail.com or @googlemail.com address
+      const isGmail = email.endsWith('@gmail.com') || email.endsWith('@googlemail.com');
+      if (Boolean(excludeGmail) && isGmail) {
+        skippedGmailCount++;
         continue;
       }
 
@@ -105,7 +113,7 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
 
     await logger.info(
       'EXTENSION_SYNC',
-      `Extension sync from ${sourceUrl || 'unknown'}: ${importedCount} contacts added, ${duplicateCount} duplicates, ${errorCount} errors. Company: ${companyName || 'unknown'}`
+      `Extension sync from ${sourceUrl || 'unknown'}: ${importedCount} contacts added, ${duplicateCount} duplicates, ${skippedGmailCount} @gmail.com skipped, ${errorCount} errors. Company: ${companyName || 'unknown'}`
     );
 
     // Auto-generate & queue routine if autoSendExtension is enabled on this campaign
@@ -218,6 +226,7 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
       success: true,
       imported: importedCount,
       duplicates: duplicateCount,
+      skippedGmail: skippedGmailCount,
       errors: errorCount,
       campaignId: Number(campaignId),
       autoSendActive: Boolean(campaign.autoSendExtension),

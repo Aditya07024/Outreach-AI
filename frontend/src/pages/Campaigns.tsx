@@ -719,6 +719,76 @@ export const Campaigns: React.FC = () => {
     }
   };
 
+  const isGmailEmail = (email?: string | null): boolean => {
+    if (!email) return false;
+    const lower = email.toLowerCase().trim();
+    return lower.endsWith('@gmail.com') || lower.endsWith('@googlemail.com');
+  };
+
+  const [isDeletingGmail, setIsDeletingGmail] = useState(false);
+
+  const handleDeleteGmailContacts = async () => {
+    if (!selectedCampId || !campaignDetails) return;
+
+    const gmailContacts = (campaignDetails.contacts || []).filter(
+      c => isGmailEmail(c.email) && c.status !== 'SENT'
+    );
+    const totalGmail = gmailContacts.length;
+    if (totalGmail === 0) {
+      alert('No un-sent @gmail.com contacts found in this campaign.');
+      return;
+    }
+
+    const readyCount = gmailContacts.filter(c => c.status === 'READY_TO_SEND').length;
+    const pendingCount = gmailContacts.filter(c => c.status === 'PENDING').length;
+    const otherCount = totalGmail - readyCount - pendingCount;
+
+    let breakdown = `Ready: ${readyCount}, Pending: ${pendingCount}`;
+    if (otherCount > 0) breakdown += `, Other: ${otherCount}`;
+
+    if (!confirm(
+      `Are you sure you want to remove all ${totalGmail} contact(s) with @gmail.com emails from this campaign?\n\n(${breakdown})\n\nThis will remove them completely even from Ready status so no outreach will be sent to them.`
+    )) return;
+
+    setIsDeletingGmail(true);
+    const prevCampaignDetails = campaignDetails;
+    const prevCampaigns = campaigns;
+
+    // Instant optimistic removal from UI
+    setCampaignDetails(prev => prev ? {
+      ...prev,
+      contacts: prev.contacts?.filter(c => !(isGmailEmail(c.email) && c.status !== 'SENT'))
+    } : null);
+
+    setCampaigns(prev => prev.map(c => c.id === selectedCampId ? {
+      ...c,
+      metrics: c.metrics ? {
+        ...c.metrics,
+        total: Math.max(0, c.metrics.total - totalGmail),
+        ready: Math.max(0, c.metrics.ready - readyCount),
+        pending: Math.max(0, c.metrics.pending - pendingCount),
+      } : undefined
+    } : c));
+
+    try {
+      const response = await fetch(`/api/campaigns/${selectedCampId}/gmail-contacts`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to remove @gmail.com contacts');
+
+      alert(data.message || `Successfully removed ${totalGmail} @gmail.com contact(s).`);
+      fetchCampaignDetails(selectedCampId);
+      fetchCampaigns();
+    } catch (err: any) {
+      setCampaignDetails(prevCampaignDetails);
+      setCampaigns(prevCampaigns);
+      alert(err.message || 'Operation failed.');
+    } finally {
+      setIsDeletingGmail(false);
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       {!selectedCampId ? (
@@ -1178,6 +1248,30 @@ export const Campaigns: React.FC = () => {
                     Delete Failed / Skipped ({campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0})
                   </button>
 
+                  {/* Remove @gmail.com Contacts Button */}
+                  {(() => {
+                    const gmailCount = (campaignDetails.contacts || []).filter(
+                      c => isGmailEmail(c.email) && c.status !== 'SENT'
+                    ).length;
+                    const readyGmailCount = (campaignDetails.contacts || []).filter(
+                      c => isGmailEmail(c.email) && c.status === 'READY_TO_SEND'
+                    ).length;
+
+                    return (
+                      <button
+                        onClick={handleDeleteGmailContacts}
+                        disabled={campaignDetails.status === 'SENDING' || gmailCount === 0 || isDeletingGmail}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                        title={gmailCount > 0 ? `Remove ${gmailCount} @gmail.com contacts (including ${readyGmailCount} Ready)` : 'No @gmail.com contacts to remove'}
+                      >
+                        <UserMinus className="w-3.5 h-3.5 text-rose-600" />
+                        <span>
+                          {isDeletingGmail ? 'Removing...' : `Remove @gmail.com (${gmailCount})`}
+                        </span>
+                      </button>
+                    );
+                  })()}
+
                   {/* Export Contacts CSV */}
                   <button
                     onClick={() => handleExportCampaignCsv(campaignDetails.id, campaignDetails.name)}
@@ -1491,6 +1585,24 @@ export const Campaigns: React.FC = () => {
                           Remove {campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length} Failed/Skipped
                         </button>
                       )}
+                      {(() => {
+                        const gmailCount = (campaignDetails.contacts || []).filter(
+                          c => isGmailEmail(c.email) && c.status !== 'SENT'
+                        ).length;
+                        if (gmailCount === 0) return null;
+                        return (
+                          <button
+                            type="button"
+                            onClick={handleDeleteGmailContacts}
+                            disabled={isDeletingGmail}
+                            className="text-[10px] text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1 transition-colors cursor-pointer bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 shadow-2xs"
+                            title="Remove all @gmail.com contacts from this campaign (including Ready contacts)"
+                          >
+                            <UserMinus className="w-3 h-3 text-rose-600" />
+                            Remove {gmailCount} @gmail.com
+                          </button>
+                        );
+                      })()}
                       {(() => {
                         const allContactsCount = campaignDetails.contacts?.length || 0;
                         const filteredCount = filteredContacts.length;

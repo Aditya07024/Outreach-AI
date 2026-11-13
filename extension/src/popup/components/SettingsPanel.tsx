@@ -13,14 +13,24 @@ interface SettingsPanelProps {
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onLogout }) => {
   const [domains, setDomains] = useState<string[]>([]);
+  const [excludeGmail, setExcludeGmail] = useState<boolean>(true);
 
   useEffect(() => {
-    const loadDomains = async () => {
-      const storageData = await chrome.storage.local.get('allowed_domains');
+    const loadSettings = async () => {
+      const storageData = await chrome.storage.local.get(['allowed_domains', 'exclude_gmail']);
       setDomains(storageData.allowed_domains || []);
+      if (storageData.exclude_gmail !== undefined) {
+        setExcludeGmail(Boolean(storageData.exclude_gmail));
+      }
     };
-    loadDomains();
+    loadSettings();
   }, []);
+
+  const handleToggleExcludeGmail = async () => {
+    const nextVal = !excludeGmail;
+    setExcludeGmail(nextVal);
+    await chrome.storage.local.set({ exclude_gmail: nextVal });
+  };
 
   const handleRemoveDomain = async (domain: string) => {
     const updated = domains.filter(d => d !== domain);
@@ -45,6 +55,30 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onLogout }) => {
         <span className="font-medium">Open Outreach AI Dashboard</span>
         <ExternalLink className="w-3.5 h-3.5" />
       </button>
+
+      {/* Exclude Gmail Toggle */}
+      <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/60 border border-zinc-800">
+        <div className="space-y-0.5 pr-2">
+          <span className="text-xs font-medium text-zinc-200">Exclude @gmail.com Emails</span>
+          <p className="text-[10px] text-zinc-500">
+            Do not extract or add personal @gmail.com addresses to campaigns
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleToggleExcludeGmail}
+          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            excludeGmail ? 'bg-violet-600' : 'bg-zinc-700'
+          }`}
+          title={excludeGmail ? 'Exclude Gmail ON' : 'Exclude Gmail OFF'}
+        >
+          <span
+            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+              excludeGmail ? 'translate-x-4' : 'translate-x-0'
+            }`}
+          />
+        </button>
+      </div>
 
       {/* Whitelisted Domains */}
       <div className="space-y-2">

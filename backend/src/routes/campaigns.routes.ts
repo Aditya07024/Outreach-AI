@@ -960,4 +960,46 @@ router.delete('/:id/failed-contacts', async (req: AuthenticatedRequest, res) => 
   }
 });
 
+// Delete all @gmail.com contacts in a campaign (including READY_TO_SEND, PENDING, GENERATING, FAILED, SKIPPED)
+router.delete('/:id/gmail-contacts', async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = Number(req.params.id);
+    const userId = req.user!.id;
+    const includeSent = req.query.includeSent === 'true';
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, userId },
+    });
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
+    const statusFilter = includeSent ? {} : { status: { not: 'SENT' } };
+
+    const deleteResult = await prisma.contact.deleteMany({
+      where: {
+        campaignId: id,
+        ...statusFilter,
+        OR: [
+          { email: { endsWith: '@gmail.com', mode: 'insensitive' } },
+          { email: { endsWith: '@googlemail.com', mode: 'insensitive' } },
+        ],
+      },
+    });
+
+    await logger.info(
+      'API',
+      `Deleted ${deleteResult.count} @gmail.com contact(s) from campaign "${campaign.name}" (ID: ${id})`
+    );
+
+    res.json({
+      success: true,
+      count: deleteResult.count,
+      message: `Deleted ${deleteResult.count} @gmail.com contact(s) from campaign.`,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to delete @gmail.com contacts' });
+  }
+});
+
 export default router;
