@@ -41,7 +41,7 @@ function checkIsTechnical(title: string): boolean {
 }
 
 // Helper: Check duplicate status
-async function getDuplicateStatus(email: string, company: string | null, campaignId: number): Promise<string> {
+export async function getDuplicateStatus(email: string, company: string | null, campaignId: number): Promise<string> {
   // Check if email already exists in this same campaign
   const sameCampaignEmail = await prisma.contact.findFirst({
     where: { campaignId, email },

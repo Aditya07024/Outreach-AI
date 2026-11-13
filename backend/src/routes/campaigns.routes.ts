@@ -1,10 +1,14 @@
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma';
 import { SendingEngine } from '../services/sending.engine';
 import { AIService } from '../services/ai.service';
 import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { replacePlaceholders } from '../utils/template';
+import { getDuplicateStatus } from './contacts.routes';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
 const router = Router();
 
@@ -287,6 +291,189 @@ router.get('/search-email', async (req: AuthenticatedRequest, res) => {
   }
 });
 
+// Preview shared campaign contacts using share token / link
+router.get('/share-preview/:token', async (req: AuthenticatedRequest, res) => {
+  try {
+    let token = decodeURIComponent(req.params.token || '').trim();
+    if (token.includes('import_share=')) {
+      token = token.split('import_share=')[1].split('&')[0];
+    } else if (token.includes('share=')) {
+      token = token.split('share=')[1].split('&')[0];
+    }
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (err: any) {
+      return res.status(400).json({ error: 'Invalid or expired share link/code.' });
+    }
+
+    if (decoded.type !== 'campaign_share' || !decoded.campaignId) {
+      return res.status(400).json({ error: 'Invalid share token format.' });
+    }
+
+    const sourceCampaign = await prisma.campaign.findUnique({
+      where: { id: decoded.campaignId },
+      include: {
+        contacts: {
+          orderBy: { id: 'asc' },
+        },
+        _count: {
+          select: { contacts: true },
+        },
+      },
+    });
+
+    if (!sourceCampaign) {
+      return res.status(404).json({ error: 'The shared campaign no longer exists.' });
+    }
+
+    res.json({
+      success: true,
+      campaignId: sourceCampaign.id,
+      campaignName: sourceCampaign.name,
+      campaignDescription: sourceCampaign.description,
+      templateType: sourceCampaign.templateType,
+      templateSubject: sourceCampaign.templateSubject,
+      templateBody: sourceCampaign.templateBody,
+      totalContacts: sourceCampaign._count.contacts,
+      contactsPreview: sourceCampaign.contacts.slice(0, 10).map((c) => ({
+        id: c.id,
+        email: c.email,
+        firstName: c.firstName,
+        lastName: c.lastName,
+        company: c.company,
+        title: c.title || c.role,
+        country: c.country,
+        isTechnical: c.isTechnical,
+      })),
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to preview shared campaign' });
+  }
+});
+
+// Import shared campaign contacts into user account (new campaign or existing)
+router.post('/import-shared', async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { shareToken, targetCampaignId, createNewCampaign, newCampaignName } = req.body;
+
+    if (!shareToken) {
+      return res.status(400).json({ error: 'Share code or link is required.' });
+    }
+
+    let token = String(shareToken).trim();
+    if (token.includes('import_share=')) {
+      token = token.split('import_share=')[1].split('&')[0];
+    } else if (token.includes('share=')) {
+      token = token.split('share=')[1].split('&')[0];
+    }
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (err: any) {
+      return res.status(400).json({ error: 'Invalid or expired share link/code.' });
+    }
+
+    if (decoded.type !== 'campaign_share' || !decoded.campaignId) {
+      return res.status(400).json({ error: 'Invalid share token format.' });
+    }
+
+    const sourceCampaign = await prisma.campaign.findUnique({
+      where: { id: decoded.campaignId },
+      include: {
+        contacts: {
+          orderBy: { id: 'asc' },
+        },
+      },
+    });
+
+    if (!sourceCampaign) {
+      return res.status(404).json({ error: 'The shared campaign no longer exists.' });
+    }
+
+    let finalCampaignId: number;
+    let finalCampaignName: string;
+
+    if (createNewCampaign || !targetCampaignId) {
+      finalCampaignName = newCampaignName?.trim() || `${sourceCampaign.name} (Shared)`;
+      const newCamp = await prisma.campaign.create({
+        data: {
+          name: finalCampaignName,
+          description: sourceCampaign.description,
+          userId,
+          templateType: sourceCampaign.templateType || 'AI_GENERATED',
+          templateSubject: sourceCampaign.templateSubject || null,
+          templateBody: sourceCampaign.templateBody || null,
+        },
+      });
+      finalCampaignId = newCamp.id;
+    } else {
+      finalCampaignId = Number(targetCampaignId);
+      const existing = await prisma.campaign.findFirst({
+        where: { id: finalCampaignId, userId },
+      });
+      if (!existing) {
+        return res.status(404).json({ error: 'Target campaign not found or unauthorized.' });
+      }
+      finalCampaignName = existing.name;
+    }
+
+    let importedCount = 0;
+    let duplicateCount = 0;
+
+    for (const c of sourceCampaign.contacts) {
+      const dupStatus = await getDuplicateStatus(c.email, c.company, finalCampaignId);
+      if (dupStatus === 'DUPLICATE_EMAIL') {
+        duplicateCount++;
+        continue;
+      }
+
+      try {
+        await prisma.contact.create({
+          data: {
+            campaignId: finalCampaignId,
+            email: c.email,
+            firstName: c.firstName,
+            lastName: c.lastName,
+            company: c.company,
+            title: c.title,
+            role: c.role || c.title,
+            phone: c.phone,
+            linkedin: c.linkedin,
+            country: c.country,
+            isTechnical: c.isTechnical,
+            duplicateStatus: dupStatus === 'NONE' ? null : dupStatus,
+            status: 'PENDING',
+          },
+        });
+        importedCount++;
+      } catch (err) {
+        duplicateCount++;
+      }
+    }
+
+    await logger.info(
+      'API',
+      `Imported shared contacts: ${importedCount} added, ${duplicateCount} duplicates into campaign "${finalCampaignName}" (ID: ${finalCampaignId})`
+    );
+
+    res.json({
+      success: true,
+      campaignId: finalCampaignId,
+      campaignName: finalCampaignName,
+      importedCount,
+      duplicateCount,
+      totalSourceContacts: sourceCampaign.contacts.length,
+      message: `Successfully imported ${importedCount} contact(s) into "${finalCampaignName}".`,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to import shared contacts' });
+  }
+});
+
 // Get campaign detail with contacts (with optional contact search filter)
 router.get('/:id', async (req: AuthenticatedRequest, res) => {
   try {
@@ -319,6 +506,129 @@ router.get('/:id', async (req: AuthenticatedRequest, res) => {
     res.json(campaign);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch campaign' });
+  }
+});
+
+// Export contacts of a campaign as CSV file or JSON
+router.get('/:id/export', async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = Number(req.params.id);
+    const userId = req.user!.id;
+    const format = (req.query.format as string || 'csv').toLowerCase();
+
+    const campaign = await prisma.campaign.findFirst({
+      where: req.user!.role === 'super_admin' ? { id } : { id, userId },
+      include: {
+        contacts: {
+          orderBy: { id: 'asc' },
+        },
+      },
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
+    if (format === 'json') {
+      return res.json({
+        campaign: {
+          id: campaign.id,
+          name: campaign.name,
+          description: campaign.description,
+        },
+        contacts: campaign.contacts,
+      });
+    }
+
+    // Generate CSV (RFC 4180 standard)
+    const headers = [
+      'First Name',
+      'Last Name',
+      'Active Email',
+      'Company Name',
+      'Job Title',
+      'Phone Number',
+      'LinkedIn URL',
+      'Country',
+      'Technical Recruiter',
+      'Status',
+    ];
+
+    const escapeCsv = (val: any): string => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val);
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const csvRows = [headers.join(',')];
+
+    for (const c of campaign.contacts) {
+      const row = [
+        escapeCsv(c.firstName || ''),
+        escapeCsv(c.lastName || ''),
+        escapeCsv(c.email),
+        escapeCsv(c.company || ''),
+        escapeCsv(c.title || c.role || ''),
+        escapeCsv(c.phone || ''),
+        escapeCsv(c.linkedin || ''),
+        escapeCsv(c.country || ''),
+        escapeCsv(c.isTechnical ? 'Yes' : 'No'),
+        escapeCsv(c.status),
+      ];
+      csvRows.push(row.join(','));
+    }
+
+    const csvContent = csvRows.join('\r\n');
+    const safeName = campaign.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="campaign-${safeName}-contacts.csv"`);
+    res.status(200).send(csvContent);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to export contacts' });
+  }
+});
+
+// Generate share link and token for campaign contacts
+router.post('/:id/share', async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = Number(req.params.id);
+    const userId = req.user!.id;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: req.user!.role === 'super_admin' ? { id } : { id, userId },
+      include: {
+        _count: {
+          select: { contacts: true },
+        },
+      },
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
+    const shareToken = jwt.sign(
+      {
+        campaignId: campaign.id,
+        ownerId: campaign.userId,
+        type: 'campaign_share',
+        createdAt: Date.now(),
+      },
+      JWT_SECRET,
+      { expiresIn: '365d' }
+    );
+
+    await logger.info('API', `Generated share link for campaign "${campaign.name}" (${campaign._count.contacts} contacts)`);
+
+    res.json({
+      success: true,
+      shareToken,
+      campaignName: campaign.name,
+      contactsCount: campaign._count.contacts,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to generate share link' });
   }
 });
 

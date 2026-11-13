@@ -15,7 +15,14 @@ import {
   CheckCircle2,
   Search,
   X,
-  Mail
+  Mail,
+  Download,
+  Share2,
+  Copy,
+  Check,
+  FileSpreadsheet,
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { Campaign, Contact, Resume } from '../types';
 import { ImportWizard } from '../components/ImportWizard';
@@ -30,6 +37,23 @@ export const Campaigns: React.FC = () => {
   const [campaignSearch, setCampaignSearch] = useState('');
   const [contactSearch, setContactSearch] = useState('');
   const [contactStatusFilter, setContactStatusFilter] = useState('ALL');
+
+  // Share & Export states
+  const [shareModalCampaign, setShareModalCampaign] = useState<{ id: number; name: string; contactsCount?: number } | null>(null);
+  const [shareToken, setShareToken] = useState<string>('');
+  const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedEmails, setCopiedEmails] = useState(false);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
+
+  // Import Shared Campaign Modal states
+  const [showImportSharedModal, setShowImportSharedModal] = useState(false);
+  const [importShareInput, setImportShareInput] = useState('');
+  const [sharedPreviewData, setSharedPreviewData] = useState<any | null>(null);
+  const [isLoadingSharedPreview, setIsLoadingSharedPreview] = useState(false);
+  const [isImportingShared, setIsImportingShared] = useState(false);
+  const [newImportCampName, setNewImportCampName] = useState('');
   
   // Contact list pagination state (50 contacts per batch for smooth scrolling)
   const [visibleContactsCount, setVisibleContactsCount] = useState(50);
@@ -138,7 +162,144 @@ export const Campaigns: React.FC = () => {
 
   useEffect(() => {
     fetchResumes();
+
+    // Check for shared campaign link in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareParam = urlParams.get('import_share') || urlParams.get('share');
+    if (shareParam) {
+      setImportShareInput(shareParam);
+      setShowImportSharedModal(true);
+      fetchSharedPreview(shareParam);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
+
+  // Export contacts as CSV file
+  const handleExportCampaignCsv = async (campaignId: number, campaignName: string) => {
+    setIsExportingCsv(true);
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/export`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to export CSV');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const cleanName = campaignName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      a.download = `campaign-${cleanName}-contacts.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(err.message || 'Failed to download contacts CSV');
+    } finally {
+      setIsExportingCsv(false);
+    }
+  };
+
+  // Open Share modal & generate share token
+  const openShareModal = async (camp: { id: number; name: string; contactsCount?: number }) => {
+    setShareModalCampaign(camp);
+    setShareToken('');
+    setCopiedLink(false);
+    setCopiedCode(false);
+    setCopiedEmails(false);
+    setIsGeneratingShare(true);
+
+    try {
+      const res = await fetch(`/api/campaigns/${camp.id}/share`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create share link');
+      setShareToken(data.shareToken);
+    } catch (err: any) {
+      alert(err.message || 'Failed to generate share link');
+    } finally {
+      setIsGeneratingShare(false);
+    }
+  };
+
+  // Copy all contact emails to clipboard
+  const handleCopyEmails = async (campaignId: number) => {
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/export?format=json`);
+      const data = await res.json();
+      const emails = (data.contacts || []).map((c: any) => c.email).filter(Boolean);
+      if (emails.length === 0) {
+        alert('No contacts in this campaign to copy.');
+        return;
+      }
+      await navigator.clipboard.writeText(emails.join(', '));
+      setCopiedEmails(true);
+      setTimeout(() => setCopiedEmails(false), 2000);
+    } catch (err) {
+      alert('Failed to copy emails to clipboard');
+    }
+  };
+
+  // Fetch preview for shared campaign
+  const fetchSharedPreview = async (inputToken?: string) => {
+    const raw = (inputToken || importShareInput).trim();
+    if (!raw) return;
+
+    let clean = raw;
+    if (clean.includes('import_share=')) {
+      clean = clean.split('import_share=')[1].split('&')[0];
+    } else if (clean.includes('share=')) {
+      clean = clean.split('share=')[1].split('&')[0];
+    }
+
+    setIsLoadingSharedPreview(true);
+    try {
+      const res = await fetch(`/api/campaigns/share-preview/${encodeURIComponent(clean)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load shared campaign preview');
+      setSharedPreviewData(data);
+      setNewImportCampName(`${data.campaignName} (Shared)`);
+    } catch (err: any) {
+      alert(err.message || 'Invalid or expired share link/code');
+      setSharedPreviewData(null);
+    } finally {
+      setIsLoadingSharedPreview(false);
+    }
+  };
+
+  // Confirm import of shared campaign
+  const handleConfirmImportShared = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!importShareInput.trim()) return;
+
+    setIsImportingShared(true);
+    try {
+      const res = await fetch('/api/campaigns/import-shared', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shareToken: importShareInput.trim(),
+          createNewCampaign: true,
+          newCampaignName: newImportCampName.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to import shared contacts');
+
+      alert(data.message || 'Campaign and contacts imported successfully!');
+      setShowImportSharedModal(false);
+      setImportShareInput('');
+      setSharedPreviewData(null);
+      await fetchCampaigns();
+      if (data.campaignId) {
+        setSelectedCampId(data.campaignId);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to import shared campaign');
+    } finally {
+      setIsImportingShared(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedCampId) {
@@ -568,13 +729,24 @@ export const Campaigns: React.FC = () => {
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">Campaigns</h2>
               <p className="text-xs text-slate-500 mt-1">Manage and track your job outreach campaigns.</p>
             </div>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all shadow-xs cursor-pointer active:scale-[0.98]"
-            >
-              <Plus className="w-4 h-4" />
-              Create Campaign
-            </button>
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowImportSharedModal(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 font-bold rounded-xl text-xs text-slate-800 transition-all cursor-pointer shadow-2xs"
+                title="Import campaign contacts shared by another user via link or code"
+              >
+                <Share2 className="w-3.5 h-3.5 text-indigo-600" />
+                Import Shared
+              </button>
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all shadow-xs cursor-pointer active:scale-[0.98]"
+              >
+                <Plus className="w-4 h-4" />
+                Create Campaign
+              </button>
+            </div>
           </div>
 
           {/* Campaign & Email ID Search Bar */}
@@ -853,7 +1025,7 @@ export const Campaigns: React.FC = () => {
                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                       Contacts: <span className="text-slate-900 font-bold">{camp.metrics?.total || 0}</span> | Sent: <span className="text-slate-900 font-bold">{camp.metrics?.sent || 0}</span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => {
                           if (campaignSearch.trim()) {
@@ -864,6 +1036,22 @@ export const Campaigns: React.FC = () => {
                         className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-800 transition-colors cursor-pointer"
                       >
                         Manage
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleExportCampaignCsv(camp.id, camp.name)}
+                        className="p-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-colors cursor-pointer"
+                        title="Export Contacts as CSV"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openShareModal({ id: camp.id, name: camp.name, contactsCount: camp.metrics?.total || 0 })}
+                        className="p-1.5 bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-600 hover:text-indigo-700 rounded-xl transition-colors cursor-pointer"
+                        title="Share Campaign Contacts"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteCampaign(camp.id, camp.name)}
@@ -988,6 +1176,27 @@ export const Campaigns: React.FC = () => {
                   >
                     <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                     Delete Failed / Skipped ({campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0})
+                  </button>
+
+                  {/* Export Contacts CSV */}
+                  <button
+                    onClick={() => handleExportCampaignCsv(campaignDetails.id, campaignDetails.name)}
+                    disabled={isExportingCsv}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+                    title="Export contacts as CSV file"
+                  >
+                    <Download className="w-3.5 h-3.5 text-slate-600" />
+                    Export CSV
+                  </button>
+
+                  {/* Share Contacts */}
+                  <button
+                    onClick={() => openShareModal({ id: campaignDetails.id, name: campaignDetails.name, contactsCount: campaignDetails.contacts?.length || 0 })}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+                    title="Share campaign contacts with others via link or code"
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-indigo-600" />
+                    Share Contacts
                   </button>
                 </div>
               </div>
@@ -1254,14 +1463,32 @@ export const Campaigns: React.FC = () => {
                         ({campaignDetails.contacts?.length || 0} total)
                       </span>
                     </h3>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleExportCampaignCsv(campaignDetails.id, campaignDetails.name)}
+                        className="text-[10px] text-slate-700 hover:text-slate-900 font-bold flex items-center gap-1 transition-colors cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-slate-300 shadow-2xs"
+                        title="Export Contacts as CSV"
+                      >
+                        <Download className="w-3 h-3 text-slate-500" />
+                        Export CSV
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openShareModal({ id: campaignDetails.id, name: campaignDetails.name, contactsCount: campaignDetails.contacts?.length || 0 })}
+                        className="text-[10px] text-indigo-700 hover:text-indigo-900 font-bold flex items-center gap-1 transition-colors cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-indigo-200 shadow-2xs"
+                        title="Share Campaign Contacts"
+                      >
+                        <Share2 className="w-3 h-3 text-indigo-500" />
+                        Share Contacts
+                      </button>
                       {(campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0) > 0 && (
                         <button
                           onClick={handleDeleteFailedContacts}
                           className="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3 h-3" />
-                          Remove {campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length} Failed/Skipped Email(s)
+                          Remove {campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length} Failed/Skipped
                         </button>
                       )}
                       {(() => {
@@ -1618,6 +1845,279 @@ export const Campaigns: React.FC = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Share Campaign Modal */}
+      {shareModalCampaign && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 relative">
+            <button
+              onClick={() => {
+                setShareModalCampaign(null);
+                setShareToken('');
+              }}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+                <Share2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Share Campaign Contacts</h3>
+                <p className="text-xs text-slate-500 font-medium truncate max-w-[340px]">
+                  {shareModalCampaign.name}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-600 mb-5 leading-relaxed">
+              Anyone with this shareable link or code can import this campaign&apos;s contacts into their Outreach-AI account and immediately start sending outreach emails.
+            </p>
+
+            {isGeneratingShare ? (
+              <div className="py-8 flex flex-col items-center justify-center text-slate-500 gap-2">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                <span className="text-xs font-semibold">Generating secure share link...</span>
+              </div>
+            ) : shareToken ? (
+              <div className="space-y-4">
+                {/* Share Link */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Shareable Link
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${window.location.origin}/campaigns?import_share=${shareToken}`}
+                      className="flex-1 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/campaigns?import_share=${shareToken}`);
+                        setCopiedLink(true);
+                        setTimeout(() => setCopiedLink(false), 2000);
+                      }}
+                      className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    >
+                      {copiedLink ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Share Code / Token */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Share Code (Token)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={shareToken}
+                      className="flex-1 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 text-xs font-mono truncate focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(shareToken);
+                        setCopiedCode(true);
+                        setTimeout(() => setCopiedCode(false), 2000);
+                      }}
+                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    >
+                      {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick actions: CSV export & copy emails */}
+                <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleExportCampaignCsv(shareModalCampaign.id, shareModalCampaign.name)}
+                    disabled={isExportingCsv}
+                    className="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-slate-600" />
+                    <span>{isExportingCsv ? 'Exporting...' : 'Export CSV File'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyEmails(shareModalCampaign.id)}
+                    className="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    {copiedEmails ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-600" />}
+                    <span>{copiedEmails ? 'Emails Copied!' : 'Copy All Emails'}</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-rose-500 font-medium">Failed to generate share link. Please try again.</p>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShareModalCampaign(null);
+                  setShareToken('');
+                }}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Shared Campaign Modal */}
+      {showImportSharedModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                setShowImportSharedModal(false);
+                setImportShareInput('');
+                setSharedPreviewData(null);
+              }}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600">
+                <Share2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Import Shared Campaign</h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Paste a share link or share code to import contacts and start outreach.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleConfirmImportShared} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                  Share Link or Code
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={importShareInput}
+                    onChange={(e) => {
+                      setImportShareInput(e.target.value);
+                      if (sharedPreviewData) setSharedPreviewData(null);
+                    }}
+                    placeholder="Paste link (https://.../campaigns?import_share=...) or share code"
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fetchSharedPreview()}
+                    disabled={isLoadingSharedPreview || !importShareInput.trim()}
+                    className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shrink-0 disabled:opacity-40"
+                  >
+                    {isLoadingSharedPreview ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Inspect'}
+                  </button>
+                </div>
+              </div>
+
+              {sharedPreviewData && (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Campaign</span>
+                      <h4 className="text-sm font-bold text-slate-900">{sharedPreviewData.campaignName}</h4>
+                    </div>
+                    <span className="px-2.5 py-1 bg-blue-100 text-blue-700 font-bold rounded-lg text-xs">
+                      {sharedPreviewData.totalContacts} Contacts
+                    </span>
+                  </div>
+
+                  {sharedPreviewData.description && (
+                    <p className="text-xs text-slate-500">{sharedPreviewData.description}</p>
+                  )}
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      New Campaign Name in your workspace
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newImportCampName}
+                      onChange={(e) => setNewImportCampName(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {sharedPreviewData.previewContacts && sharedPreviewData.previewContacts.length > 0 && (
+                    <div className="pt-2 border-t border-slate-200/60">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-1.5">
+                        Sample Contacts
+                      </span>
+                      <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                        {sharedPreviewData.previewContacts.map((c: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between text-xs bg-white p-2 rounded-lg border border-slate-100">
+                            <div>
+                              <span className="font-semibold text-slate-800">{c.name || 'Unnamed'}</span>
+                              <span className="text-slate-400 ml-1.5 text-[11px]">{c.email}</span>
+                            </div>
+                            <span className="text-slate-500 text-[11px] truncate max-w-[120px]">{c.company || c.role || ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="p-2.5 bg-blue-50/70 border border-blue-200/60 rounded-xl text-blue-700 text-xs">
+                    Imported contacts will be added with <strong>PENDING</strong> status. Duplicate contacts across campaigns will automatically be flagged.
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowImportSharedModal(false);
+                    setImportShareInput('');
+                    setSharedPreviewData(null);
+                  }}
+                  className="px-4 py-2 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isImportingShared || (!sharedPreviewData && !importShareInput.trim())}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
+                >
+                  {isImportingShared ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Importing...</span>
+                    </>
+                  ) : (
+                    <span>Import Contacts</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

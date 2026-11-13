@@ -1,21 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Upload, FileSpreadsheet, ClipboardList, UserPlus, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, ClipboardList, UserPlus, AlertCircle, CheckCircle2, Share2, Link, Loader2 } from 'lucide-react';
 
 interface ImportWizardProps {
   campaignId: number;
   onImportComplete: () => void;
+  initialShareCode?: string;
 }
 
-type TabType = 'csv' | 'paste' | 'manual';
+type TabType = 'csv' | 'paste' | 'manual' | 'shared';
 
-export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImportComplete }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('csv');
+export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImportComplete, initialShareCode }) => {
+  const [activeTab, setActiveTab] = useState<TabType>(initialShareCode ? 'shared' : 'csv');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   
   // Paste import state
   const [pasteText, setPasteText] = useState('');
+
+  // Shared campaign import state
+  const [shareInput, setShareInput] = useState(initialShareCode || '');
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [sharedPreview, setSharedPreview] = useState<{
+    campaignName: string;
+    campaignDescription?: string;
+    totalContacts: number;
+    contactsPreview: any[];
+  } | null>(null);
 
   // Results status
   const [statusMsg, setStatusMsg] = useState<{
@@ -46,6 +57,80 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setCsvFile(e.target.files[0]);
+    }
+  };
+
+  const handleFetchSharePreview = async (tokenToFetch?: string) => {
+    const raw = (tokenToFetch || shareInput).trim();
+    if (!raw) return;
+
+    let clean = raw;
+    if (clean.includes('import_share=')) {
+      clean = clean.split('import_share=')[1].split('&')[0];
+    } else if (clean.includes('share=')) {
+      clean = clean.split('share=')[1].split('&')[0];
+    }
+
+    setIsLoadingPreview(true);
+    setStatusMsg(null);
+    try {
+      const res = await fetch(`/api/campaigns/share-preview/${encodeURIComponent(clean)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load shared campaign');
+      setSharedPreview(data);
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', text: err.message || 'Invalid or expired share link/code.' });
+      setSharedPreview(null);
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  useEffect(() => {
+    if (initialShareCode) {
+      setShareInput(initialShareCode);
+      setActiveTab('shared');
+      handleFetchSharePreview(initialShareCode);
+    }
+  }, [initialShareCode]);
+
+  // Shared Campaign Import submission
+  const handleSharedSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shareInput.trim()) return;
+
+    setIsSubmitting(true);
+    setStatusMsg(null);
+
+    try {
+      const response = await fetch('/api/campaigns/import-shared', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shareToken: shareInput.trim(),
+          targetCampaignId: campaignId,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to import shared contacts');
+
+      setStatusMsg({
+        type: 'success',
+        text: data.message || `Successfully imported ${data.importedCount} contacts into this campaign.`,
+        details: {
+          imported: data.importedCount,
+          duplicates: data.duplicateCount,
+        },
+      });
+
+      setShareInput('');
+      setSharedPreview(null);
+      onImportComplete();
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', text: err.message || 'Error importing shared contacts.' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -198,6 +283,17 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
         >
           <UserPlus className="w-4 h-4" />
           Manual Entry
+        </button>
+        <button
+          onClick={() => handleTabChange('shared')}
+          className={`flex items-center gap-2 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
+            activeTab === 'shared'
+              ? 'border-slate-900 text-slate-900 bg-white'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <Share2 className="w-4 h-4 text-indigo-600" />
+          Shared Link / Code
         </button>
       </div>
 
@@ -399,6 +495,94 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
                 className="px-5 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-[0.98]"
               >
                 {isSubmitting ? 'Saving Contact...' : 'Save Contact'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Shared Campaign / Code Form */}
+        {activeTab === 'shared' && (
+          <form onSubmit={handleSharedSubmit} className="space-y-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                Paste Campaign Share Link or Share Code
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Link className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={shareInput}
+                    onChange={(e) => setShareInput(e.target.value)}
+                    placeholder="e.g. https://outreach-ai.com/campaigns?import_share=... or share token"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                    required
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleFetchSharePreview()}
+                  disabled={isLoadingPreview || !shareInput.trim()}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-40 shrink-0 flex items-center justify-center gap-1.5"
+                >
+                  {isLoadingPreview ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Checking...
+                    </>
+                  ) : (
+                    'Preview Contacts'
+                  )}
+                </button>
+              </div>
+              <span className="text-[10px] text-slate-500">
+                Paste a link or code shared by someone else to import their contacts directly into this campaign.
+              </span>
+            </div>
+
+            {/* Live Shared Contacts Preview */}
+            {sharedPreview && (
+              <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-3">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block">
+                      Shared Source Campaign
+                    </span>
+                    <h4 className="text-sm font-bold text-slate-900">{sharedPreview.campaignName}</h4>
+                    {sharedPreview.campaignDescription && (
+                      <p className="text-[11px] text-slate-500 mt-0.5">{sharedPreview.campaignDescription}</p>
+                    )}
+                  </div>
+                  <span className="text-xs font-mono font-bold text-indigo-900 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 self-start sm:self-auto">
+                    {sharedPreview.totalContacts} Contacts Available
+                  </span>
+                </div>
+
+                {sharedPreview.contactsPreview && sharedPreview.contactsPreview.length > 0 && (
+                  <div className="border border-slate-200/80 rounded-lg overflow-hidden bg-white text-xs">
+                    <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                      Previewing first {sharedPreview.contactsPreview.length} contacts
+                    </div>
+                    <div className="divide-y divide-slate-100 max-h-36 overflow-y-auto font-mono text-[11px]">
+                      {sharedPreview.contactsPreview.map((c: any) => (
+                        <div key={c.id} className="px-3 py-1.5 flex justify-between items-center text-slate-700">
+                          <span className="font-medium truncate mr-2">{c.email}</span>
+                          <span className="text-[10px] text-slate-400 font-sans truncate">{c.company || c.title || 'Contact'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={isSubmitting || !shareInput.trim()}
+                className="px-5 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-[0.98]"
+              >
+                {isSubmitting ? 'Importing Contacts...' : sharedPreview ? `Import ${sharedPreview.totalContacts} Contacts` : 'Import Shared Contacts'}
               </button>
             </div>
           </form>
