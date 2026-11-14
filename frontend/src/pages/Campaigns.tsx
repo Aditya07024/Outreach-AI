@@ -1273,51 +1273,6 @@ export const Campaigns: React.FC = () => {
                     <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                     Delete Failed / Skipped ({campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0})
                   </button>
-
-                  {/* Remove @gmail.com Contacts Button */}
-                  {(() => {
-                    const gmailCount = (campaignDetails.contacts || []).filter(
-                      c => isGmailEmail(c.email) && c.status !== 'SENT'
-                    ).length;
-                    const readyGmailCount = (campaignDetails.contacts || []).filter(
-                      c => isGmailEmail(c.email) && c.status === 'READY_TO_SEND'
-                    ).length;
-
-                    return (
-                      <button
-                        onClick={handleOpenGmailModal}
-                        disabled={campaignDetails.status === 'SENDING' || gmailCount === 0 || isDeletingGmail}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
-                        title={gmailCount > 0 ? `Review & remove ${gmailCount} @gmail.com contacts (including ${readyGmailCount} Ready)` : 'No @gmail.com contacts to remove'}
-                      >
-                        <UserMinus className="w-3.5 h-3.5 text-rose-600" />
-                        <span>
-                          {isDeletingGmail ? 'Removing...' : `Remove @gmail.com (${gmailCount})`}
-                        </span>
-                      </button>
-                    );
-                  })()}
-
-                  {/* Export Contacts CSV */}
-                  <button
-                    onClick={() => handleExportCampaignCsv(campaignDetails.id, campaignDetails.name)}
-                    disabled={isExportingCsv}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
-                    title="Export contacts as CSV file"
-                  >
-                    <Download className="w-3.5 h-3.5 text-slate-600" />
-                    Export CSV
-                  </button>
-
-                  {/* Share Contacts */}
-                  <button
-                    onClick={() => openShareModal({ id: campaignDetails.id, name: campaignDetails.name, contactsCount: campaignDetails.contacts?.length || 0 })}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
-                    title="Share campaign contacts with others via link or code"
-                  >
-                    <Share2 className="w-3.5 h-3.5 text-indigo-600" />
-                    Share Contacts
-                  </button>
                 </div>
               </div>
 
