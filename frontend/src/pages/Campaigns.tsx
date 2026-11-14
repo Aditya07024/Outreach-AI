@@ -22,7 +22,8 @@ import {
   Check,
   FileSpreadsheet,
   ExternalLink,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { Campaign, Contact, Resume } from '../types';
 import { ImportWizard } from '../components/ImportWizard';
@@ -726,29 +727,51 @@ export const Campaigns: React.FC = () => {
   };
 
   const [isDeletingGmail, setIsDeletingGmail] = useState(false);
+  const [showGmailModal, setShowGmailModal] = useState(false);
+  const [gmailSearchTerm, setGmailSearchTerm] = useState('');
+  const [selectedGmailIds, setSelectedGmailIds] = useState<number[]>([]);
+  const [copiedGmailList, setCopiedGmailList] = useState(false);
 
-  const handleDeleteGmailContacts = async () => {
-    if (!selectedCampId || !campaignDetails) return;
-
+  const handleOpenGmailModal = () => {
+    if (!campaignDetails) return;
     const gmailContacts = (campaignDetails.contacts || []).filter(
       c => isGmailEmail(c.email) && c.status !== 'SENT'
     );
-    const totalGmail = gmailContacts.length;
-    if (totalGmail === 0) {
+    if (gmailContacts.length === 0) {
       alert('No un-sent @gmail.com contacts found in this campaign.');
       return;
     }
+    setSelectedGmailIds(gmailContacts.map(c => c.id));
+    setGmailSearchTerm('');
+    setCopiedGmailList(false);
+    setShowGmailModal(true);
+  };
 
-    const readyCount = gmailContacts.filter(c => c.status === 'READY_TO_SEND').length;
-    const pendingCount = gmailContacts.filter(c => c.status === 'PENDING').length;
-    const otherCount = totalGmail - readyCount - pendingCount;
+  const handleCopyGmailEmails = async () => {
+    if (!campaignDetails) return;
+    const gmailContacts = (campaignDetails.contacts || []).filter(
+      c => isGmailEmail(c.email) && c.status !== 'SENT'
+    );
+    const emails = gmailContacts.map(c => c.email).filter(Boolean);
+    if (emails.length === 0) return;
 
-    let breakdown = `Ready: ${readyCount}, Pending: ${pendingCount}`;
-    if (otherCount > 0) breakdown += `, Other: ${otherCount}`;
+    try {
+      await navigator.clipboard.writeText(emails.join(', '));
+      setCopiedGmailList(true);
+      setTimeout(() => setCopiedGmailList(false), 2000);
+    } catch {
+      alert('Failed to copy emails to clipboard');
+    }
+  };
 
-    if (!confirm(
-      `Are you sure you want to remove all ${totalGmail} contact(s) with @gmail.com emails from this campaign?\n\n(${breakdown})\n\nThis will remove them completely even from Ready status so no outreach will be sent to them.`
-    )) return;
+  const handleConfirmRemoveGmail = async () => {
+    if (!selectedCampId || !campaignDetails || selectedGmailIds.length === 0) return;
+
+    const idsToRemove = new Set(selectedGmailIds);
+    const toRemoveContacts = (campaignDetails.contacts || []).filter(c => idsToRemove.has(c.id));
+    const totalToRemove = toRemoveContacts.length;
+    const readyToRemove = toRemoveContacts.filter(c => c.status === 'READY_TO_SEND').length;
+    const pendingToRemove = toRemoveContacts.filter(c => c.status === 'PENDING').length;
 
     setIsDeletingGmail(true);
     const prevCampaignDetails = campaignDetails;
@@ -757,27 +780,30 @@ export const Campaigns: React.FC = () => {
     // Instant optimistic removal from UI
     setCampaignDetails(prev => prev ? {
       ...prev,
-      contacts: prev.contacts?.filter(c => !(isGmailEmail(c.email) && c.status !== 'SENT'))
+      contacts: prev.contacts?.filter(c => !idsToRemove.has(c.id))
     } : null);
 
     setCampaigns(prev => prev.map(c => c.id === selectedCampId ? {
       ...c,
       metrics: c.metrics ? {
         ...c.metrics,
-        total: Math.max(0, c.metrics.total - totalGmail),
-        ready: Math.max(0, c.metrics.ready - readyCount),
-        pending: Math.max(0, c.metrics.pending - pendingCount),
+        total: Math.max(0, c.metrics.total - totalToRemove),
+        ready: Math.max(0, c.metrics.ready - readyToRemove),
+        pending: Math.max(0, c.metrics.pending - pendingToRemove),
       } : undefined
     } : c));
 
     try {
       const response = await fetch(`/api/campaigns/${selectedCampId}/gmail-contacts`, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contactIds: selectedGmailIds }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to remove @gmail.com contacts');
 
-      alert(data.message || `Successfully removed ${totalGmail} @gmail.com contact(s).`);
+      alert(data.message || `Successfully removed ${totalToRemove} @gmail.com contact(s).`);
+      setShowGmailModal(false);
       fetchCampaignDetails(selectedCampId);
       fetchCampaigns();
     } catch (err: any) {
@@ -1259,10 +1285,10 @@ export const Campaigns: React.FC = () => {
 
                     return (
                       <button
-                        onClick={handleDeleteGmailContacts}
+                        onClick={handleOpenGmailModal}
                         disabled={campaignDetails.status === 'SENDING' || gmailCount === 0 || isDeletingGmail}
                         className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
-                        title={gmailCount > 0 ? `Remove ${gmailCount} @gmail.com contacts (including ${readyGmailCount} Ready)` : 'No @gmail.com contacts to remove'}
+                        title={gmailCount > 0 ? `Review & remove ${gmailCount} @gmail.com contacts (including ${readyGmailCount} Ready)` : 'No @gmail.com contacts to remove'}
                       >
                         <UserMinus className="w-3.5 h-3.5 text-rose-600" />
                         <span>
@@ -1593,10 +1619,10 @@ export const Campaigns: React.FC = () => {
                         return (
                           <button
                             type="button"
-                            onClick={handleDeleteGmailContacts}
+                            onClick={handleOpenGmailModal}
                             disabled={isDeletingGmail}
                             className="text-[10px] text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1 transition-colors cursor-pointer bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 shadow-2xs"
-                            title="Remove all @gmail.com contacts from this campaign (including Ready contacts)"
+                            title="Review and remove @gmail.com contacts (including Ready contacts)"
                           >
                             <UserMinus className="w-3 h-3 text-rose-600" />
                             Remove {gmailCount} @gmail.com
@@ -2231,6 +2257,224 @@ export const Campaigns: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Review & Remove @gmail.com Emails Modal */}
+      {showGmailModal && campaignDetails && (() => {
+        const allGmailContacts = (campaignDetails.contacts || []).filter(
+          c => isGmailEmail(c.email) && c.status !== 'SENT'
+        );
+        const filteredGmailContacts = allGmailContacts.filter(c => {
+          if (!gmailSearchTerm.trim()) return true;
+          const term = gmailSearchTerm.toLowerCase();
+          const email = (c.email || '').toLowerCase();
+          const name = `${c.firstName || ''} ${c.lastName || ''}`.toLowerCase();
+          const company = (c.company || '').toLowerCase();
+          return email.includes(term) || name.includes(term) || company.includes(term);
+        });
+
+        const readyCount = allGmailContacts.filter(c => c.status === 'READY_TO_SEND').length;
+        const pendingCount = allGmailContacts.filter(c => c.status === 'PENDING').length;
+        const isAllSelected = allGmailContacts.length > 0 && selectedGmailIds.length === allGmailContacts.length;
+
+        const handleToggleSelectAll = () => {
+          if (isAllSelected) {
+            setSelectedGmailIds([]);
+          } else {
+            setSelectedGmailIds(allGmailContacts.map(c => c.id));
+          }
+        };
+
+        const handleToggleContact = (id: number) => {
+          setSelectedGmailIds(prev => 
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+          );
+        };
+
+        return (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-2xl p-6 relative max-h-[90vh] flex flex-col">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowGmailModal(false)}
+                className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Modal Header */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+                  <UserMinus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Review & Remove @gmail.com Emails</h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {allGmailContacts.length} personal Gmail addresses found in <strong className="text-slate-700">{campaignDetails.name}</strong>
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Breakdown Pills */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Gmail</span>
+                  <span className="text-base font-extrabold text-slate-800">{allGmailContacts.length}</span>
+                </div>
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-center">
+                  <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Ready to Send</span>
+                  <span className="text-base font-extrabold text-emerald-700">{readyCount}</span>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 text-center">
+                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">Pending</span>
+                  <span className="text-base font-extrabold text-blue-700">{pendingCount}</span>
+                </div>
+              </div>
+
+              {/* Filter & Copy Toolbar */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 mb-3">
+                <div className="relative flex-1">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={gmailSearchTerm}
+                    onChange={(e) => setGmailSearchTerm(e.target.value)}
+                    placeholder="Search in Gmail list..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400"
+                  />
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleCopyGmailEmails}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Copy all @gmail.com email addresses to clipboard"
+                  >
+                    {copiedGmailList ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                    <span>{copiedGmailList ? 'Emails Copied!' : 'Copy All Emails'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleToggleSelectAll}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                  >
+                    {isAllSelected ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Scrollable Email List */}
+              <div className="flex-1 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-slate-50/50 mb-4 max-h-[340px]">
+                {filteredGmailContacts.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-400">
+                    No contacts matching search query.
+                  </div>
+                ) : (
+                  filteredGmailContacts.map((contact) => {
+                    const isSelected = selectedGmailIds.includes(contact.id);
+                    const name = [contact.firstName, contact.lastName].filter(Boolean).join(' ') || 'Unnamed Contact';
+
+                    return (
+                      <div
+                        key={contact.id}
+                        onClick={() => handleToggleContact(contact.id)}
+                        className={`p-3 flex items-center gap-3 transition-colors cursor-pointer ${
+                          isSelected ? 'bg-rose-50/40 hover:bg-rose-50/60' : 'bg-white hover:bg-slate-50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleContact(contact.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded border-slate-300 text-rose-600 focus:ring-0 w-4 h-4 cursor-pointer shrink-0"
+                        />
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-bold text-slate-900 truncate">
+                              {contact.email}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                              contact.status === 'READY_TO_SEND'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : contact.status === 'PENDING'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                : contact.status === 'FAILED'
+                                ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                            }`}>
+                              {contact.status === 'READY_TO_SEND' ? 'Ready' : contact.status}
+                            </span>
+                          </div>
+
+                          <div className="text-[11px] text-slate-500 mt-0.5 truncate flex items-center gap-2">
+                            <span className="font-medium text-slate-700">{name}</span>
+                            {contact.company && (
+                              <>
+                                <span>•</span>
+                                <span>{contact.company}</span>
+                              </>
+                            )}
+                            {contact.role && (
+                              <>
+                                <span>•</span>
+                                <span className="text-slate-400">{contact.role}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Warning Notice */}
+              <div className="p-3 bg-rose-50/80 border border-rose-200/80 rounded-xl text-rose-700 text-xs mb-4 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>
+                  Removing these contacts will permanently delete them from this campaign (including those in Ready status). They will not receive any outreach emails.
+                </span>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 shrink-0">
+                <span className="text-xs text-slate-500 font-medium">
+                  {selectedGmailIds.length} of {allGmailContacts.length} selected for removal
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowGmailModal(false)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmRemoveGmail}
+                    disabled={isDeletingGmail || selectedGmailIds.length === 0}
+                    className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shadow-sm"
+                  >
+                    {isDeletingGmail ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Removing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Remove {selectedGmailIds.length} Email{selectedGmailIds.length !== 1 ? 's' : ''}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

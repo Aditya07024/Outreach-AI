@@ -966,6 +966,7 @@ router.delete('/:id/gmail-contacts', async (req: AuthenticatedRequest, res) => {
     const id = Number(req.params.id);
     const userId = req.user!.id;
     const includeSent = req.query.includeSent === 'true';
+    const { contactIds } = req.body || {};
 
     const campaign = await prisma.campaign.findFirst({
       where: { id, userId },
@@ -975,11 +976,15 @@ router.delete('/:id/gmail-contacts', async (req: AuthenticatedRequest, res) => {
     }
 
     const statusFilter = includeSent ? {} : { status: { not: 'SENT' } };
+    const idFilter = Array.isArray(contactIds) && contactIds.length > 0
+      ? { id: { in: contactIds.map((cid: any) => Number(cid)) } }
+      : {};
 
     const deleteResult = await prisma.contact.deleteMany({
       where: {
         campaignId: id,
         ...statusFilter,
+        ...idFilter,
         OR: [
           { email: { endsWith: '@gmail.com', mode: 'insensitive' } },
           { email: { endsWith: '@googlemail.com', mode: 'insensitive' } },
