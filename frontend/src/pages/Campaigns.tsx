@@ -69,6 +69,7 @@ export const Campaigns: React.FC = () => {
   const [newTemplateSubject, setNewTemplateSubject] = useState('Opportunities at {company} - {role} Application');
   const [newTemplateBody, setNewTemplateBody] = useState('Hi {firstName},\n\nI have been following your engineering team at {company} and would love to express interest in the {role} role.\n\nI have attached my resume for your review. You can view my portfolio at {portfolio} and GitHub at {github}.\n\nBest regards,\n{name}');
   const [newAutoSendExtension, setNewAutoSendExtension] = useState(false);
+  const [newAutoRemoveGmailExtension, setNewAutoRemoveGmailExtension] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Edit campaign settings state
@@ -80,6 +81,7 @@ export const Campaigns: React.FC = () => {
   const [editTemplateSubject, setEditTemplateSubject] = useState('');
   const [editTemplateBody, setEditTemplateBody] = useState('');
   const [editAutoSendExtension, setEditAutoSendExtension] = useState(false);
+  const [editAutoRemoveGmailExtension, setEditAutoRemoveGmailExtension] = useState(true);
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
 
   // Edit contact modal state
@@ -394,6 +396,7 @@ export const Campaigns: React.FC = () => {
       setEditTemplateSubject(campaignDetails.templateSubject || '');
       setEditTemplateBody(campaignDetails.templateBody || '');
       setEditAutoSendExtension(Boolean(campaignDetails.autoSendExtension));
+      setEditAutoRemoveGmailExtension(campaignDetails.autoRemoveGmailExtension !== false);
     }
   }, [campaignDetails?.id]);
 
@@ -426,6 +429,35 @@ export const Campaigns: React.FC = () => {
     }
   };
 
+  const handleToggleAutoRemoveGmailExtension = async (campaignId: number, currentVal: boolean, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const newVal = !currentVal;
+
+    // Optimistic UI updates
+    setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, autoRemoveGmailExtension: newVal } : c));
+    if (campaignDetails?.id === campaignId) {
+      setCampaignDetails(prev => prev ? { ...prev, autoRemoveGmailExtension: newVal } : null);
+      setEditAutoRemoveGmailExtension(newVal);
+    }
+
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoRemoveGmailExtension: newVal }),
+      });
+      if (!response.ok) throw new Error('Failed to toggle auto-remove @gmail setting');
+    } catch (err: any) {
+      // Rollback
+      setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, autoRemoveGmailExtension: currentVal } : c));
+      if (campaignDetails?.id === campaignId) {
+        setCampaignDetails(prev => prev ? { ...prev, autoRemoveGmailExtension: currentVal } : null);
+        setEditAutoRemoveGmailExtension(currentVal);
+      }
+      alert('Failed to update Auto-Remove @gmail toggle.');
+    }
+  };
+
   const handleCreateCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
@@ -443,6 +475,7 @@ export const Campaigns: React.FC = () => {
           templateSubject: newTemplateSubject,
           templateBody: newTemplateBody,
           autoSendExtension: newAutoSendExtension,
+          autoRemoveGmailExtension: newAutoRemoveGmailExtension,
         }),
       });
 
@@ -452,6 +485,7 @@ export const Campaigns: React.FC = () => {
       setNewName('');
       setNewDesc('');
       setNewAutoSendExtension(false);
+      setNewAutoRemoveGmailExtension(true);
       setShowCreateForm(false);
       fetchCampaigns();
     } catch (err) {
@@ -478,6 +512,7 @@ export const Campaigns: React.FC = () => {
           templateSubject: editTemplateSubject,
           templateBody: editTemplateBody,
           autoSendExtension: editAutoSendExtension,
+          autoRemoveGmailExtension: editAutoRemoveGmailExtension,
         }),
       });
 
@@ -991,6 +1026,32 @@ export const Campaigns: React.FC = () => {
                   </div>
                 )}
 
+                <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-rose-600" />
+                      Auto-Remove @gmail from Extension
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      Automatically drop personal @gmail.com addresses when leads are synced from extension
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNewAutoRemoveGmailExtension(!newAutoRemoveGmailExtension)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      newAutoRemoveGmailExtension ? 'bg-rose-600' : 'bg-slate-300'
+                    }`}
+                    title={newAutoRemoveGmailExtension ? 'Auto-Remove @gmail ON' : 'Auto-Remove @gmail OFF'}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                        newAutoRemoveGmailExtension ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
                 <div className="flex justify-end gap-3 pt-2">
                   <button
                     type="button"
@@ -1117,6 +1178,28 @@ export const Campaigns: React.FC = () => {
                     </button>
                   </div>
 
+                  {/* Auto-Remove @gmail Extension Lead Toggle */}
+                  <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700">
+                      <Mail className={`w-3.5 h-3.5 ${camp.autoRemoveGmailExtension !== false ? 'text-rose-500' : 'text-slate-400'}`} />
+                      <span>Auto-Remove @gmail from Extension</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleAutoRemoveGmailExtension(camp.id, camp.autoRemoveGmailExtension !== false, e)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        camp.autoRemoveGmailExtension !== false ? 'bg-rose-600' : 'bg-slate-300'
+                      }`}
+                      title={camp.autoRemoveGmailExtension !== false ? 'Auto-Remove ON: @gmail.com leads from extension are automatically dropped' : 'Auto-Remove OFF: @gmail.com leads from extension are kept'}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          camp.autoRemoveGmailExtension !== false ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
                   <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                       Contacts: <span className="text-slate-900 font-bold">{camp.metrics?.total || 0}</span> | Sent: <span className="text-slate-900 font-bold">{camp.metrics?.sent || 0}</span>
@@ -1191,6 +1274,11 @@ export const Campaigns: React.FC = () => {
                       <span className="inline-flex items-center gap-1">
                         <Zap className={`w-3.5 h-3.5 ${campaignDetails.autoSendExtension ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
                         <span>Auto-Send Extension: <strong className={campaignDetails.autoSendExtension ? 'text-emerald-700 font-bold' : 'text-slate-600'}>{campaignDetails.autoSendExtension ? 'ON' : 'OFF'}</strong></span>
+                      </span>
+                      <span className="hidden sm:inline">•</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Mail className={`w-3.5 h-3.5 ${campaignDetails.autoRemoveGmailExtension !== false ? 'text-rose-500' : 'text-slate-400'}`} />
+                        <span>Auto-Remove @gmail: <strong className={campaignDetails.autoRemoveGmailExtension !== false ? 'text-rose-700 font-bold' : 'text-slate-600'}>{campaignDetails.autoRemoveGmailExtension !== false ? 'ON' : 'OFF'}</strong></span>
                       </span>
                     </span>
                   </div>
@@ -1272,6 +1360,66 @@ export const Campaigns: React.FC = () => {
                   >
                     <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                     Delete Failed / Skipped ({campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0})
+                  </button>
+
+                  {/* Remove @gmail.com Contacts Button */}
+                  {(() => {
+                    const gmailCount = (campaignDetails.contacts || []).filter(
+                      c => isGmailEmail(c.email) && c.status !== 'SENT'
+                    ).length;
+                    const readyGmailCount = (campaignDetails.contacts || []).filter(
+                      c => isGmailEmail(c.email) && c.status === 'READY_TO_SEND'
+                    ).length;
+
+                    return (
+                      <button
+                        onClick={handleOpenGmailModal}
+                        disabled={campaignDetails.status === 'SENDING' || gmailCount === 0 || isDeletingGmail}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                        title={gmailCount > 0 ? `Review & remove ${gmailCount} @gmail.com contacts (including ${readyGmailCount} Ready)` : 'No @gmail.com contacts to remove'}
+                      >
+                        <UserMinus className="w-3.5 h-3.5 text-rose-600" />
+                        <span>
+                          {isDeletingGmail ? 'Removing...' : `Remove @gmail.com (${gmailCount})`}
+                        </span>
+                      </button>
+                    );
+                  })()}
+
+                  {/* Toggle: Auto-Remove @gmail from extension */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleAutoRemoveGmailExtension(campaignDetails.id, campaignDetails.autoRemoveGmailExtension !== false)}
+                    className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs ${
+                      campaignDetails.autoRemoveGmailExtension !== false
+                        ? 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
+                        : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
+                    }`}
+                    title={campaignDetails.autoRemoveGmailExtension !== false ? 'Auto-Remove @gmail ON: Personal @gmail.com leads from Chrome extension are automatically dropped' : 'Auto-Remove @gmail OFF: Personal @gmail.com leads from Chrome extension will be added'}
+                  >
+                    <Mail className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Auto-Remove @gmail: <strong>{campaignDetails.autoRemoveGmailExtension !== false ? 'ON' : 'OFF'}</strong></span>
+                  </button>
+
+                  {/* Export Contacts CSV */}
+                  <button
+                    onClick={() => handleExportCampaignCsv(campaignDetails.id, campaignDetails.name)}
+                    disabled={isExportingCsv}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+                    title="Export contacts as CSV file"
+                  >
+                    <Download className="w-3.5 h-3.5 text-slate-600" />
+                    Export CSV
+                  </button>
+
+                  {/* Share Contacts */}
+                  <button
+                    onClick={() => openShareModal({ id: campaignDetails.id, name: campaignDetails.name, contactsCount: campaignDetails.contacts?.length || 0 })}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+                    title="Share campaign contacts with others via link or code"
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-indigo-600" />
+                    Share Contacts
                   </button>
                 </div>
               </div>
@@ -1359,6 +1507,32 @@ export const Campaigns: React.FC = () => {
                         />
                       </button>
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-rose-600" />
+                        Auto-Remove @gmail from Extension
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">
+                        Automatically drop personal @gmail.com addresses when leads are synced from extension
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditAutoRemoveGmailExtension(!editAutoRemoveGmailExtension)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        editAutoRemoveGmailExtension ? 'bg-rose-600' : 'bg-slate-300'
+                      }`}
+                      title={editAutoRemoveGmailExtension ? 'Auto-Remove @gmail ON' : 'Auto-Remove @gmail OFF'}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          editAutoRemoveGmailExtension ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
                   </div>
 
                   {editTemplateType === 'SAVED_TEMPLATE' && (

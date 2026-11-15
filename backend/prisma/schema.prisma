@@ -81,6 +81,7 @@ model Campaign {
   templateSubject String?
   templateBody    String?
   autoSendExtension Boolean      @default(false)
+  autoRemoveGmailExtension Boolean @default(true)
   contacts        Contact[]
   emailHistory    EmailHistory[]
   createdAt       DateTime       @default(now())

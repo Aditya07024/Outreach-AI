@@ -233,7 +233,7 @@ router.get('/dashboard-stats', async (req: AuthenticatedRequest, res) => {
 router.post('/', async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.id;
-    const { name, description, resumeId, templateType, templateSubject, templateBody, autoSendExtension } = req.body;
+    const { name, description, resumeId, templateType, templateSubject, templateBody, autoSendExtension, autoRemoveGmailExtension } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Campaign name is required.' });
     }
@@ -248,10 +248,11 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         templateSubject: templateSubject || null,
         templateBody: templateBody || null,
         autoSendExtension: Boolean(autoSendExtension),
+        autoRemoveGmailExtension: autoRemoveGmailExtension !== undefined ? Boolean(autoRemoveGmailExtension) : true,
       },
     });
 
-    await logger.info('API', `Created campaign: "${name}" with template type: ${campaign.templateType}, autoSendExtension: ${campaign.autoSendExtension}`);
+    await logger.info('API', `Created campaign: "${name}" with template type: ${campaign.templateType}, autoSendExtension: ${campaign.autoSendExtension}, autoRemoveGmailExtension: ${campaign.autoRemoveGmailExtension}`);
     res.status(201).json(campaign);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to create campaign' });
@@ -637,7 +638,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
     const userId = req.user!.id;
-    const { name, description, resumeId, status, templateType, templateSubject, templateBody, autoSendExtension } = req.body;
+    const { name, description, resumeId, status, templateType, templateSubject, templateBody, autoSendExtension, autoRemoveGmailExtension } = req.body;
 
     const existing = await prisma.campaign.findFirst({
       where: { id, userId }
@@ -658,6 +659,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
         templateSubject,
         templateBody,
         autoSendExtension: autoSendExtension !== undefined ? Boolean(autoSendExtension) : undefined,
+        autoRemoveGmailExtension: autoRemoveGmailExtension !== undefined ? Boolean(autoRemoveGmailExtension) : undefined,
       },
     });
 

@@ -58,6 +58,7 @@ interface Campaign {
   status: string;
   contactCount: number;
   autoSendExtension?: boolean;
+  autoRemoveGmailExtension?: boolean;
 }
 
 type ScanStatus = 'idle' | 'scanning' | 'done' | 'error';
@@ -795,21 +796,30 @@ export const ScanView: React.FC = () => {
             </div>
 
             {/* Sync Feedback Message */}
-            {selectedCampaign?.autoSendExtension ? (
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 animate-fade-in">
-                <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />
-                <span className="text-[10px] leading-relaxed font-medium">
-                  Auto-Send ON: Contacts are auto-generated & sent via Gmail!
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 animate-fade-in">
-                <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="text-[10px] leading-relaxed">
-                  All found contacts are automatically saved to your campaign.
-                </span>
-              </div>
-            )}
+            <div className="space-y-1.5">
+              {selectedCampaign?.autoSendExtension ? (
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 animate-fade-in">
+                  <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />
+                  <span className="text-[10px] leading-relaxed font-medium">
+                    Auto-Send ON: Contacts are auto-generated & sent via Gmail!
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 animate-fade-in">
+                  <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="text-[10px] leading-relaxed">
+                    All found contacts are automatically saved to your campaign.
+                  </span>
+                </div>
+              )}
+
+              {selectedCampaign?.autoRemoveGmailExtension !== false && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[9.5px]">
+                  <Mail className="w-3 h-3 text-rose-400 flex-shrink-0" />
+                  <span>Auto-filtering: @gmail.com leads are skipped for this campaign</span>
+                </div>
+              )}
+            </div>
 
             {/* Open Dashboard link */}
             <button

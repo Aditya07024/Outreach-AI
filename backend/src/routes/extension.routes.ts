@@ -55,9 +55,10 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
         continue;
       }
 
-      // If excludeGmail toggle is active, skip any @gmail.com or @googlemail.com address
+      // If campaign has autoRemoveGmailExtension enabled OR excludeGmail toggle is active, skip any @gmail.com or @googlemail.com address
       const isGmail = email.endsWith('@gmail.com') || email.endsWith('@googlemail.com');
-      if (Boolean(excludeGmail) && isGmail) {
+      const shouldFilterGmail = campaign.autoRemoveGmailExtension || Boolean(excludeGmail);
+      if (shouldFilterGmail && isGmail) {
         skippedGmailCount++;
         continue;
       }
@@ -252,6 +253,7 @@ router.get('/campaigns', async (req: AuthenticatedRequest, res) => {
         name: true,
         status: true,
         autoSendExtension: true,
+        autoRemoveGmailExtension: true,
         _count: { select: { contacts: true } }
       }
     });
@@ -261,6 +263,7 @@ router.get('/campaigns', async (req: AuthenticatedRequest, res) => {
       name: c.name,
       status: c.status,
       autoSendExtension: c.autoSendExtension,
+      autoRemoveGmailExtension: c.autoRemoveGmailExtension,
       contactCount: c._count.contacts,
     })));
   } catch (error: any) {
@@ -289,6 +292,7 @@ router.post('/campaigns', async (req: AuthenticatedRequest, res) => {
         userId,
         templateType: 'AI_GENERATED',
         autoSendExtension: false,
+        autoRemoveGmailExtension: true,
       }
     });
 
@@ -299,6 +303,7 @@ router.post('/campaigns', async (req: AuthenticatedRequest, res) => {
       name: campaign.name,
       status: campaign.status,
       autoSendExtension: campaign.autoSendExtension,
+      autoRemoveGmailExtension: campaign.autoRemoveGmailExtension,
       contactCount: 0,
     });
   } catch (error: any) {

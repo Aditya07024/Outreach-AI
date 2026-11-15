@@ -64,6 +64,7 @@ export interface Campaign {
   templateSubject?: string | null;
   templateBody?: string | null;
   autoSendExtension?: boolean;
+  autoRemoveGmailExtension?: boolean;
   contacts?: Contact[];
   matchingContacts?: Contact[];
   createdAt: string;
