@@ -242,7 +242,13 @@ export class GmailService {
       '',
     ];
 
-    const bodyHtml = body.replace(/\n/g, '<br />');
+    const unsubscribeNotice = "If you'd prefer not to hear from me regarding this, please reply 'unsubscribe' and I will not contact you again.";
+    const hasUnsubscribe = body.toLowerCase().includes('unsubscribe');
+    const footerHtml = hasUnsubscribe
+      ? ''
+      : `<br /><br /><div style="font-size: 9.5px; color: #a1a1aa; margin-top: 24px; line-height: 1.4; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">${unsubscribeNotice}</div>`;
+
+    const bodyHtml = body.replace(/\n/g, '<br />') + footerHtml;
     const bodyBase64 = Buffer.from(bodyHtml).toString('base64');
     const formattedBody = bodyBase64.match(/.{1,76}/g)?.join('\r\n') || bodyBase64;
 

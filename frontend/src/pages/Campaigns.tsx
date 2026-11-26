@@ -2049,6 +2049,12 @@ export const Campaigns: React.FC = () => {
                           rows={10}
                           className="rounded-xl border border-slate-300 bg-slate-50 p-3.5 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono leading-relaxed transition-colors"
                         />
+                        <div className="flex items-start gap-1.5 p-2 bg-slate-50 border border-slate-200/80 rounded-lg">
+                          <span className="text-[9.5px] text-slate-400 font-semibold uppercase tracking-wider shrink-0">Footer:</span>
+                          <span className="text-[9.5px] text-slate-400 italic leading-tight">
+                            "If you'd prefer not to hear from me regarding this, please reply 'unsubscribe' and I will not contact you again."
+                          </span>
+                        </div>
                       </div>
                     </div>
 
