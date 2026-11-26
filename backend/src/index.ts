@@ -17,6 +17,7 @@ import logsRoutes from './routes/logs.routes';
 import healthRoutes from './routes/health.routes';
 import adminRoutes from './routes/admin.routes';
 import extensionRoutes from './routes/extension.routes';
+import unsubscribeRoutes from './routes/unsubscribe.routes';
 
 // Services
 import { SendingEngine } from './services/sending.engine';
@@ -53,6 +54,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/health', healthRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/waitlist', healthRoutes);
+app.use('/api/unsubscribe', unsubscribeRoutes);
 
 // Register Protected Routes
 app.use('/api/auth/google', authRoutes);

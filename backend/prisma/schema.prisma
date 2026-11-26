@@ -152,3 +152,14 @@ model WaitlistLead {
   notes     String?
   createdAt DateTime @default(now())
 }
+
+model UnsubscribeFeedback {
+  id          Int      @id @default(autoincrement())
+  email       String
+  campaignId  Int?
+  reason      String?
+  feedback    String?
+  createdAt   DateTime @default(now())
+
+  @@index([email])
+}

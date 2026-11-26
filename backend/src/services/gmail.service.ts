@@ -242,7 +242,9 @@ export class GmailService {
       '',
     ];
 
-    const unsubscribeNotice = "If you'd prefer not to hear from me regarding this, please reply 'unsubscribe' and I will not contact you again.";
+    const appUrl = (process.env.APP_URL || process.env.FRONTEND_URL || 'https://outreach.aditya07.me').replace(/\/+$/, '');
+    const unsubscribeUrl = `${appUrl}/unsubscribe?email=${encodeURIComponent(to)}`;
+    const unsubscribeNotice = `If you'd prefer not to hear from me regarding this, please reply 'unsubscribe' or <a href="${unsubscribeUrl}" target="_blank" rel="noopener noreferrer" style="color: #a1a1aa; text-decoration: underline;">click here to unsubscribe</a> and I will not contact you again.`;
     const hasUnsubscribe = body.toLowerCase().includes('unsubscribe');
     const footerHtml = hasUnsubscribe
       ? ''

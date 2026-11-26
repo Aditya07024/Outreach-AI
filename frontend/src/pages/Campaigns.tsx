@@ -2052,7 +2052,7 @@ export const Campaigns: React.FC = () => {
                         <div className="flex items-start gap-1.5 p-2 bg-slate-50 border border-slate-200/80 rounded-lg">
                           <span className="text-[9.5px] text-slate-400 font-semibold uppercase tracking-wider shrink-0">Footer:</span>
                           <span className="text-[9.5px] text-slate-400 italic leading-tight">
-                            "If you'd prefer not to hear from me regarding this, please reply 'unsubscribe' and I will not contact you again."
+                            "If you'd prefer not to hear from me regarding this, please reply 'unsubscribe' or <u className="underline cursor-pointer">click here to unsubscribe</u> and I will not contact you again."
                           </span>
                         </div>
                       </div>

@@ -8,6 +8,7 @@ import { LandingPage } from './pages/LandingPage';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsAndConditions } from './pages/TermsAndConditions';
 import { SupportPage } from './pages/SupportPage';
+import { UnsubscribePage } from './pages/UnsubscribePage';
 
 // Views
 import { Dashboard } from './pages/Dashboard';
@@ -363,6 +364,7 @@ export const App: React.FC = () => {
         {/* Public static content routes */}
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/unsubscribe" element={<UnsubscribePage />} />
 
         {!isAuthenticated ? (
           <>
