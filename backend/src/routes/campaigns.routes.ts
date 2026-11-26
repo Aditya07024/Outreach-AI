@@ -775,6 +775,41 @@ router.post('/:id/retry', async (req: AuthenticatedRequest, res) => {
   }
 });
 
+// Skip queue delay for next email (one-time skip)
+router.post('/:id/skip-queue', async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = Number(req.params.id);
+    const userId = req.user!.id;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, userId }
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
+    // Check if there are any ready contacts
+    const readyCount = await prisma.contact.count({
+      where: {
+        campaignId: id,
+        status: { in: ['READY_TO_SEND', 'FAILED'] },
+        emailSubject: { not: null },
+        emailBody: { not: null },
+      }
+    });
+
+    if (readyCount === 0) {
+      return res.status(400).json({ error: 'No ready emails in queue to send. Generate emails first.' });
+    }
+
+    const result = await SendingEngine.skipNextQueue(id, userId);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to skip queue for next email' });
+  }
+});
+
 // AI Batch Generation endpoint
 router.post('/:id/generate', async (req: AuthenticatedRequest, res) => {
   try {

@@ -253,5 +253,25 @@ async function sendTabMessageWithFallback(tabId: number, message: any): Promise<
   }
 }
 
+// On initial extension installation: automatically open Outreach AI login tab
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === 'install') {
+    try {
+      const token = await getToken();
+      if (!token) {
+        chrome.tabs.create({
+          url: 'https://outreach.aditya07.me/extension-login',
+          active: true,
+        });
+      }
+    } catch (err) {
+      chrome.tabs.create({
+        url: 'https://outreach.aditya07.me/extension-login',
+        active: true,
+      });
+    }
+  }
+});
+
 // Log that service worker is running
 console.log('[Outreach AI] Background service worker loaded');

@@ -23,7 +23,8 @@ import {
   FileSpreadsheet,
   ExternalLink,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  FastForward
 } from 'lucide-react';
 import { Campaign, Contact, Resume } from '../types';
 import { ImportWizard } from '../components/ImportWizard';
@@ -92,6 +93,7 @@ export const Campaigns: React.FC = () => {
 
   // Active generation tracking
   const [isGeneratingEmails, setIsGeneratingEmails] = useState(false);
+  const [isSkippingQueue, setIsSkippingQueue] = useState(false);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
 
   const fetchActivityLogs = async () => {
@@ -588,6 +590,27 @@ export const Campaigns: React.FC = () => {
         setIsGeneratingEmails(false);
       }
       alert(err.message || 'Operation failed.');
+    }
+  };
+
+  const handleSkipQueue = async () => {
+    if (!selectedCampId) return;
+    setIsSkippingQueue(true);
+    try {
+      const response = await fetch(`/api/campaigns/${selectedCampId}/skip-queue`, {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to skip queue for next email');
+      }
+      fetchCampaignDetails(selectedCampId);
+      fetchCampaigns();
+      fetchActivityLogs();
+    } catch (err: any) {
+      alert(err.message || 'Failed to skip queue for next email');
+    } finally {
+      setIsSkippingQueue(false);
     }
   };
 
@@ -1317,6 +1340,17 @@ export const Campaigns: React.FC = () => {
                     </button>
                   )}
 
+                  {/* Skip Queue Button for next email (one-time skip) */}
+                  <button
+                    onClick={handleSkipQueue}
+                    disabled={isSkippingQueue || (campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND' || c.status === 'FAILED').length || 0) === 0}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Skip queue delay for the next email only (single use). Normal delays resume for following emails."
+                  >
+                    <FastForward className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>{isSkippingQueue ? 'Skipping...' : 'Skip Queue (Next Email)'}</span>
+                  </button>
+
                   <button
                     onClick={() => triggerAction('generate')}
                     className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
@@ -1618,13 +1652,24 @@ export const Campaigns: React.FC = () => {
                   const completed = sent + failed;
                   const percent = Math.min(100, Math.round((completed / total) * 100));
                   return (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-2.5 shadow-sm">
-                      <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-wider">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3 shadow-sm">
+                      <div className="flex flex-wrap justify-between items-center gap-2 text-[10px] uppercase font-bold tracking-wider">
                         <span className="text-emerald-700 animate-pulse flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
                           Campaign Sending Sequence Active...
                         </span>
-                        <span className="text-slate-500 font-mono">{completed} / {total} Delivered ({percent}%)</span>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={handleSkipQueue}
+                            disabled={isSkippingQueue || (campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND' || c.status === 'FAILED').length || 0) === 0}
+                            className="flex items-center gap-1 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all shadow-xs cursor-pointer disabled:opacity-40"
+                            title="Skip the queue wait time for the next email only"
+                          >
+                            <FastForward className="w-3 h-3 text-indigo-600" />
+                            <span>{isSkippingQueue ? 'Skipping...' : 'Skip Queue (Next Email)'}</span>
+                          </button>
+                          <span className="text-slate-500 font-mono">{completed} / {total} Delivered ({percent}%)</span>
+                        </div>
                       </div>
                       <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                         <div 

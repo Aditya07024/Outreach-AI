@@ -9,6 +9,7 @@ import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsAndConditions } from './pages/TermsAndConditions';
 import { SupportPage } from './pages/SupportPage';
 import { UnsubscribePage } from './pages/UnsubscribePage';
+import { ExtensionLogin } from './pages/ExtensionLogin';
 
 // Views
 import { Dashboard } from './pages/Dashboard';
@@ -365,6 +366,8 @@ export const App: React.FC = () => {
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/unsubscribe" element={<UnsubscribePage />} />
+        <Route path="/extension-login" element={<ExtensionLogin />} />
+        <Route path="/extension-login" element={<ExtensionLogin />} />
 
         {!isAuthenticated ? (
           <>

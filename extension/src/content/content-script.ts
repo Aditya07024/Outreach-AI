@@ -49,6 +49,68 @@ interface ScanResponse {
 }
 
 /**
+ * Web Authentication Bridge
+ * Automatically handles login handshake with Outreach AI web dashboard (/extension-login)
+ */
+window.addEventListener('message', async (event) => {
+  if (event.source !== window) return;
+
+  // Handle auth request from Outreach AI website
+  if (event.data?.type === 'OUTREACH_EXTENSION_AUTH_REQUEST' && event.data?.token) {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: 'LOGIN',
+        token: event.data.token,
+      });
+
+      if (response?.success) {
+        window.postMessage(
+          {
+            type: 'OUTREACH_EXTENSION_AUTH_SUCCESS',
+            user: response.user,
+          },
+          '*'
+        );
+      } else {
+        window.postMessage(
+          {
+            type: 'OUTREACH_EXTENSION_AUTH_ERROR',
+            error: response?.error || 'Failed to authenticate extension',
+          },
+          '*'
+        );
+      }
+    } catch (err: any) {
+      window.postMessage(
+        {
+          type: 'OUTREACH_EXTENSION_AUTH_ERROR',
+          error: err.message || 'Failed to communicate with extension',
+        },
+        '*'
+      );
+    }
+  }
+
+  // Handle ping to detect extension presence
+  if (event.data?.type === 'OUTREACH_EXTENSION_PING') {
+    window.postMessage(
+      {
+        type: 'OUTREACH_EXTENSION_PONG',
+      },
+      '*'
+    );
+  }
+});
+
+// Announce presence on load if on Outreach AI website
+try {
+  const host = window.location.hostname;
+  if (host.includes('outreach') || host.includes('localhost')) {
+    window.postMessage({ type: 'OUTREACH_EXTENSION_PONG' }, '*');
+  }
+} catch (e) {}
+
+/**
  * Handle messages from popup or background script
  */
 chrome.runtime.onMessage.addListener((message: ScanRequest, _sender, sendResponse) => {

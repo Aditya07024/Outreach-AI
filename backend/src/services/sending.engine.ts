@@ -39,6 +39,8 @@ export class SendingEngine {
   private static isRunning = false;
   private static timerId: NodeJS.Timeout | null = null;
   private static activeTimeout: NodeJS.Timeout | null = null;
+  private static activeTimeoutResolve: (() => void) | null = null;
+  private static skipNextQueueDelay = false;
 
   /**
    * Start the background scheduler loop.
@@ -68,6 +70,11 @@ export class SendingEngine {
       clearTimeout(this.activeTimeout);
       this.activeTimeout = null;
     }
+    if (this.activeTimeoutResolve) {
+      this.activeTimeoutResolve();
+      this.activeTimeoutResolve = null;
+    }
+    this.skipNextQueueDelay = false;
     console.log('[SendingEngine] Background scheduler stopped.');
   }
 
@@ -310,24 +317,37 @@ export class SendingEngine {
         }
       }
 
-      // 4. Calculate and apply random delay
-      const delayMin = settings?.delayMin ?? 60;
-      const delayMax = settings?.delayMax ?? 180;
-      const randomDelaySeconds = Math.floor(Math.random() * (delayMax - delayMin + 1)) + delayMin;
+      // 4. Calculate and apply random delay (or consume one-time skip if requested)
+      if (this.skipNextQueueDelay) {
+        this.skipNextQueueDelay = false; // Reset: single press skips one time only
+        await logger.info(
+          'EMAIL_SENDING',
+          'Single-use queue skip consumed. Proceeding to next email without delay.',
+          null,
+          campaign.userId || undefined
+        );
+      } else {
+        const delayMin = settings?.delayMin ?? 60;
+        const delayMax = settings?.delayMax ?? 180;
+        const randomDelaySeconds = Math.floor(Math.random() * (delayMax - delayMin + 1)) + delayMin;
 
-      await logger.info(
-        'EMAIL_SENDING',
-        `Queue waiting for ${randomDelaySeconds} seconds before next send...`,
-        null,
-        campaign.userId || undefined
-      );
+        await logger.info(
+          'EMAIL_SENDING',
+          `Queue waiting for ${randomDelaySeconds} seconds before next send...`,
+          null,
+          campaign.userId || undefined
+        );
 
-      // Wait for the random delay in a non-blocking timeout
-      await new Promise<void>((resolve) => {
-        this.activeTimeout = setTimeout(() => {
-          resolve();
-        }, randomDelaySeconds * 1000);
-      });
+        // Wait for the random delay in a non-blocking timeout
+        await new Promise<void>((resolve) => {
+          this.activeTimeoutResolve = resolve;
+          this.activeTimeout = setTimeout(() => {
+            this.activeTimeout = null;
+            this.activeTimeoutResolve = null;
+            resolve();
+          }, randomDelaySeconds * 1000);
+        });
+      }
 
     } catch (error: any) {
       console.error('Critical error in sending loop:', error);
@@ -335,6 +355,7 @@ export class SendingEngine {
     } finally {
       this.isRunning = false;
       this.activeTimeout = null;
+      this.activeTimeoutResolve = null;
     }
   }
 
@@ -430,5 +451,81 @@ export class SendingEngine {
       null,
       campaign.userId || undefined
     );
+  }
+
+  /**
+   * Skips the queue wait time for the next email (one-time only).
+   * - If currently in a delay sleep, wakes up immediately.
+   * - If between loops, sets skipNextQueueDelay = true so the next email proceeds with 0s delay.
+   * - Once the next email is handled, normal delays automatically resume.
+   */
+  static async skipNextQueue(campaignId?: number, userId?: number): Promise<{ success: boolean; message: string }> {
+    if (campaignId) {
+      const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
+      if (campaign && campaign.status !== 'SENDING') {
+        const status = await GmailService.getConnectionStatus(campaign.userId || 1);
+        if (!status.connected) {
+          throw new Error('Please connect your Gmail account before starting the campaign.');
+        }
+        await prisma.campaign.update({
+          where: { id: campaignId },
+          data: { status: 'SENDING' },
+        });
+      }
+    }
+
+    // Case 1: An active delay timeout is currently running
+    if (this.activeTimeout && this.activeTimeoutResolve) {
+      clearTimeout(this.activeTimeout);
+      this.activeTimeout = null;
+      const resolve = this.activeTimeoutResolve;
+      this.activeTimeoutResolve = null;
+      this.skipNextQueueDelay = false;
+
+      await logger.info(
+        'EMAIL_SENDING',
+        'Queue wait skipped by user! Triggering next email immediately.',
+        null,
+        userId
+      );
+
+      resolve();
+
+      setTimeout(() => {
+        if (!this.isRunning) {
+          this.processQueue().catch((err) => {
+            console.error('Error running queue after skipping wait:', err);
+          });
+        }
+      }, 50);
+
+      return {
+        success: true,
+        message: 'Active queue wait skipped! Sending next email immediately.',
+      };
+    }
+
+    // Case 2: Set one-time skip flag for the next email
+    this.skipNextQueueDelay = true;
+
+    await logger.info(
+      'EMAIL_SENDING',
+      'One-time queue delay skip armed for next email.',
+      null,
+      userId
+    );
+
+    if (!this.isRunning) {
+      setTimeout(() => {
+        this.processQueue().catch((err) => {
+          console.error('Error triggering queue after skipNextQueue:', err);
+        });
+      }, 50);
+    }
+
+    return {
+      success: true,
+      message: 'Queue delay skipped for the next email. Normal delays will resume afterwards.',
+    };
   }
 }

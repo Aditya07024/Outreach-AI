@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send, Lock, Sparkles, Copy, Check, ShieldCheck, Flame, Gauge, Clock } from 'lucide-react';
+import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send, Lock, Sparkles, Copy, Check, ShieldCheck, Flame, Gauge, Clock, ArrowRight } from 'lucide-react';
 import { Settings as SettingsType, Resume, QuotaStats } from '../types';
 import { GoogleVerificationModal } from '../components/GoogleVerificationModal';
 
@@ -435,22 +435,30 @@ export const Settings: React.FC<SettingsProps> = ({
                 <KeyRound className="w-4 h-4 text-slate-600" />
                 Chrome Extension Connection
               </h3>
-              <a
-                href="https://chromewebstore.google.com/detail/outreach-ai-%E2%80%94-email-extra/lghahidlejpibjojgiokdghjjpmkhcnc"
-                target="_blank"
-                rel="noreferrer"
-                className="text-[10px] text-slate-800 hover:text-slate-900 font-bold flex items-center gap-1 transition-colors border border-slate-300 bg-slate-100 px-2.5 py-0.5 rounded-full"
-              >
-                Web Store <Send className="w-2.5 h-2.5" />
-              </a>
+              <div className="flex items-center gap-2">
+                <a
+                  href="/extension-login"
+                  className="text-[10px] text-white bg-slate-900 hover:bg-slate-800 font-bold flex items-center gap-1 transition-colors px-3 py-1 rounded-full shadow-xs"
+                >
+                  Connect 1-Click <ArrowRight className="w-2.5 h-2.5" />
+                </a>
+                <a
+                  href="https://chromewebstore.google.com/detail/outreach-ai-%E2%80%94-email-extra/lghahidlejpibjojgiokdghjjpmkhcnc"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] text-slate-800 hover:text-slate-900 font-bold flex items-center gap-1 transition-colors border border-slate-300 bg-slate-100 px-2.5 py-1 rounded-full"
+                >
+                  Web Store <Send className="w-2.5 h-2.5" />
+                </a>
+              </div>
             </div>
             <p className="text-[10px] text-slate-500 leading-relaxed">
-              Use this token to connect the Chrome Extension to your account.
+              When the extension is installed, a login tab automatically opens to link your account in 1 click. You can also connect anytime using the button above.
             </p>
 
             <div className="space-y-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">JWT Access Token</label>
+                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Manual JWT Access Token (Fallback)</label>
                 <div className="relative">
                   <input
                     type="password"
@@ -478,7 +486,7 @@ export const Settings: React.FC<SettingsProps> = ({
                 </div>
               </div>
               <div className="text-[9px] text-slate-500 leading-relaxed">
-                Instructions:
+                Seamless Setup:
                 <ol className="list-decimal pl-3 mt-1 space-y-0.5">
                   <li>
                     Install the{' '}
@@ -486,13 +494,13 @@ export const Settings: React.FC<SettingsProps> = ({
                       href="https://chromewebstore.google.com/detail/outreach-ai-%E2%80%94-email-extra/lghahidlejpibjojgiokdghjjpmkhcnc"
                       target="_blank"
                       rel="noreferrer"
-                      className="text-purple-400 hover:text-purple-300 font-semibold underline"
+                      className="text-purple-600 hover:text-purple-700 font-semibold underline"
                     >
                       Outreach AI Chrome Extension
                     </a>.
                   </li>
-                  <li>Click the extension icon in your toolbar.</li>
-                  <li>Paste this JWT access token and click Connect.</li>
+                  <li>A tab will automatically open asking to connect with your active Outreach AI login.</li>
+                  <li>Your extension links automatically without having to copy-paste any token or link code!</li>
                 </ol>
               </div>
             </div>

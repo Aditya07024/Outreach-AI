@@ -48,6 +48,17 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     checkAuth();
+
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      if (changes.outreach_jwt_token) {
+        checkAuth();
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
   }, [checkAuth]);
 
   /** Handle successful login */
