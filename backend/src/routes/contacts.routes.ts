@@ -7,6 +7,7 @@ import prisma from '../utils/prisma';
 import { logger } from '../utils/logger';
 import { AIService } from '../services/ai.service';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { isEmailExcluded } from '../utils/exclusion';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/temp/' });
@@ -149,6 +150,8 @@ router.post('/import-csv', upload.single('file'), async (req: AuthenticatedReque
             continue; // Skip exact duplicates in the same campaign to satisfy unique constraints
           }
 
+          const isExcluded = isEmailExcluded(email, campaign.excludedEmails) || isEmailExcluded(email, (settings as any).excludedEmails);
+
           try {
             await prisma.contact.create({
               data: {
@@ -163,6 +166,7 @@ router.post('/import-csv', upload.single('file'), async (req: AuthenticatedReque
                 linkedin,
                 country,
                 isTechnical,
+                status: isExcluded ? 'SKIPPED' : 'PENDING',
                 duplicateStatus: dupStatus === 'NONE' ? null : dupStatus,
               },
             });
@@ -229,6 +233,8 @@ router.post('/import-paste', async (req: AuthenticatedRequest, res) => {
     let duplicateCount = 0;
     let errorCount = 0;
 
+    const userSettings = await prisma.settings.findUnique({ where: { id: userId } });
+
     for (const email of emails) {
       const dupStatus = await getDuplicateStatus(email, null, campaignIdNum);
       if (dupStatus === 'DUPLICATE_EMAIL') {
@@ -236,11 +242,14 @@ router.post('/import-paste', async (req: AuthenticatedRequest, res) => {
         continue;
       }
 
+      const isExcluded = isEmailExcluded(email, campaign.excludedEmails) || isEmailExcluded(email, userSettings?.excludedEmails);
+
       try {
         await prisma.contact.create({
           data: {
             campaignId: campaignIdNum,
             email,
+            status: isExcluded ? 'SKIPPED' : 'PENDING',
             duplicateStatus: dupStatus === 'NONE' ? null : dupStatus,
           },
         });
@@ -293,6 +302,9 @@ router.post('/import-manual', async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ error: 'A contact with this email already exists in this campaign.' });
     }
 
+    const userSettings = await prisma.settings.findUnique({ where: { id: userId } });
+    const isExcluded = isEmailExcluded(email, campaign.excludedEmails) || isEmailExcluded(email, userSettings?.excludedEmails);
+
     const contact = await prisma.contact.create({
       data: {
         campaignId: campaignIdNum,
@@ -306,6 +318,7 @@ router.post('/import-manual', async (req: AuthenticatedRequest, res) => {
         linkedin,
         country,
         isTechnical,
+        status: isExcluded ? 'SKIPPED' : 'PENDING',
         duplicateStatus: dupStatus === 'NONE' ? null : dupStatus,
       },
     });

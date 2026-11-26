@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send, Lock, Sparkles, Copy, Check, ShieldCheck, Flame, Gauge, Clock, ArrowRight } from 'lucide-react';
+import { Mail, CheckCircle2, AlertTriangle, KeyRound, Cpu, Sliders, Shield, Send, Lock, Sparkles, Copy, Check, ShieldCheck, Flame, Gauge, Clock, ArrowRight, Ban } from 'lucide-react';
 import { Settings as SettingsType, Resume, QuotaStats } from '../types';
 import { GoogleVerificationModal } from '../components/GoogleVerificationModal';
 
@@ -798,6 +798,32 @@ export const Settings: React.FC<SettingsProps> = ({
                 <label htmlFor="technicalFilter" className="text-xs font-medium text-slate-700 cursor-pointer select-none">
                   Enable Recruiter Title Technical Filter (only import technical recruiter contacts)
                 </label>
+              </div>
+            </div>
+
+            {/* GLOBAL EXCLUDED DOMAINS & EMAILS */}
+            <div className="border border-slate-200/80 bg-white rounded-2xl p-6 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <Ban className="w-4 h-4 text-rose-600" />
+                  Global Excluded Domains & Emails (Do Not Contact)
+                </h3>
+                <span className="text-[10px] text-slate-400 font-mono">Applies to all campaigns & extension</span>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                  Excluded Domain Endings & Email Addresses
+                </label>
+                <textarea
+                  {...register('excludedEmails')}
+                  rows={3}
+                  placeholder="e.g. .sparixglobal.com, @domain.com, aditya@sparixglobal.com, ceo@company.com"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 font-mono leading-relaxed transition-colors"
+                />
+                <span className="text-[10px] text-slate-500 leading-relaxed">
+                  Enter domain suffixes (like <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded font-mono">.sparixglobal.com</code> or <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded font-mono">@domain.com</code>) or exact email addresses to block, separated by commas or new lines. Emails matching these will never be sent and will be automatically skipped across all campaigns.
+                </span>
               </div>
             </div>
 

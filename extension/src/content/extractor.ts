@@ -128,6 +128,67 @@ export function isGmailAddress(email: string): boolean {
 }
 
 /**
+ * Checks if an email or extracted address matches excluded domain suffixes or specific email addresses
+ * e.g., ".sparixglobal.com", "@domain.com", "aditya@sparixglobal.com"
+ */
+export function parseExcludedPatterns(patternsInput: string | string[] | null | undefined): string[] {
+  if (!patternsInput) return [];
+  if (Array.isArray(patternsInput)) {
+    return patternsInput.map(p => p.trim().toLowerCase()).filter(Boolean);
+  }
+  return patternsInput
+    .split(/[\n,;]+/)
+    .map(p => p.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function isEmailExcluded(email: string, patternsInput: string | string[] | null | undefined): boolean {
+  if (!email || !patternsInput) return false;
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) return false;
+
+  const patterns = parseExcludedPatterns(patternsInput);
+  if (patterns.length === 0) return false;
+
+  const atIndex = normalizedEmail.lastIndexOf('@');
+  const emailDomain = atIndex !== -1 ? normalizedEmail.substring(atIndex + 1) : '';
+
+  for (const rawPattern of patterns) {
+    const pattern = rawPattern.trim().toLowerCase();
+    if (!pattern) continue;
+
+    // 1. Exact match (handles both exact emails and non-@ strings like "aditya.sparixglobal.com")
+    if (normalizedEmail === pattern) return true;
+
+    // 2. Pattern starts with '@' (e.g., "@sparixglobal.com")
+    if (pattern.startsWith('@')) {
+      const targetDomain = pattern.substring(1);
+      if (normalizedEmail.endsWith(pattern)) return true;
+      if (emailDomain === targetDomain || emailDomain.endsWith('.' + targetDomain)) return true;
+      continue;
+    }
+
+    // 3. Pattern starts with '.' (e.g., ".sparixglobal.com")
+    if (pattern.startsWith('.')) {
+      if (normalizedEmail.endsWith(pattern)) return true;
+      const targetDomain = pattern.substring(1);
+      if (normalizedEmail.endsWith('@' + targetDomain)) return true;
+      if (emailDomain === targetDomain || emailDomain.endsWith('.' + targetDomain)) return true;
+      continue;
+    }
+
+    // 4. Plain domain name
+    if (!pattern.includes('@')) {
+      if (normalizedEmail.endsWith('@' + pattern)) return true;
+      if (normalizedEmail.endsWith('.' + pattern)) return true;
+      if (emailDomain === pattern || emailDomain.endsWith('.' + pattern)) return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Validates whether an email is a real business email worth collecting.
  */
 function isValidBusinessEmail(email: string): boolean {

@@ -16,6 +16,7 @@ import { AIService } from '../services/ai.service';
 import { GmailService } from '../services/gmail.service';
 import { SendingEngine } from '../services/sending.engine';
 import { replacePlaceholders } from '../utils/template';
+import { isEmailExcluded } from '../utils/exclusion';
 
 const router = Router();
 
@@ -45,8 +46,11 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
     let importedCount = 0;
     let duplicateCount = 0;
     let skippedGmailCount = 0;
+    let skippedExcludedCount = 0;
     let errorCount = 0;
     const insertedContacts: any[] = [];
+
+    const userSettings = await prisma.settings.findUnique({ where: { id: userId } });
 
     for (const contact of contacts) {
       const email = (contact.email || '').trim().toLowerCase();
@@ -60,6 +64,13 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
       const shouldFilterGmail = campaign.autoRemoveGmailExtension || Boolean(excludeGmail);
       if (shouldFilterGmail && isGmail) {
         skippedGmailCount++;
+        continue;
+      }
+
+      // Check if email matches campaign or global excluded domain suffixes/emails (e.g. .sparixglobal.com, specific emails)
+      const isExcluded = isEmailExcluded(email, campaign.excludedEmails) || isEmailExcluded(email, userSettings?.excludedEmails);
+      if (isExcluded) {
+        skippedExcludedCount++;
         continue;
       }
 
@@ -114,7 +125,7 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
 
     await logger.info(
       'EXTENSION_SYNC',
-      `Extension sync from ${sourceUrl || 'unknown'}: ${importedCount} contacts added, ${duplicateCount} duplicates, ${skippedGmailCount} @gmail.com skipped, ${errorCount} errors. Company: ${companyName || 'unknown'}`
+      `Extension sync from ${sourceUrl || 'unknown'}: ${importedCount} contacts added, ${duplicateCount} duplicates, ${skippedGmailCount} @gmail.com skipped, ${skippedExcludedCount} excluded domain/emails skipped, ${errorCount} errors. Company: ${companyName || 'unknown'}`
     );
 
     // Auto-generate & queue routine if autoSendExtension is enabled on this campaign
@@ -228,6 +239,7 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
       imported: importedCount,
       duplicates: duplicateCount,
       skippedGmail: skippedGmailCount,
+      skippedExcluded: skippedExcludedCount,
       errors: errorCount,
       campaignId: Number(campaignId),
       autoSendActive: Boolean(campaign.autoSendExtension),
@@ -254,6 +266,7 @@ router.get('/campaigns', async (req: AuthenticatedRequest, res) => {
         status: true,
         autoSendExtension: true,
         autoRemoveGmailExtension: true,
+        excludedEmails: true,
         _count: { select: { contacts: true } }
       }
     });
@@ -264,6 +277,7 @@ router.get('/campaigns', async (req: AuthenticatedRequest, res) => {
       status: c.status,
       autoSendExtension: c.autoSendExtension,
       autoRemoveGmailExtension: c.autoRemoveGmailExtension,
+      excludedEmails: c.excludedEmails,
       contactCount: c._count.contacts,
     })));
   } catch (error: any) {

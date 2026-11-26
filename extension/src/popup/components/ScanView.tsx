@@ -31,8 +31,9 @@ import {
   Play,
   Pause,
   Zap,
+  Ban,
 } from 'lucide-react';
-import { isGmailAddress } from '../../content/extractor';
+import { isGmailAddress, isEmailExcluded } from '../../content/extractor';
 
 interface ExtractedEmail {
   email: string;
@@ -59,6 +60,7 @@ interface Campaign {
   contactCount: number;
   autoSendExtension?: boolean;
   autoRemoveGmailExtension?: boolean;
+  excludedEmails?: string;
 }
 
 type ScanStatus = 'idle' | 'scanning' | 'done' | 'error';
@@ -420,7 +422,10 @@ export const ScanView: React.FC = () => {
   /** Sync selected emails to the backend */
   const handleSync = async (emailsToSync?: ExtractedEmail[]) => {
     const listToFilter = emailsToSync || emails.filter(e => selected.has(e.email));
-    const contactsToSync = excludeGmail ? listToFilter.filter(e => !isGmailAddress(e.email)) : listToFilter;
+    let contactsToSync = excludeGmail ? listToFilter.filter(e => !isGmailAddress(e.email)) : listToFilter;
+    if (selectedCampaign?.excludedEmails) {
+      contactsToSync = contactsToSync.filter(e => !isEmailExcluded(e.email, selectedCampaign.excludedEmails));
+    }
     if (contactsToSync.length === 0) return;
     if (!selectedCampaignId) return;
 
@@ -463,8 +468,15 @@ export const ScanView: React.FC = () => {
   };
 
   const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
-  const displayedEmails = excludeGmail ? emails.filter(e => !isGmailAddress(e.email)) : emails;
+  const displayedEmails = emails.filter(e => {
+    if (excludeGmail && isGmailAddress(e.email)) return false;
+    if (selectedCampaign?.excludedEmails && isEmailExcluded(e.email, selectedCampaign.excludedEmails)) return false;
+    return true;
+  });
   const gmailCount = emails.filter(e => isGmailAddress(e.email)).length;
+  const excludedByCampaignCount = selectedCampaign?.excludedEmails
+    ? emails.filter(e => isEmailExcluded(e.email, selectedCampaign.excludedEmails)).length
+    : 0;
 
   if (isDomainAllowed === null) {
     return (
@@ -817,6 +829,13 @@ export const ScanView: React.FC = () => {
                 <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[9.5px]">
                   <Mail className="w-3 h-3 text-rose-400 flex-shrink-0" />
                   <span>Auto-filtering: @gmail.com leads are skipped for this campaign</span>
+                </div>
+              )}
+
+              {Boolean(selectedCampaign?.excludedEmails) && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[9.5px]">
+                  <Ban className="w-3 h-3 text-rose-400 flex-shrink-0" />
+                  <span>Exclusions active: blocked domains/emails (.sparixglobal.com, etc.) are skipped</span>
                 </div>
               )}
             </div>

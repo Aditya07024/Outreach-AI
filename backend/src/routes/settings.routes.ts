@@ -77,6 +77,7 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         warmupWeeklyIncrement: data.warmupWeeklyIncrement ? Number(data.warmupWeeklyIncrement) : 5,
         warmupStartDate: warmupStartDate,
         technicalFilter: data.technicalFilter ?? true,
+        excludedEmails: data.excludedEmails !== undefined ? String(data.excludedEmails) : '',
       },
       create: {
         id: userId,
@@ -98,6 +99,7 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         warmupWeeklyIncrement: data.warmupWeeklyIncrement ? Number(data.warmupWeeklyIncrement) : 5,
         warmupStartDate: warmupStartDate,
         technicalFilter: data.technicalFilter ?? true,
+        excludedEmails: data.excludedEmails !== undefined ? String(data.excludedEmails) : '',
       },
     });
 

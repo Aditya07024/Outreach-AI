@@ -26,6 +26,7 @@ export interface Settings {
   warmupWeeklyIncrement: number;
   warmupStartDate?: string;
   technicalFilter: boolean;
+  excludedEmails?: string;
   quotaStats?: QuotaStats;
 }
 
@@ -65,6 +66,7 @@ export interface Campaign {
   templateBody?: string | null;
   autoSendExtension?: boolean;
   autoRemoveGmailExtension?: boolean;
+  excludedEmails?: string;
   contacts?: Contact[];
   matchingContacts?: Contact[];
   createdAt: string;

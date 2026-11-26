@@ -7,6 +7,7 @@ import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { replacePlaceholders } from '../utils/template';
 import { getDuplicateStatus } from './contacts.routes';
+import { isEmailExcluded } from '../utils/exclusion';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
@@ -233,7 +234,7 @@ router.get('/dashboard-stats', async (req: AuthenticatedRequest, res) => {
 router.post('/', async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.id;
-    const { name, description, resumeId, templateType, templateSubject, templateBody, autoSendExtension, autoRemoveGmailExtension } = req.body;
+    const { name, description, resumeId, templateType, templateSubject, templateBody, autoSendExtension, autoRemoveGmailExtension, excludedEmails } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Campaign name is required.' });
     }
@@ -249,6 +250,7 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         templateBody: templateBody || null,
         autoSendExtension: Boolean(autoSendExtension),
         autoRemoveGmailExtension: autoRemoveGmailExtension !== undefined ? Boolean(autoRemoveGmailExtension) : true,
+        excludedEmails: excludedEmails !== undefined ? String(excludedEmails) : '',
       },
     });
 
@@ -638,7 +640,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = Number(req.params.id);
     const userId = req.user!.id;
-    const { name, description, resumeId, status, templateType, templateSubject, templateBody, autoSendExtension, autoRemoveGmailExtension } = req.body;
+    const { name, description, resumeId, status, templateType, templateSubject, templateBody, autoSendExtension, autoRemoveGmailExtension, excludedEmails } = req.body;
 
     const existing = await prisma.campaign.findFirst({
       where: { id, userId }
@@ -660,6 +662,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
         templateBody,
         autoSendExtension: autoSendExtension !== undefined ? Boolean(autoSendExtension) : undefined,
         autoRemoveGmailExtension: autoRemoveGmailExtension !== undefined ? Boolean(autoRemoveGmailExtension) : undefined,
+        excludedEmails: excludedEmails !== undefined ? String(excludedEmails) : undefined,
       },
     });
 
@@ -807,6 +810,69 @@ router.post('/:id/skip-queue', async (req: AuthenticatedRequest, res) => {
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to skip queue for next email' });
+  }
+});
+
+// Skip all contacts in this campaign that match the excluded domain/email list
+router.post('/:id/skip-excluded', async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = Number(req.params.id);
+    const userId = req.user!.id;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, userId }
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' });
+    }
+
+    const userSettings = await prisma.settings.findUnique({ where: { id: userId } });
+    const campaignExclusions = campaign.excludedEmails || '';
+    const settingsExclusions = userSettings?.excludedEmails || '';
+
+    // Find all contacts in campaign that are not already SENT or UNSUBSCRIBED
+    const contacts = await prisma.contact.findMany({
+      where: {
+        campaignId: id,
+        status: { in: ['PENDING', 'GENERATING', 'READY_TO_SEND', 'FAILED'] }
+      }
+    });
+
+    const matchingIds: number[] = [];
+    const matchingEmails: string[] = [];
+
+    for (const c of contacts) {
+      if (isEmailExcluded(c.email, campaignExclusions) || isEmailExcluded(c.email, settingsExclusions)) {
+        matchingIds.push(c.id);
+        matchingEmails.push(c.email);
+      }
+    }
+
+    if (matchingIds.length > 0) {
+      await prisma.contact.updateMany({
+        where: { id: { in: matchingIds } },
+        data: { status: 'SKIPPED' }
+      });
+
+      await logger.info(
+        'API',
+        `Marked ${matchingIds.length} contact(s) as SKIPPED matching exclusion rules for campaign "${campaign.name}"`,
+        { count: matchingIds.length, emails: matchingEmails },
+        userId
+      );
+    }
+
+    res.json({
+      success: true,
+      skippedCount: matchingIds.length,
+      affectedEmails: matchingEmails,
+      message: matchingIds.length > 0 
+        ? `Marked ${matchingIds.length} contact(s) matching exclusion rules as SKIPPED.`
+        : 'No un-sent contacts matched the exclusion rules.'
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to scan and skip excluded contacts' });
   }
 });
 

@@ -1,6 +1,7 @@
 import prisma from '../utils/prisma';
 import { GmailService } from './gmail.service';
 import { logger } from '../utils/logger';
+import { isEmailExcluded } from '../utils/exclusion';
 import fs from 'fs';
 
 export function getEffectiveDailyLimit(settings: any): { effectiveLimit: number; warmupWeek: number; isWarmup: boolean } {
@@ -181,6 +182,26 @@ export class SendingEngine {
         });
         await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" completed. No more pending contacts.`, null, campaign.userId || undefined);
         this.isRunning = false;
+        return;
+      }
+
+      // Check if contact matches excluded domains or emails (e.g. .sparixglobal.com, specific email addresses)
+      const campaignExclusions = (campaign as any).excludedEmails || '';
+      const settingsExclusions = (settings as any)?.excludedEmails || '';
+      if (isEmailExcluded(contact.email, campaignExclusions) || isEmailExcluded(contact.email, settingsExclusions)) {
+        await prisma.contact.update({
+          where: { id: contact.id },
+          data: { status: 'SKIPPED' },
+        });
+        await logger.warn(
+          'EMAIL_SENDING',
+          `Skipped sending to ${contact.email} (Contact #${contact.id}) for campaign "${campaign.name}" because it matches the excluded domain / email list.`,
+          { contactId: contact.id, email: contact.email },
+          campaign.userId || undefined
+        );
+        // Continue sending queue immediately to next contact
+        this.isRunning = false;
+        setTimeout(() => this.processQueue(), 500);
         return;
       }
 

@@ -27,6 +27,7 @@ model Settings {
   warmupWeeklyIncrement Int     @default(5) // weekly email limit increase
   warmupStartDate      DateTime @default(now()) // start timestamp for warmup week calculations
   technicalFilter      Boolean  @default(true)
+  excludedEmails       String?  @default("")
 }
 
 model GmailCredentials {
@@ -82,6 +83,7 @@ model Campaign {
   templateBody    String?
   autoSendExtension Boolean      @default(false)
   autoRemoveGmailExtension Boolean @default(true)
+  excludedEmails  String?        @default("")
   contacts        Contact[]
   emailHistory    EmailHistory[]
   createdAt       DateTime       @default(now())
