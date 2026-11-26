@@ -1112,12 +1112,12 @@ export const Campaigns: React.FC = () => {
                   <textarea
                     value={newExcludedEmails}
                     onChange={(e) => setNewExcludedEmails(e.target.value)}
-                    placeholder="e.g. .sparixglobal.com, @domain.com, aditya@sparixglobal.com, ceo@company.com"
+                    placeholder="e.g. @competitor.com, .corp.example.com, .edu, hr@company.com, noreply@domain.com"
                     rows={2}
                     className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-900 font-mono transition-colors"
                   />
                   <span className="text-[9.5px] text-slate-500">
-                    Domain suffixes (like <code className="text-slate-800 font-bold">.sparixglobal.com</code>) or exact emails to block. The engine will never send to them.
+                    Domain suffixes (like <code className="text-slate-800 font-bold">@competitor.com</code> or <code className="text-slate-800 font-bold">.corp.example.com</code>) or exact emails to block. The engine will never send to them.
                   </span>
                 </div>
 
@@ -1522,7 +1522,7 @@ export const Campaigns: React.FC = () => {
                       )}
                     </div>
                     <p className="text-[10.5px] text-slate-500 mt-0.5 leading-snug">
-                      Domain suffixes (e.g. <code className="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">.sparixglobal.com</code>) or specific emails will never be contacted and are automatically skipped.
+                      Domain suffixes (e.g. <code className="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">@competitor.com</code>, <code className="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">.corp.example.com</code>) or specific emails will never be contacted and are automatically skipped.
                     </p>
                     {campaignDetails.excludedEmails && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
@@ -1715,12 +1715,12 @@ export const Campaigns: React.FC = () => {
                     <textarea
                       value={editExcludedEmails}
                       onChange={(e) => setEditExcludedEmails(e.target.value)}
-                      placeholder="e.g. .sparixglobal.com, @domain.com, aditya@sparixglobal.com, ceo@company.com"
+                      placeholder="e.g. @competitor.com, .corp.example.com, .edu, hr@company.com, noreply@domain.com"
                       rows={2}
                       className="rounded-xl border border-rose-200 bg-white px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-rose-600 font-mono transition-colors"
                     />
                     <span className="text-[10px] text-slate-500">
-                      Enter domain suffixes like <code className="text-rose-700 bg-white px-1 rounded border border-rose-200 font-mono">.sparixglobal.com</code> or specific emails to block (comma/newline separated). The sending engine will automatically skip any email matching these.
+                      Enter domain suffixes like <code className="text-rose-700 bg-white px-1 rounded border border-rose-200 font-mono">@competitor.com</code>, <code className="text-rose-700 bg-white px-1 rounded border border-rose-200 font-mono">.corp.example.com</code>, or specific emails to block (comma/newline separated). The sending engine will automatically skip any email matching these.
                     </span>
                   </div>
 

@@ -818,11 +818,11 @@ export const Settings: React.FC<SettingsProps> = ({
                 <textarea
                   {...register('excludedEmails')}
                   rows={3}
-                  placeholder="e.g. .sparixglobal.com, @domain.com, aditya@sparixglobal.com, ceo@company.com"
+                  placeholder="e.g. @competitor.com, .corp.example.com, .edu, hr@company.com, noreply@domain.com"
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 font-mono leading-relaxed transition-colors"
                 />
                 <span className="text-[10px] text-slate-500 leading-relaxed">
-                  Enter domain suffixes (like <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded font-mono">.sparixglobal.com</code> or <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded font-mono">@domain.com</code>) or exact email addresses to block, separated by commas or new lines. Emails matching these will never be sent and will be automatically skipped across all campaigns.
+                  Enter domain suffixes (like <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded font-mono">@competitor.com</code>, <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded font-mono">.corp.example.com</code>, or <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded font-mono">.edu</code>) or exact email addresses (like <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded font-mono">hr@company.com</code>) to block, separated by commas or new lines. Emails matching these will never be sent and will be automatically skipped across all campaigns.
                 </span>
               </div>
             </div>

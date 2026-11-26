@@ -835,7 +835,7 @@ export const ScanView: React.FC = () => {
               {Boolean(selectedCampaign?.excludedEmails) && (
                 <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[9.5px]">
                   <Ban className="w-3 h-3 text-rose-400 flex-shrink-0" />
-                  <span>Exclusions active: blocked domains/emails (.sparixglobal.com, etc.) are skipped</span>
+                  <span>Exclusions active: blocked domains/emails (@competitor.com, etc.) are skipped</span>
                 </div>
               )}
             </div>
