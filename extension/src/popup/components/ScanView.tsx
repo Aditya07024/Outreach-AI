@@ -189,8 +189,8 @@ export const ScanView: React.FC = () => {
 
   useEffect(() => {
     const initScanAndCampaigns = async () => {
-      // 1. Fetch campaigns first
-      await fetchCampaigns();
+      // 1. Fetch campaigns concurrently without blocking tab permission detection
+      fetchCampaigns().catch(() => {});
 
       // 2. Fetch active tab URL
       try {

@@ -43,6 +43,32 @@ export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
     chrome.tabs.create({ url: 'https://outreach.aditya07.me/extension-login' });
   };
 
+  const handleCheckConnection = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await chrome.runtime.sendMessage({ action: 'CHECK_AUTH' });
+      if (res?.authenticated && res?.user) {
+        onLogin(res.user);
+      } else {
+        setError('Not connected yet. Please sign in on the opened tab, or paste your token below.');
+      }
+    } catch (e: any) {
+      setError(e.message || 'Failed to verify connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearPreviousTokens = async () => {
+    try {
+      await chrome.runtime.sendMessage({ action: 'LOGOUT' });
+    } catch (e) {}
+    await chrome.storage.local.remove(['outreach_jwt_token', 'cached_user', 'outreach_api_url']);
+    setToken('');
+    setError(null);
+  };
+
   const handleManualLogin = async () => {
     if (!token.trim()) {
       setError('Please enter your JWT token.');
@@ -105,9 +131,18 @@ export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
           </button>
 
           {tabOpened && (
-            <div className="flex items-center gap-2 p-2 bg-violet-500/10 border border-violet-500/20 rounded-lg text-violet-300 text-[10px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-ping shrink-0" />
-              <span>Waiting for login in tab... This popup will connect automatically!</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-2 bg-violet-500/10 border border-violet-500/20 rounded-lg text-violet-300 text-[10px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-ping shrink-0" />
+                <span>Waiting for login in tab... This popup will connect automatically!</span>
+              </div>
+              <button
+                onClick={handleCheckConnection}
+                disabled={loading}
+                className="w-full py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {loading ? 'Checking...' : 'Check Connection Now'}
+              </button>
             </div>
           )}
         </div>
@@ -149,6 +184,16 @@ export const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Reset previous session / troubleshooting */}
+        <div className="text-center pt-2">
+          <button
+            onClick={handleClearPreviousTokens}
+            className="text-[9.5px] text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer underline"
+          >
+            Reset previous session data
+          </button>
         </div>
       </div>
     </div>

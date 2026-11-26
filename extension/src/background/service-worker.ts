@@ -30,40 +30,71 @@ async function getToken(): Promise<string | null> {
 }
 
 /**
- * Make an authenticated API request to the backend.
+ * Make an authenticated API request to the backend with timeout and failover.
  */
 async function apiRequest(path: string, options: RequestInit = {}): Promise<any> {
-  const apiUrl = await getApiUrl();
   const token = await getToken();
   
   if (!token) {
     throw new Error('Not authenticated. Please log in.');
   }
-  
-  const url = `${apiUrl}${path}`;
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-    ...(options.headers as Record<string, string> || {}),
-  };
-  
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-  
-  if (response.status === 401) {
-    // Token expired — clear it
-    await chrome.storage.local.remove(STORAGE_KEYS.TOKEN);
-    throw new Error('Session expired. Please log in again.');
+
+  // Candidate API base URLs: production API and main website proxy
+  const candidateUrls = [
+    'https://api.outreachai.aditya07.me',
+    'https://outreach.aditya07.me',
+  ];
+
+  const storageData = await chrome.storage.local.get(STORAGE_KEYS.API_URL);
+  if (storageData[STORAGE_KEYS.API_URL]) {
+    candidateUrls.unshift(storageData[STORAGE_KEYS.API_URL]);
   }
-  
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(body.error || `API error: ${response.status}`);
+
+  let lastError: any = null;
+
+  for (const baseUrl of candidateUrls) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+
+    try {
+      const url = `${baseUrl.replace(/\/+$/, '')}${path}`;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...(options.headers as Record<string, string> || {}),
+      };
+      
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+      
+      if (response.status === 401 || response.status === 403) {
+        // Token expired or invalid — clear it immediately so user isn't trapped
+        await chrome.storage.local.remove([STORAGE_KEYS.TOKEN, 'cached_user']);
+        throw new Error('Session expired. Please log in again.');
+      }
+      
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({ error: `API error: ${response.status}` }));
+        throw new Error(body.error || `API error: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err: any) {
+      clearTimeout(timeout);
+      lastError = err;
+      if (err.message?.includes('Session expired') || err.message?.includes('Not authenticated')) {
+        throw err;
+      }
+      // Try next candidate URL
+    }
   }
-  
-  return response.json();
+
+  throw lastError || new Error('Failed to connect to server.');
 }
 
 /**
@@ -108,18 +139,23 @@ async function handleMessage(message: any): Promise<any> {
         const status = await apiRequest('/api/extension/status');
         await chrome.storage.local.set({ cached_user: status.user });
         return { authenticated: true, user: status.user };
-      } catch (err) {
-        // If we still have the token in local storage, keep user logged in.
-        // The token is only removed during explicit logout or on a definitive 401 response in apiRequest.
-        const tokenExists = await getToken();
-        if (tokenExists) {
-          const storageData = await chrome.storage.local.get('cached_user');
+      } catch (err: any) {
+        if (err.message?.includes('Session expired') || err.message?.includes('Not authenticated') || err.message?.includes('401') || err.message?.includes('403')) {
+          await chrome.storage.local.remove([STORAGE_KEYS.TOKEN, 'cached_user']);
+          return { authenticated: false };
+        }
+        // If server is temporarily unreachable, check if we have cached user info
+        const storageData = await chrome.storage.local.get('cached_user');
+        if (storageData.cached_user) {
           return { 
             authenticated: true, 
-            user: storageData.cached_user || { id: 0, email: 'Offline Mode', role: 'user', paid: true } 
+            user: storageData.cached_user,
+            offline: true 
           };
         }
-        return { authenticated: false };
+        // If no cached user and connection failed, clear token to allow re-login!
+        await chrome.storage.local.remove([STORAGE_KEYS.TOKEN, 'cached_user']);
+        return { authenticated: false, error: err.message };
       }
     }
     
