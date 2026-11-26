@@ -10,14 +10,23 @@
  */
 
 import { execSync } from 'child_process';
-import { cpSync, existsSync, mkdirSync } from 'fs';
+import { cpSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = resolve(__dirname, 'dist');
+const zipFile = resolve(__dirname, 'extension.zip');
 
 console.log('🔨 Building Outreach AI Chrome Extension...\n');
+
+// Clean previous build artifacts
+if (existsSync(distDir)) {
+  rmSync(distDir, { recursive: true, force: true });
+}
+if (existsSync(zipFile)) {
+  rmSync(zipFile, { force: true });
+}
 
 // Step 1: Build popup via Vite
 console.log('📦 [1/4] Building popup (React)...');
