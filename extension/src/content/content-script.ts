@@ -342,7 +342,7 @@ async function initAutoScan() {
   try {
     const domain = window.location.hostname;
     
-    // Blacklisted domains by default (e.g. webmails, localhost, search engines, and Outreach AI dashboard)
+    // Blacklisted domains by default (e.g. webmails, localhost, search engines)
     if (
       domain === 'mail.google.com' ||
       domain === 'gmail.com' ||
@@ -354,7 +354,6 @@ async function initAutoScan() {
       domain.includes('outreachai.aditya07.me') ||
       domain === 'localhost'
     ) {
-      // Silently bypass Outreach dashboard and system sites
       return;
     }
     
@@ -362,7 +361,7 @@ async function initAutoScan() {
     const allowed = result.allowed_domains || [];
     
     if (allowed.includes(domain)) {
-      console.log(`[Outreach AI] Background auto-scan active for ${domain}`);
+      console.log(`[Outreach AI] Auto-scan active for ${domain}`);
       autoScan();
       
       // Start observer
