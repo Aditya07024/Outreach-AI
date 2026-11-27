@@ -59,10 +59,10 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
         continue;
       }
 
-      // If campaign has autoRemoveGmailExtension enabled OR excludeGmail toggle is active, skip any @gmail.com or @googlemail.com address
-      const isGmail = email.endsWith('@gmail.com') || email.endsWith('@googlemail.com');
-      const shouldFilterGmail = campaign.autoRemoveGmailExtension || Boolean(excludeGmail);
-      if (shouldFilterGmail && isGmail) {
+      // If campaign has autoRemoveGmailExtension enabled OR excludeGmail toggle is active OR userSettings.technicalFilter is active, skip personal emails (@gmail.com, @yahoo.com, etc.)
+      const isPersonal = email.endsWith('@gmail.com') || email.endsWith('@googlemail.com') || email.endsWith('@yahoo.com') || email.endsWith('@hotmail.com') || email.endsWith('@outlook.com') || email.endsWith('@icloud.com');
+      const shouldFilterPersonal = campaign.autoRemoveGmailExtension || Boolean(excludeGmail) || userSettings?.technicalFilter;
+      if (shouldFilterPersonal && isPersonal) {
         skippedGmailCount++;
         continue;
       }

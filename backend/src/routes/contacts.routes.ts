@@ -137,10 +137,13 @@ router.post('/import-csv', upload.single('file'), async (req: AuthenticatedReque
 
           const isTechnical = checkIsTechnical(title);
 
-          // Apply Technical Filter if active
-          if (settings.technicalFilter && title && !isTechnical) {
-            skippedCount++;
-            continue;
+          // Apply Personal Email Filter if active (skips @gmail.com, @yahoo.com, etc.)
+          if (settings.technicalFilter) {
+            const isPersonal = email.endsWith('@gmail.com') || email.endsWith('@googlemail.com') || email.endsWith('@yahoo.com') || email.endsWith('@hotmail.com') || email.endsWith('@outlook.com') || email.endsWith('@icloud.com');
+            if (isPersonal) {
+              skippedCount++;
+              continue;
+            }
           }
 
           // Duplicate detection
@@ -303,6 +306,12 @@ router.post('/import-manual', async (req: AuthenticatedRequest, res) => {
     }
 
     const userSettings = await prisma.settings.findUnique({ where: { id: userId } });
+    if (userSettings?.technicalFilter) {
+      const isPersonal = email.endsWith('@gmail.com') || email.endsWith('@googlemail.com') || email.endsWith('@yahoo.com') || email.endsWith('@hotmail.com') || email.endsWith('@outlook.com') || email.endsWith('@icloud.com');
+      if (isPersonal) {
+        return res.status(400).json({ error: 'Personal email addresses (@gmail.com, @yahoo.com, etc.) are skipped because the Work Email Only Filter is active.' });
+      }
+    }
     const isExcluded = isEmailExcluded(email, campaign.excludedEmails) || isEmailExcluded(email, userSettings?.excludedEmails);
 
     const contact = await prisma.contact.create({

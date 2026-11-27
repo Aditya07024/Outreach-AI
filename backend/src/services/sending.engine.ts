@@ -5,7 +5,7 @@ import { isEmailExcluded } from '../utils/exclusion';
 import fs from 'fs';
 
 export function getEffectiveDailyLimit(settings: any): { effectiveLimit: number; warmupWeek: number; isWarmup: boolean } {
-  const maxDailyLimit = settings?.maxDailyLimit ?? 50;
+  const maxDailyLimit = Math.min(200, settings?.maxDailyLimit ?? 50);
   if (!settings?.enableWarmup) {
     return { effectiveLimit: maxDailyLimit, warmupWeek: 0, isWarmup: false };
   }
@@ -430,8 +430,8 @@ export class SendingEngine {
           userId
         );
       } else {
-        const delayMin = settings?.delayMin ?? 60;
-        const delayMax = settings?.delayMax ?? 180;
+        const delayMin = settings?.delayMin ?? 300;
+        const delayMax = settings?.delayMax ?? 900;
         const randomDelaySeconds = Math.floor(Math.random() * (delayMax - delayMin + 1)) + delayMin;
 
         await logger.info(

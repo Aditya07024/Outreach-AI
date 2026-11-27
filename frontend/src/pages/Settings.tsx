@@ -28,6 +28,7 @@ import {
   Eye,
   EyeSlash,
   Broadcast,
+  CaretDown,
 } from '@phosphor-icons/react';
 import { Settings as SettingsType, Resume, QuotaStats } from '../types';
 import { Glass } from '../components/glass/Glass';
@@ -88,9 +89,33 @@ const formatSeconds = (sec: number): string => {
 };
 
 const pausePresets = [
-  { label: 'Fast (1–3m)', min: 60, max: 180 },
-  { label: 'Recommended (3–7m)', min: 180, max: 420 },
-  { label: 'Ultra Safe (5–15m)', min: 300, max: 900 },
+  { 
+    id: 'ultra',
+    label: 'Ultra Safe', 
+    range: '5m–15m', 
+    min: 300, 
+    max: 900, 
+    badge: 'Best Spam Shield',
+    desc: 'Mimics real candidate typing.' 
+  },
+  { 
+    id: 'recommended',
+    label: 'Balanced', 
+    range: '3m–7m', 
+    min: 180, 
+    max: 420, 
+    badge: 'Standard Safe',
+    desc: 'Recommended for active senders.' 
+  },
+  { 
+    id: 'fast',
+    label: 'Fast', 
+    range: '1m–3m', 
+    min: 60, 
+    max: 180, 
+    badge: 'Quick Send',
+    desc: 'Random jitter for faster sends.' 
+  },
 ];
 
 export const Settings: React.FC<SettingsProps> = ({ 
@@ -127,6 +152,7 @@ export const Settings: React.FC<SettingsProps> = ({
   // Tag list for blocklist
   const [newBlockEntry, setNewBlockEntry] = useState('');
   const [blockList, setBlockList] = useState<string[]>([]);
+  const [showCustomPacing, setShowCustomPacing] = useState(false);
 
   const isConnected = !!gmailStatus?.connected;
   const [isExtensionDone, setIsExtensionDone] = useState<boolean>(() => {
@@ -137,11 +163,23 @@ export const Settings: React.FC<SettingsProps> = ({
   const isStep2Active = isConnected && !isExtensionDone;
   const areOtherSettingsDulled = !isConnected || !isExtensionDone;
 
-  const { register, handleSubmit, reset, setValue, watch } = useForm<SettingsType>();
+  const { register, handleSubmit, reset, setValue, watch, getValues } = useForm<SettingsType>({
+    defaultValues: {
+      delayMin: 300,
+      delayMax: 900,
+      maxDailyLimit: 50,
+      technicalFilter: true,
+      enableWarmup: true,
+    },
+  });
+
+  const isLoadedRef = useRef(false);
+  const saveTimeoutRef = useRef<any>(null);
+  const initialDataRef = useRef<SettingsType | null>(null);
 
   const maxDailyLimit = watch('maxDailyLimit') || 50;
-  const delayMin = watch('delayMin') || 60;
-  const delayMax = watch('delayMax') || 180;
+  const delayMin = watch('delayMin') ?? 300;
+  const delayMax = watch('delayMax') ?? 900;
   const enableWarmup = watch('enableWarmup');
   const technicalFilter = watch('technicalFilter');
   const rawExcluded = watch('excludedEmails') || '';
@@ -152,28 +190,34 @@ export const Settings: React.FC<SettingsProps> = ({
     const mm = gsap.matchMedia();
     mm.add('(prefers-reduced-motion: no-preference)', () => {
       // Animate non-dulled cards smoothly with opacity
-      gsap.fromTo(
-        '.bento-reveal:not(.settings-dulled-card)',
-        { y: 24, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.45,
-          stagger: 0.04,
-          ease: 'power3.out',
-        }
-      );
+      const activeCards = containerRef.current?.querySelectorAll('.bento-reveal:not(.settings-dulled-card)');
+      if (activeCards && activeCards.length > 0) {
+        gsap.fromTo(
+          activeCards,
+          { y: 24, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.45,
+            stagger: 0.04,
+            ease: 'power3.out',
+          }
+        );
+      }
       // For dulled cards, animate translation only without touching opacity or filter
-      gsap.fromTo(
-        '.settings-dulled-card',
-        { y: 24 },
-        {
-          y: 0,
-          duration: 0.45,
-          stagger: 0.04,
-          ease: 'power3.out',
-        }
-      );
+      const dulledCards = containerRef.current?.querySelectorAll('.settings-dulled-card');
+      if (dulledCards && dulledCards.length > 0) {
+        gsap.fromTo(
+          dulledCards,
+          { y: 24 },
+          {
+            y: 0,
+            duration: 0.45,
+            stagger: 0.04,
+            ease: 'power3.out',
+          }
+        );
+      }
     });
     return () => mm.revert();
   }, [isConnected, isExtensionDone]);
@@ -254,8 +298,27 @@ export const Settings: React.FC<SettingsProps> = ({
         if (data.quotaStats) {
           setQuotaStats(data.quotaStats);
         }
-        setInitialData(data);
-        reset(data);
+        // Ultra Safe (5m–15m / 300s–900s) is default selected for every user
+        const currentMin = data.delayMin;
+        const currentMax = data.delayMax;
+        const isOldDefault = (!currentMin && !currentMax) || (currentMin <= 60 && currentMax <= 180);
+
+        // 50 (Personal Gmail) is default selected for every user, capped at max 200
+        const rawLimit = data.maxDailyLimit;
+        const resolvedLimit = (rawLimit && rawLimit > 0) ? Math.min(200, rawLimit) : 50;
+
+        const resolvedData = {
+          ...data,
+          delayMin: isOldDefault ? 300 : currentMin,
+          delayMax: isOldDefault ? 900 : currentMax,
+          maxDailyLimit: resolvedLimit,
+        };
+        setInitialData(resolvedData);
+        initialDataRef.current = resolvedData;
+        reset(resolvedData);
+        setTimeout(() => {
+          isLoadedRef.current = true;
+        }, 300);
       }
 
       // Load resumes list
@@ -303,6 +366,62 @@ export const Settings: React.FC<SettingsProps> = ({
       }
     }
   }, []);
+
+  const triggerAutoSave = (formData?: Partial<SettingsType>) => {
+    if (!isLoadedRef.current) return;
+    if (areOtherSettingsDulled) return;
+
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const formValues = getValues();
+        const payload = {
+          ...(initialDataRef.current || {}),
+          ...formValues,
+          ...(formData || {}),
+        };
+
+        const response = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) throw new Error('Failed to auto-save settings');
+        const data = await response.json();
+        if (data.quotaStats) {
+          setQuotaStats(data.quotaStats);
+        }
+        setInitialData(data);
+        initialDataRef.current = data;
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2500);
+      } catch (err: any) {
+        console.error('Auto-save error:', err);
+      } finally {
+        setIsSaving(false);
+      }
+    }, 400);
+  };
+
+  // Auto-save whenever any setting value changes
+  useEffect(() => {
+    const subscription = watch((value) => {
+      if (!isLoadedRef.current) return;
+      if (areOtherSettingsDulled) return;
+      triggerAutoSave(value as SettingsType);
+    });
+    return () => {
+      subscription.unsubscribe();
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [watch, areOtherSettingsDulled]);
 
   const onSaveSettings = async (formData: SettingsType) => {
     setIsSaving(true);
@@ -422,7 +541,7 @@ export const Settings: React.FC<SettingsProps> = ({
     if (!blockList.includes(trimmed)) {
       const updated = [...blockList, trimmed];
       setBlockList(updated);
-      setValue('excludedEmails', updated.join(', '));
+      setValue('excludedEmails', updated.join(', '), { shouldDirty: true });
     }
     setNewBlockEntry('');
   };
@@ -430,19 +549,19 @@ export const Settings: React.FC<SettingsProps> = ({
   const handleRemoveBlockItem = (itemToRemove: string) => {
     const updated = blockList.filter((item) => item !== itemToRemove);
     setBlockList(updated);
-    setValue('excludedEmails', updated.join(', '));
+    setValue('excludedEmails', updated.join(', '), { shouldDirty: true });
   };
 
   // Preset daily limit values
   const presetLimits = [
     { value: 25, label: '25', desc: 'Ultra Safe' },
-    { value: 50, label: '50', desc: 'Personal Gmail' },
+    { value: 50, label: '50', desc: 'Personal Gmail', badge: 'Default' },
     { value: 100, label: '100', desc: 'High Volume' },
-    { value: 200, label: '200', desc: 'Workspace' },
+    { value: 200, label: '200', desc: 'Max Limit' },
   ];
 
   const effectiveSent = quotaStats?.sentInLast24h || 0;
-  const effectiveLimit = quotaStats?.effectiveLimit || Number(maxDailyLimit) || 50;
+  const effectiveLimit = Math.min(200, quotaStats?.effectiveLimit || Number(maxDailyLimit) || 50);
   const warmupPercent = Math.min(100, Math.round((effectiveSent / (effectiveLimit || 1)) * 100));
   const remainingToday = quotaStats?.remainingToday ?? Math.max(0, effectiveLimit - effectiveSent);
 
@@ -494,36 +613,27 @@ export const Settings: React.FC<SettingsProps> = ({
           </p>
         </div>
 
-        {/* Command Action Buttons */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          {saveSuccess && (
-            <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#1DA365]/10 border border-[#1DA365]/20 text-[#1DA365] text-xs font-bold animate-fade-in shadow-2xs">
+        {/* Auto-Save Live Status Indicator */}
+        <div className="flex items-center gap-2 shrink-0">
+          {isSaving ? (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold shadow-2xs">
+              <div className="w-3.5 h-3.5 rounded-full border-2 border-amber-600/30 border-t-amber-600 animate-spin" />
+              <span>Saving changes...</span>
+            </div>
+          ) : saveSuccess ? (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-[#1DA365] text-xs font-bold animate-fade-in shadow-2xs">
               <CheckCircle size={15} weight="fill" />
-              <span>All changes saved!</span>
+              <span>All changes auto-saved!</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/90 border border-[rgba(42,26,15,0.08)] shadow-2xs text-xs">
+              <span className="w-2 h-2 rounded-full bg-[#1DA365]" />
+              <span className="font-semibold text-[#2A1A0F]">Auto-Save Active</span>
+              <span className="text-[10px] text-[#735E50] border-l border-[rgba(42,26,15,0.1)] pl-2 hidden sm:inline">
+                Changes apply instantly
+              </span>
             </div>
           )}
-          <button
-            type="button"
-            onClick={handleSubmit(onSaveSettings)}
-            disabled={isSaving || areOtherSettingsDulled}
-            className={`px-5 py-2.5 rounded-[14px] bg-[#FF6B1A] text-white text-xs font-bold transition-all flex items-center gap-2 ${
-              areOtherSettingsDulled
-                ? 'opacity-20 cursor-not-allowed pointer-events-none grayscale'
-                : 'hover:bg-[#E55B10] shadow-md shadow-[#FF6B1A]/25 cursor-pointer active:scale-[0.98]'
-            }`}
-          >
-            {isSaving ? (
-              <>
-                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                <span>Saving Changes...</span>
-              </>
-            ) : (
-              <>
-                <FloppyDisk size={15} weight="bold" />
-                <span>Save All Settings</span>
-              </>
-            )}
-          </button>
         </div>
       </div>
 
@@ -901,113 +1011,319 @@ Sign-In Key (If you failed to sign-in then use this code)
 
         {/* 2x2 Bento Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Card 1: Pause Delay Between Sends */}
-          <div className="p-5 rounded-[20px] bg-white/70 border border-white/90 shadow-2xs flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
+          {/* Card 1: Anti-Spam Human Pacing Cockpit */}
+          <div className="p-5 sm:p-6 rounded-[22px] bg-white/80 border border-white/95 shadow-sm flex flex-col justify-between space-y-4">
+            <div className="space-y-4">
+              {/* Header with Anti-Spam Focus */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-[rgba(42,26,15,0.06)]">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-[10px] bg-[#FF6B1A]/10 text-[#FF6B1A] flex items-center justify-center">
-                    <Clock size={18} weight="duotone" />
+                  <div className="w-9 h-9 rounded-[12px] bg-[#FF6B1A]/10 text-[#FF6B1A] flex items-center justify-center border border-[#FF6B1A]/20 shrink-0">
+                    <Clock size={19} weight="duotone" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#2A1A0F]">Pause Delay Between Sends</h3>
-                    <p className="text-[11px] text-[#735E50]">Random delay between each email to look human</p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-[#2A1A0F]">Anti-Spam Human Pacing</h3>
+                      {/* <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-[#1DA365] border border-emerald-200 font-mono text-[9px] font-bold uppercase tracking-wider">
+                        Zero Spam Flags
+                      </span> */}
+                    </div>
+                    <p className="text-[11px] text-[#735E50]">Random pause between emails to bypass Google spam detection</p>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <span className="inline-block px-2.5 py-1 rounded-[10px] bg-[#FF6B1A]/10 text-[#FF6B1A] font-mono text-xs font-bold border border-[#FF6B1A]/20">
+                <div className="text-left sm:text-right">
+                  <div className="inline-block px-2.5 py-1 rounded-[10px] bg-[#FF6B1A]/10 text-[#FF6B1A] font-mono text-xs font-bold border border-[#FF6B1A]/20">
                     {formatSeconds(delayMin)} – {formatSeconds(delayMax)}
-                  </span>
-                  <div className="text-[10px] text-[#735E50] font-mono mt-0.5">
-                    ({delayMin}s – {delayMax}s)
                   </div>
+                  {/* <div className="text-[10px] text-[#735E50] font-mono mt-0.5">
+                    ({delayMin}s – {delayMax}s random jitter)
+                  </div> */}
                 </div>
               </div>
 
-              {/* Quick Presets */}
-              <div className="mt-3 pt-3 border-t border-[rgba(42,26,15,0.06)] space-y-1.5">
-                <span className="text-[10px] font-mono text-[#735E50] uppercase font-bold tracking-wider">
-                  Quick Pacing Presets:
-                </span>
-                <div className="grid grid-cols-3 gap-2">
+              {/* Visual Pacing Timeline Simulation */}
+              {/* <div className="p-3.5 rounded-[16px] bg-white/70 border border-white/90 shadow-2xs space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-semibold text-[#2A1A0F] flex items-center gap-1.5">
+                    <ShieldCheck size={15} weight="fill" className="text-[#1DA365]" />
+                    <span>Human Sending Simulation</span>
+                  </span>
+                  <span className="font-mono text-[10px] text-[#1DA365] font-bold">100% Non-Robotic</span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 pt-0.5 text-center">
+                  <div className="p-2 rounded-[10px] bg-emerald-50/70 border border-emerald-200/80">
+                    <div className="text-[9px] font-mono font-bold text-[#1DA365]">Outgoing Email 1</div>
+                    <div className="text-xs text-[#2A1A0F] font-bold mt-0.5 font-display">Sent at 10:00</div>
+                  </div>
+                  <div className="p-2 rounded-[10px] bg-amber-50/70 border border-amber-200/80 flex flex-col justify-center">
+                    <div className="text-[9px] font-mono font-bold text-amber-700">Random Pause</div>
+                    <div className="text-xs text-[#FF6B1A] font-extrabold font-mono mt-0.5">
+                      ≈ {formatSeconds(Math.round((Number(delayMin) + Number(delayMax)) / 2))}
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-[10px] bg-emerald-50/70 border border-emerald-200/80">
+                    <div className="text-[9px] font-mono font-bold text-[#1DA365]">Outgoing Email 2</div>
+                    <div className="text-xs text-[#2A1A0F] font-bold mt-0.5 font-display">Sent next</div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-[#735E50] leading-relaxed pt-0.5">
+                  Google algorithms flag rapid machine bursts. Randomized pauses make each message appear hand-typed by a human candidate.
+                </p>
+              </div> */}
+
+              {/* Quick Anti-Spam Presets */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-[#735E50] uppercase font-bold tracking-wider">
+                    Anti-Spam Pacing Presets:
+                  </span>
+                  <span className="text-[10px] text-[#735E50]">Tap to apply</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {pausePresets.map((preset) => {
                     const isSelected = Number(delayMin) === preset.min && Number(delayMax) === preset.max;
                     return (
                       <button
-                        key={preset.label}
+                        key={preset.id}
                         type="button"
                         onClick={() => {
                           setValue('delayMin', preset.min, { shouldDirty: true });
                           setValue('delayMax', preset.max, { shouldDirty: true });
                         }}
-                        className={`px-2.5 py-1.5 rounded-[10px] text-xs font-bold transition-all cursor-pointer border text-center ${
+                        className={`p-2.5 rounded-[12px] text-left transition-all cursor-pointer border flex flex-col justify-between ${
                           isSelected
-                            ? 'bg-[#2A1A0F] text-white border-[#2A1A0F] shadow-xs'
-                            : 'bg-white/90 hover:bg-white text-[#735E50] hover:text-[#2A1A0F] border-[rgba(42,26,15,0.08)]'
+                            ? 'bg-[#2A1A0F] text-white border-[#2A1A0F] shadow-sm ring-2 ring-[#FF6B1A]/50'
+                            : 'bg-white/90 hover:bg-white text-[#2A1A0F] border-[rgba(42,26,15,0.08)]'
                         }`}
                       >
-                        {preset.label}
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                            isSelected
+                              ? 'bg-[#FF6B1A] text-white'
+                              : preset.id === 'ultra'
+                                ? 'bg-amber-100 text-amber-900 border border-amber-200 font-extrabold'
+                                : 'bg-emerald-50 text-[#1DA365] border border-emerald-200'
+                          }`}>
+                            {preset.badge}
+                          </span>
+                          {isSelected && <Check size={12} weight="bold" className="text-[#1DA365]" />}
+                        </div>
+                        <div className="text-xs font-bold font-display">{preset.label}</div>
+                        <div className={`text-[10px] font-mono mt-0.5 ${isSelected ? 'text-[#FF6B1A]' : 'text-[#735E50]'}`}>
+                          {preset.range}
+                        </div>
+                        <div className={`text-[9px] mt-1 leading-snug line-clamp-1 ${isSelected ? 'text-white/80' : 'text-[#735E50]'}`}>
+                          {preset.desc}
+                        </div>
                       </button>
                     );
                   })}
+
+                  {/* 4th Preset: Custom Toggle */}
+                  {(() => {
+                    const isCustomPreset = !pausePresets.some(
+                      (p) => Number(delayMin) === p.min && Number(delayMax) === p.max
+                    );
+                    const isCustomActive = isCustomPreset || showCustomPacing;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => setShowCustomPacing((prev) => !prev)}
+                        className={`p-2.5 rounded-[12px] text-left transition-all cursor-pointer border flex flex-col justify-between ${
+                          isCustomActive
+                            ? 'bg-[#2A1A0F] text-white border-[#2A1A0F] shadow-sm ring-2 ring-[#FF6B1A]/50'
+                            : 'bg-white/90 hover:bg-white text-[#2A1A0F] border-[rgba(42,26,15,0.08)]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                            isCustomActive
+                              ? 'bg-[#FF6B1A] text-white'
+                              : 'bg-stone-100 text-[#735E50] border border-stone-200'
+                          }`}>
+                            CUSTOM
+                          </span>
+                          {isCustomActive && (
+                            <Sliders size={12} weight="bold" className="text-[#1DA365]" />
+                          )}
+                        </div>
+                        <div className="text-xs font-bold font-display">Custom</div>
+                        <div className={`text-[10px] font-mono mt-0.5 ${isCustomActive ? 'text-[#FF6B1A]' : 'text-[#735E50]'}`}>
+                          {formatSeconds(delayMin)}–{formatSeconds(delayMax)}
+                        </div>
+                        <div className={`text-[9px] mt-1 leading-snug line-clamp-1 ${isCustomActive ? 'text-white/80' : 'text-[#735E50]'}`}>
+                          Click to {showCustomPacing ? 'hide' : 'open custom'}
+                        </div>
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
 
-            {/* Custom Inputs */}
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="p-3 rounded-[14px] bg-white/80 border border-[rgba(42,26,15,0.08)] shadow-2xs space-y-1">
-                <label className="text-[11px] font-semibold text-[#735E50] flex items-center justify-between">
-                  <span>Min Pause</span>
-                  <span className="font-mono text-[10px] text-[#FF6B1A]">≈ {formatSeconds(delayMin)}</span>
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    min={5}
-                    step={5}
-                    {...register('delayMin', { valueAsNumber: true })}
-                    className="w-full px-2.5 py-1.5 rounded-[10px] bg-white border border-[rgba(42,26,15,0.12)] text-xs font-mono font-bold text-[#2A1A0F] focus:border-[#FF6B1A] focus:outline-none"
-                    title="Minimum pause in seconds"
-                  />
-                  <span className="text-xs font-mono text-[#735E50] shrink-0">sec</span>
-                </div>
-                <span className="text-[10px] text-[#735E50]">Shortest wait time</span>
-              </div>
+            {/* Custom Wait Times Component (Click to Open) */}
+            <div className="space-y-3 pt-1">
+              {(() => {
+                const isCustomPreset = !pausePresets.some(
+                  (p) => Number(delayMin) === p.min && Number(delayMax) === p.max
+                );
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomPacing(!showCustomPacing)}
+                    className={`w-full p-3.5 rounded-[16px] border transition-all cursor-pointer flex items-center justify-between text-left ${
+                      showCustomPacing
+                        ? 'bg-white border-[#FF6B1A]/40 shadow-xs ring-2 ring-[#FF6B1A]/20'
+                        : 'bg-white/80 hover:bg-white border-[rgba(42,26,15,0.08)] shadow-2xs'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center transition-colors ${
+                        showCustomPacing ? 'bg-[#FF6B1A] text-white shadow-2xs' : 'bg-stone-100 text-[#735E50]'
+                      }`}>
+                        <Sliders size={16} weight="bold" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-[#2A1A0F]">Custom Wait Times</span>
+                          <span className="font-mono text-[11px] text-[#FF6B1A] font-bold">
+                            {formatSeconds(delayMin)} ({delayMin}s) – {formatSeconds(delayMax)} ({delayMax}s)
+                          </span>
+                          {isCustomPreset && (
+                            <span className="px-2 py-0.5 rounded-full bg-[#FF6B1A]/10 text-[#FF6B1A] font-mono text-[9px] font-bold border border-[#FF6B1A]/20">
+                              Custom Active
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#735E50] mt-0.5">
+                          {showCustomPacing ? 'Fine-tune shortest & longest wait seconds below' : 'Click here to customize your exact shortest & longest wait seconds'}
+                        </p>
+                      </div>
+                    </div>
 
-              <div className="p-3 rounded-[14px] bg-white/80 border border-[rgba(42,26,15,0.08)] shadow-2xs space-y-1">
-                <label className="text-[11px] font-semibold text-[#735E50] flex items-center justify-between">
-                  <span>Max Pause</span>
-                  <span className="font-mono text-[10px] text-[#FF6B1A]">≈ {formatSeconds(delayMax)}</span>
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    min={10}
-                    step={5}
-                    {...register('delayMax', { valueAsNumber: true })}
-                    className="w-full px-2.5 py-1.5 rounded-[10px] bg-white border border-[rgba(42,26,15,0.12)] text-xs font-mono font-bold text-[#2A1A0F] focus:border-[#FF6B1A] focus:outline-none"
-                    title="Maximum pause in seconds"
-                  />
-                  <span className="text-xs font-mono text-[#735E50] shrink-0">sec</span>
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#FF6B1A] shrink-0">
+                      <span className="text-[11px] hidden sm:inline">
+                        {showCustomPacing ? 'Close custom' : 'Open custom'}
+                      </span>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-transform duration-200 ${
+                        showCustomPacing ? 'bg-[#FF6B1A]/10 rotate-180' : 'bg-stone-100'
+                      }`}>
+                        <CaretDown size={14} weight="bold" className={showCustomPacing ? 'text-[#FF6B1A]' : 'text-[#735E50]'} />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })()}
+
+              {/* Opened Custom Steppers Component */}
+              {showCustomPacing && (
+                <div className="space-y-3 pt-0.5">
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Shortest Wait (Min) */}
+                    <div className="p-3.5 rounded-[14px] bg-white/95 border border-[rgba(42,26,15,0.08)] shadow-2xs space-y-2">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <label className="font-semibold text-[#735E50]">Shortest Wait (Min)</label>
+                        <span className="font-mono text-[11px] font-bold text-[#FF6B1A]">≈ {formatSeconds(delayMin)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setValue('delayMin', Math.max(15, Number(delayMin) - 30), { shouldDirty: true })}
+                          className="w-8 h-8 rounded-[8px] bg-stone-100 hover:bg-stone-200 active:scale-95 border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] text-sm font-bold flex items-center justify-center cursor-pointer shrink-0 transition-all"
+                          title="Decrease by 30 seconds"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min={15}
+                          step={15}
+                          {...register('delayMin', { valueAsNumber: true })}
+                          className="w-full text-center px-2 py-1.5 rounded-[8px] bg-white border border-[rgba(42,26,15,0.12)] text-xs font-mono font-bold text-[#2A1A0F] focus:border-[#FF6B1A] focus:outline-none"
+                          title="Minimum pause in seconds"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setValue('delayMin', Number(delayMin) + 30, { shouldDirty: true })}
+                          className="w-8 h-8 rounded-[8px] bg-stone-100 hover:bg-stone-200 active:scale-95 border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] text-sm font-bold flex items-center justify-center cursor-pointer shrink-0 transition-all"
+                          title="Increase by 30 seconds"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-[#735E50] block text-center font-mono">Seconds: {delayMin}s</span>
+                    </div>
+
+                    {/* Longest Wait (Max) */}
+                    <div className="p-3.5 rounded-[14px] bg-white/95 border border-[rgba(42,26,15,0.08)] shadow-2xs space-y-2">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <label className="font-semibold text-[#735E50]">Longest Wait (Max)</label>
+                        <span className="font-mono text-[11px] font-bold text-[#FF6B1A]">≈ {formatSeconds(delayMax)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setValue('delayMax', Math.max(Number(delayMin) + 15, Number(delayMax) - 30), { shouldDirty: true })}
+                          className="w-8 h-8 rounded-[8px] bg-stone-100 hover:bg-stone-200 active:scale-95 border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] text-sm font-bold flex items-center justify-center cursor-pointer shrink-0 transition-all"
+                          title="Decrease by 30 seconds"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min={30}
+                          step={15}
+                          {...register('delayMax', { valueAsNumber: true })}
+                          className="w-full text-center px-2 py-1.5 rounded-[8px] bg-white border border-[rgba(42,26,15,0.12)] text-xs font-mono font-bold text-[#2A1A0F] focus:border-[#FF6B1A] focus:outline-none"
+                          title="Maximum pause in seconds"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setValue('delayMax', Number(delayMax) + 30, { shouldDirty: true })}
+                          className="w-8 h-8 rounded-[8px] bg-stone-100 hover:bg-stone-200 active:scale-95 border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] text-sm font-bold flex items-center justify-center cursor-pointer shrink-0 transition-all"
+                          title="Increase by 30 seconds"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-[#735E50] block text-center font-mono">Seconds: {delayMax}s</span>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[10px] text-[#735E50]">Longest wait time</span>
+              )}
+
+              {/* Anti-Spam Safety Reassurance */}
+              <div className="p-3 rounded-[14px] bg-emerald-50/60 border border-emerald-200/70 flex items-start gap-2.5 text-xs text-[#1DA365]">
+                <ShieldCheck size={18} weight="fill" className="shrink-0 mt-0.5 text-[#1DA365]" />
+                <p className="text-[11px] text-[#2A1A0F] leading-relaxed">
+                  <strong>Why this stops spam:</strong> Google flags outreach accounts that blast emails in uniform bursts. Spacing sends with random human delays ({formatSeconds(delayMin)}–{formatSeconds(delayMax)}) ensures primary inbox placement and protects your sender score.
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Card 2: Safe Start (Volume Warmup) */}
-          <div className="p-5 rounded-[20px] bg-white/70 border border-white/90 shadow-2xs flex flex-col justify-between space-y-4">
+          {/* Card 2: Email Account Warmup & Deliverability Ramp */}
+          <div className="p-5 sm:p-6 rounded-[22px] bg-white/80 border border-white/95 shadow-sm flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-[10px] bg-[#FF6B1A]/10 text-[#FF6B1A] flex items-center justify-center">
-                    <Fire size={18} weight="duotone" />
+                  <div className="w-9 h-9 rounded-[12px] bg-[#FF6B1A]/10 text-[#FF6B1A] flex items-center justify-center border border-[#FF6B1A]/20 shrink-0">
+                    <Fire size={20} weight="duotone" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#2A1A0F]">Safe Start (Gradual Ramp)</h3>
-                    <p className="text-[11px] text-[#735E50]">Ramps volume weekly to build Google sender trust</p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-[#2A1A0F]">Email Account Warmup</h3>
+                      <span className={`px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider ${
+                        enableWarmup
+                          ? 'bg-emerald-50 text-[#1DA365] border border-emerald-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
+                        {enableWarmup ? 'Recommended First' : 'Warmup Disabled'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#735E50]">Condition your Gmail inbox first to safely send high daily volumes</p>
                   </div>
                 </div>
 
@@ -1022,70 +1338,130 @@ Sign-In Key (If you failed to sign-in then use this code)
               </div>
 
               {/* Status Banner */}
-              <div className={`p-3.5 rounded-[14px] border mt-3 transition-colors ${
+              <div className={`p-3.5 rounded-[16px] border mt-3 transition-colors ${
                 enableWarmup
                   ? 'bg-emerald-50/70 border-emerald-200/80 text-[#1DA365]'
-                  : 'bg-white/80 border-[rgba(42,26,15,0.08)] text-[#735E50]'
+                  : 'bg-amber-50/70 border-amber-200/80 text-amber-900'
               }`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold flex items-center gap-1.5">
                     {enableWarmup ? (
                       <>
-                        <CheckCircle size={15} weight="fill" />
-                        <span>Weekly Volume Ramp Active</span>
+                        <CheckCircle size={15} weight="fill" className="text-[#1DA365]" />
+                        <span className="text-[#1DA365]">Account Warmup Active</span>
                       </>
                     ) : (
                       <>
-                        <Gauge size={15} weight="bold" />
-                        <span>Standard Daily Limit Active</span>
+                        <WarningCircle size={15} weight="fill" className="text-amber-600" />
+                        <span className="text-amber-900">Direct Volume (High Risk for New Accounts)</span>
                       </>
                     )}
                   </span>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white border border-current/20">
-                    {enableWarmup ? 'Recommended' : 'Direct Limit'}
+                  <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white border ${
+                    enableWarmup ? 'border-[#1DA365]/20 text-[#1DA365]' : 'border-amber-300 text-amber-700'
+                  }`}>
+                    {enableWarmup ? 'Safe Ramp' : 'High Risk'}
                   </span>
                 </div>
                 <p className="text-[11px] text-[#735E50] mt-1 leading-relaxed">
                   {enableWarmup
-                    ? 'Protects your Gmail address by starting at 10 emails/day and safely expanding weekly.'
-                    : 'Sends up to your configured daily limit immediately without gradual weekly ramping.'}
+                    ? 'Protects your Gmail address by starting at 10 emails/day and expanding weekly so Google recognizes you as a trusted human sender.'
+                    : 'Sends up to your full daily limit immediately without gradual weekly ramping. Only recommended for accounts already warmed up.'}
                 </p>
               </div>
             </div>
 
-            {/* Visual Ramp Steps */}
-            <div className="p-3 rounded-[14px] bg-white/80 border border-[rgba(42,26,15,0.08)] shadow-2xs">
-              <div className="text-[10px] font-mono text-[#735E50] uppercase font-bold mb-2">
-                Warmup Schedule:
+            {/* Visual Ramp Steps / Warmup Schedule */}
+            <div className="p-3.5 rounded-[16px] bg-white/70 border border-white/90 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-[#735E50] uppercase font-bold tracking-wider">
+                  3-Week Account Conditioning Roadmap:
+                </span>
+                {enableWarmup && (
+                  <span className="text-[10px] font-mono font-bold text-[#1DA365]">
+                    Week {quotaStats?.warmupWeek || 1} of 3
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
-                <div className={`p-2 rounded-[10px] border ${enableWarmup ? 'bg-emerald-50/60 border-emerald-200 text-[#1DA365]' : 'bg-stone-50 border-stone-200 text-[#735E50]'}`}>
-                  <div className="text-[10px] font-mono font-bold">Week 1</div>
+                <div className={`p-2.5 rounded-[12px] border transition-all ${
+                  enableWarmup
+                    ? (quotaStats?.warmupWeek || 1) === 1
+                      ? 'bg-emerald-100/70 border-[#1DA365] text-[#1DA365] shadow-2xs ring-1 ring-[#1DA365]/30'
+                      : 'bg-emerald-50/60 border-emerald-200 text-[#1DA365]'
+                    : 'bg-stone-50 border-stone-200 text-[#735E50]'
+                }`}>
+                  <div className="flex items-center justify-center gap-1">
+                    <span className="text-[10px] font-mono font-bold">Week 1</span>
+                    {enableWarmup && (quotaStats?.warmupWeek || 1) === 1 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1DA365] animate-pulse" />
+                    )}
+                  </div>
                   <div className="text-xs font-bold font-display mt-0.5">10 / day</div>
+                  <div className="text-[9px] text-[#735E50] mt-0.5">Safe Start</div>
                 </div>
-                <div className={`p-2 rounded-[10px] border ${enableWarmup ? 'bg-emerald-50/60 border-emerald-200 text-[#1DA365]' : 'bg-stone-50 border-stone-200 text-[#735E50]'}`}>
-                  <div className="text-[10px] font-mono font-bold">Week 2</div>
+
+                <div className={`p-2.5 rounded-[12px] border transition-all ${
+                  enableWarmup
+                    ? (quotaStats?.warmupWeek || 1) === 2
+                      ? 'bg-emerald-100/70 border-[#1DA365] text-[#1DA365] shadow-2xs ring-1 ring-[#1DA365]/30'
+                      : 'bg-emerald-50/60 border-emerald-200 text-[#1DA365]'
+                    : 'bg-stone-50 border-stone-200 text-[#735E50]'
+                }`}>
+                  <div className="flex items-center justify-center gap-1">
+                    <span className="text-[10px] font-mono font-bold">Week 2</span>
+                    {enableWarmup && (quotaStats?.warmupWeek || 1) === 2 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1DA365] animate-pulse" />
+                    )}
+                  </div>
                   <div className="text-xs font-bold font-display mt-0.5">25 / day</div>
+                  <div className="text-[9px] text-[#735E50] mt-0.5">Volume Ramp</div>
                 </div>
-                <div className={`p-2 rounded-[10px] border ${enableWarmup ? 'bg-emerald-50/60 border-emerald-200 text-[#1DA365]' : 'bg-stone-50 border-stone-200 text-[#735E50]'}`}>
-                  <div className="text-[10px] font-mono font-bold">Week 3+</div>
+
+                <div className={`p-2.5 rounded-[12px] border transition-all ${
+                  enableWarmup
+                    ? (quotaStats?.warmupWeek || 1) >= 3
+                      ? 'bg-emerald-100/70 border-[#1DA365] text-[#1DA365] shadow-2xs ring-1 ring-[#1DA365]/30'
+                      : 'bg-emerald-50/60 border-emerald-200 text-[#1DA365]'
+                    : 'bg-stone-50 border-stone-200 text-[#735E50]'
+                }`}>
+                  <div className="flex items-center justify-center gap-1">
+                    <span className="text-[10px] font-mono font-bold">Week 3+</span>
+                    {enableWarmup && (quotaStats?.warmupWeek || 1) >= 3 && (
+                      <Check size={11} weight="bold" className="text-[#1DA365]" />
+                    )}
+                  </div>
                   <div className="text-xs font-bold font-display mt-0.5">Full Limit</div>
+                  <div className="text-[9px] text-[#735E50] mt-0.5">{effectiveLimit} / day</div>
                 </div>
               </div>
             </div>
+
+            {/* Why Warmup Comes First Educational Callout */}
+            <div className="p-3 rounded-[14px] bg-white/80 border border-[rgba(42,26,15,0.08)] flex items-start gap-2.5 text-xs text-[#735E50]">
+              <ShieldCheck size={16} weight="fill" className="text-[#1DA365] shrink-0 mt-0.5" />
+              <p className="text-[10.5px] leading-relaxed">
+                <strong>Why warm up first:</strong> Google actively monitors email spikes. Blasting 50+ emails immediately from a new sender flags anti-spam defenses. Conditioning your account over 3 weeks unlocks safe high-volume sending permanently.
+              </p>
+            </div>
           </div>
 
-          {/* Card 3: Tech Recruiter Filter */}
-          <div className="p-5 rounded-[20px] bg-white/70 border border-white/90 shadow-2xs flex flex-col justify-between space-y-4">
+          {/* Card 3: Work Email Only Smart Filter (Excludes Personal @gmail.com) */}
+          <div className="p-5 sm:p-6 rounded-[22px] bg-white/80 border border-white/95 shadow-sm flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-[10px] bg-[#1DA365]/10 text-[#1DA365] flex items-center justify-center">
-                    <UsersThree size={18} weight="duotone" />
+                  <div className="w-9 h-9 rounded-[12px] bg-[#1DA365]/10 text-[#1DA365] flex items-center justify-center border border-[#1DA365]/20 shrink-0">
+                    <EnvelopeSimple size={19} weight="duotone" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#2A1A0F]">Tech Recruiter Smart Filter</h3>
-                    <p className="text-[11px] text-[#735E50]">Prioritize engineering hiring managers and technical recruiters</p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-[#2A1A0F]">Work Email Only Filter</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-[#1DA365] border border-emerald-200 font-mono text-[9px] font-bold uppercase tracking-wider">
+                        Corporate Inboxes
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#735E50]">Skip @gmail.com & personal inboxes to reach official company addresses</p>
                   </div>
                 </div>
 
@@ -1100,7 +1476,7 @@ Sign-In Key (If you failed to sign-in then use this code)
               </div>
 
               {/* Status Banner */}
-              <div className={`p-3.5 rounded-[14px] border mt-3 transition-colors ${
+              <div className={`p-3.5 rounded-[16px] border mt-3 transition-colors ${
                 technicalFilter !== false
                   ? 'bg-emerald-50/70 border-emerald-200/80 text-[#1DA365]'
                   : 'bg-white/80 border-[rgba(42,26,15,0.08)] text-[#735E50]'
@@ -1110,46 +1486,58 @@ Sign-In Key (If you failed to sign-in then use this code)
                     {technicalFilter !== false ? (
                       <>
                         <CheckCircle size={15} weight="fill" />
-                        <span>Focusing on Technical Hiring Leads</span>
+                        <span>Corporate Inboxes Enforced</span>
                       </>
                     ) : (
                       <>
-                        <UsersThree size={15} weight="bold" />
-                        <span>All Recruiter Roles Included</span>
+                        <WarningCircle size={15} weight="fill" className="text-amber-600" />
+                        <span>All Inboxes Allowed (Personal Included)</span>
                       </>
                     )}
                   </span>
                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white border border-current/20">
-                    {technicalFilter !== false ? 'Smart Filter' : 'All Roles'}
+                    {technicalFilter !== false ? 'Work Only' : 'Allow All'}
                   </span>
                 </div>
                 <p className="text-[11px] text-[#735E50] mt-1 leading-relaxed">
                   {technicalFilter !== false
-                    ? 'Automatically skips general HR, payroll, and benefits staff so your emails reach people who actually hire engineers.'
-                    : 'Emails will be sent to any recruiter, HR coordinator, or talent acquisition contact found on LinkedIn.'}
+                    ? 'Automatically drops personal inboxes (@gmail.com, @yahoo.com, @outlook.com) scraped from LinkedIn profiles. Only verified company work domains (@company.com) receive your outreach.'
+                    : 'Sends to any email address found on LinkedIn, including private personal Gmail, Yahoo, and Hotmail accounts.'}
                 </p>
               </div>
             </div>
 
-            {/* Filter Tags */}
-            <div className="p-3 rounded-[14px] bg-white/80 border border-[rgba(42,26,15,0.08)] shadow-2xs space-y-1.5">
-              <div className="text-[10px] font-mono text-[#735E50] uppercase font-bold">
-                Target Roles on LinkedIn:
+            {/* Filter Rules & Tags Visualizer */}
+            <div className="p-3.5 rounded-[16px] bg-white/70 border border-white/90 shadow-2xs space-y-2">
+              <div className="text-[10px] font-mono text-[#735E50] uppercase font-bold tracking-wider">
+                Automated Email Filtering Rules:
               </div>
               <div className="flex flex-wrap gap-1.5">
-                <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-[#1DA365] text-[10px] font-semibold">
-                  ✓ Tech Recruiter
+                <span className="px-2.5 py-1 rounded-[8px] bg-emerald-50 border border-emerald-200 text-[#1DA365] text-[10px] font-semibold flex items-center gap-1">
+                  <Check size={11} weight="bold" />
+                  <span>Corporate Work Emails (@company.com)</span>
                 </span>
-                <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-[#1DA365] text-[10px] font-semibold">
-                  ✓ Engineering Manager
+                <span className="px-2.5 py-1 rounded-[8px] bg-emerald-50 border border-emerald-200 text-[#1DA365] text-[10px] font-semibold flex items-center gap-1">
+                  <Check size={11} weight="bold" />
+                  <span>Verified Business Domains</span>
                 </span>
-                <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-[#1DA365] text-[10px] font-semibold">
-                  ✓ Talent Acquisition (Tech)
+                <span className="px-2.5 py-1 rounded-[8px] bg-rose-50 border border-rose-200 text-[#E63946] text-[10px] font-semibold flex items-center gap-1">
+                  <X size={11} weight="bold" />
+                  <span>Personal @gmail.com (Skipped)</span>
                 </span>
-                <span className="px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-[#E63946] text-[10px] font-semibold">
-                  ✕ Non-Tech HR (Skipped)
+                <span className="px-2.5 py-1 rounded-[8px] bg-rose-50 border border-rose-200 text-[#E63946] text-[10px] font-semibold flex items-center gap-1">
+                  <X size={11} weight="bold" />
+                  <span>Personal @yahoo / @hotmail (Skipped)</span>
                 </span>
               </div>
+            </div>
+
+            {/* Why This Matters Callout */}
+            <div className="p-3 rounded-[14px] bg-white/80 border border-[rgba(42,26,15,0.08)] flex items-start gap-2.5 text-xs text-[#735E50]">
+              <ShieldCheck size={16} weight="fill" className="text-[#1DA365] shrink-0 mt-0.5" />
+              <p className="text-[10.5px] leading-relaxed">
+                Recruiters check official corporate mail during business hours and ignore job pitches sent to their private personal Gmails. This filter ensures 100% of emails reach professional inboxes.
+              </p>
             </div>
           </div>
 
@@ -1323,14 +1711,23 @@ Sign-In Key (If you failed to sign-in then use this code)
                       key={preset.value}
                       type="button"
                       onClick={() => setValue('maxDailyLimit', preset.value, { shouldDirty: true })}
-                      className={`p-2 rounded-[12px] text-center transition-all cursor-pointer border ${
+                      className={`p-2.5 rounded-[12px] text-center transition-all cursor-pointer border flex flex-col justify-between items-center ${
                         isSelected
-                          ? 'bg-[#2A1A0F] text-white border-[#2A1A0F] shadow-xs'
+                          ? 'bg-[#2A1A0F] text-white border-[#2A1A0F] shadow-sm ring-2 ring-[#FF6B1A]/40'
                           : 'bg-white/80 hover:bg-white text-[#2A1A0F] border-[rgba(42,26,15,0.08)]'
                       }`}
                     >
+                      {preset.badge && (
+                        <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full mb-1 ${
+                          isSelected
+                            ? 'bg-[#FF6B1A] text-white'
+                            : 'bg-emerald-50 text-[#1DA365] border border-emerald-200'
+                        }`}>
+                          {preset.badge}
+                        </span>
+                      )}
                       <div className="text-xs font-extrabold font-display">{preset.label}</div>
-                      <div className={`text-[9px] truncate ${isSelected ? 'text-white/70' : 'text-[#735E50]'}`}>
+                      <div className={`text-[9px] truncate w-full ${isSelected ? 'text-white/70' : 'text-[#735E50]'}`}>
                         {preset.desc}
                       </div>
                     </button>
@@ -1343,20 +1740,24 @@ Sign-In Key (If you failed to sign-in then use this code)
             <div className="p-3 rounded-[14px] bg-white/80 border border-[rgba(42,26,15,0.08)] space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[11px] font-semibold text-[#735E50]">Custom Limit Adjustment</span>
-                <span className="font-mono font-bold text-[#FF6B1A]">{maxDailyLimit} emails</span>
+                <span className="font-mono font-bold text-[#FF6B1A]">{maxDailyLimit} emails / day</span>
               </div>
               <input
                 type="range"
                 min={10}
-                max={250}
+                max={200}
                 step={5}
-                {...register('maxDailyLimit', { valueAsNumber: true })}
+                {...register('maxDailyLimit', { 
+                  valueAsNumber: true,
+                  max: 200,
+                  min: 10
+                })}
                 className="w-full accent-[#FF6B1A] cursor-pointer"
               />
               <div className="flex justify-between text-[10px] font-mono text-[#735E50]">
                 <span>10 (Minimal)</span>
-                <span>50 (Recommended)</span>
-                <span>250 (Max)</span>
+                <span className="text-[#FF6B1A] font-bold">50 (Personal Gmail — Default)</span>
+                <span>200 (Max Limit)</span>
               </div>
             </div>
           </div>
@@ -1466,48 +1867,40 @@ Sign-In Key (If you failed to sign-in then use this code)
             : undefined
         }
       >
-        <div className="flex items-center gap-2">
-          {saveSuccess ? (
-            <div className="flex items-center gap-2 text-xs font-bold text-[#1DA365] animate-fade-in">
-              <CheckCircle size={16} weight="fill" />
-              <span>All changes saved successfully!</span>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-[10px] bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-[#1DA365] shrink-0">
+            <CheckCircle size={18} weight="fill" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-[#2A1A0F]">Auto-Save Enabled</span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-[#1DA365] font-mono text-[9px] font-bold border border-emerald-200">
+                Instant Sync
+              </span>
             </div>
-          ) : (
-            <span className="text-xs text-[#735E50]">
-              Review your settings and click save to apply any changes.
-            </span>
-          )}
+            <p className="text-[11px] text-[#735E50] mt-0.5">
+              Every setting applies automatically. No need to click any save button.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={isSaving || areOtherSettingsDulled}
-            className="px-4 py-2.5 rounded-[14px] bg-white/70 hover:bg-white border border-[rgba(42,26,15,0.08)] text-xs font-bold text-[#735E50] hover:text-[#2A1A0F] transition-all cursor-pointer shadow-2xs flex items-center gap-1.5 disabled:opacity-40"
-          >
-            <ArrowCounterClockwise size={15} weight="bold" />
-            <span>Reset</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSubmit(onSaveSettings)}
-            disabled={isSaving || areOtherSettingsDulled}
-            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-[14px] bg-[#FF6B1A] hover:bg-[#E55B10] text-white text-xs font-bold shadow-md shadow-[#FF6B1A]/20 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40"
-          >
-            {isSaving ? (
-              <>
-                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <FloppyDisk size={15} weight="bold" />
-                <span>Save All Settings</span>
-              </>
-            )}
-          </button>
+          {isSaving ? (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-[12px] bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold">
+              <div className="w-3.5 h-3.5 rounded-full border-2 border-amber-600/30 border-t-amber-600 animate-spin" />
+              <span>Saving changes...</span>
+            </div>
+          ) : saveSuccess ? (
+            <div className="flex items-center gap-1.5 px-4 py-2 rounded-[12px] bg-emerald-50 border border-emerald-200 text-[#1DA365] text-xs font-bold animate-fade-in">
+              <CheckCircle size={15} weight="fill" />
+              <span>All changes synced!</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-[12px] bg-stone-50 border border-stone-200 text-[#735E50] text-xs font-medium">
+              <span className="w-2 h-2 rounded-full bg-[#1DA365]" />
+              <span>All settings up to date</span>
+            </div>
+          )}
         </div>
       </div>
 

@@ -17,11 +17,29 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
       where: { id: userId },
     });
 
-    // Auto-create settings if not found
+    // Auto-create settings if not found with Ultra Safe default (5m–15m) and 50 maxDailyLimit
     if (!settings) {
       settings = await prisma.settings.create({
-        data: { id: userId },
+        data: { id: userId, delayMin: 300, delayMax: 900, maxDailyLimit: 50 },
       });
+    } else {
+      let needsUpdate = false;
+      const updateData: any = {};
+      if (settings.delayMin <= 60 && settings.delayMax <= 180) {
+        updateData.delayMin = 300;
+        updateData.delayMax = 900;
+        needsUpdate = true;
+      }
+      if (settings.maxDailyLimit > 200) {
+        updateData.maxDailyLimit = 200;
+        needsUpdate = true;
+      }
+      if (needsUpdate) {
+        settings = await prisma.settings.update({
+          where: { id: userId },
+          data: updateData,
+        });
+      }
     }
 
     const { effectiveLimit, warmupWeek, isWarmup } = getEffectiveDailyLimit(settings);
@@ -69,9 +87,9 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         location: data.location ?? '',
         defaultResumeId: data.defaultResumeId ? Number(data.defaultResumeId) : null,
         customPrompt: data.customPrompt ?? '',
-        delayMin: data.delayMin ? Number(data.delayMin) : 60,
-        delayMax: data.delayMax ? Number(data.delayMax) : 180,
-        maxDailyLimit: data.maxDailyLimit ? Number(data.maxDailyLimit) : 50,
+        delayMin: data.delayMin ? Number(data.delayMin) : 300,
+        delayMax: data.delayMax ? Number(data.delayMax) : 900,
+        maxDailyLimit: data.maxDailyLimit ? Math.min(200, Math.max(1, Number(data.maxDailyLimit))) : 50,
         enableWarmup: Boolean(data.enableWarmup),
         warmupStartLimit: data.warmupStartLimit ? Number(data.warmupStartLimit) : 5,
         warmupWeeklyIncrement: data.warmupWeeklyIncrement ? Number(data.warmupWeeklyIncrement) : 5,
@@ -91,9 +109,9 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         location: data.location ?? '',
         defaultResumeId: data.defaultResumeId ? Number(data.defaultResumeId) : null,
         customPrompt: data.customPrompt ?? '',
-        delayMin: data.delayMin ? Number(data.delayMin) : 60,
-        delayMax: data.delayMax ? Number(data.delayMax) : 180,
-        maxDailyLimit: data.maxDailyLimit ? Number(data.maxDailyLimit) : 50,
+        delayMin: data.delayMin ? Number(data.delayMin) : 300,
+        delayMax: data.delayMax ? Number(data.delayMax) : 900,
+        maxDailyLimit: data.maxDailyLimit ? Math.min(200, Math.max(1, Number(data.maxDailyLimit))) : 50,
         enableWarmup: Boolean(data.enableWarmup),
         warmupStartLimit: data.warmupStartLimit ? Number(data.warmupStartLimit) : 5,
         warmupWeeklyIncrement: data.warmupWeeklyIncrement ? Number(data.warmupWeeklyIncrement) : 5,

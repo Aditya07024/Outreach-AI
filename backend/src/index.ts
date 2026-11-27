@@ -105,8 +105,8 @@ async function startServer() {
           desiredSalary: '',
           location: '',
           customPrompt: 'Write a concise and professional cold email. Mention my technical skills and internships. Keep under 150 words. Do not exaggerate.',
-          delayMin: 30,
-          delayMax: 90,
+          delayMin: 300,
+          delayMax: 900,
           technicalFilter: true,
         },
       });
