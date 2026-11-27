@@ -23,8 +23,6 @@ export const Header: React.FC<HeaderProps> = ({ title, gmailStatus, onMenuClick 
           <Menu className="w-5 h-5" />
         </button>
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-slate-400 hidden sm:inline">Workspace</span>
-          <span className="text-slate-300 hidden sm:inline">/</span>
           <h1 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">{title}</h1>
         </div>
       </div>

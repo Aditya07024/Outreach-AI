@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   List,
-  Tray,
   Sparkle,
   CheckCircle,
   WarningCircle,
@@ -96,8 +95,6 @@ export const IslandHeader: React.FC<IslandHeaderProps> = ({
               <List size={20} />
             </button>
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-[#735E50]/70 hidden sm:inline font-mono">Workspace</span>
-              <span className="text-[#735E50]/40 hidden sm:inline">/</span>
               <h1 className="text-sm sm:text-base font-bold font-display tracking-tight text-[#2A1A0F]">
                 {title}
               </h1>
@@ -106,15 +103,6 @@ export const IslandHeader: React.FC<IslandHeaderProps> = ({
 
           {/* Right: Quick Pills & Dynamic Island Gmail Capsule */}
           <div className="flex items-center gap-2.5">
-            {/* Quick action: Outbox */}
-            <Link
-              to="/outbox"
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 hover:bg-white border border-white/90 text-xs font-semibold text-[#735E50] hover:text-[#2A1A0F] shadow-2xs transition-all"
-            >
-              <Tray size={14} className="text-[#D99B00]" weight="duotone" />
-              <span>Outbox</span>
-            </Link>
-
             {/* Expanding Dynamic Island Gmail Capsule */}
             <div className="relative" ref={popoverRef}>
               <button
@@ -157,7 +145,7 @@ export const IslandHeader: React.FC<IslandHeaderProps> = ({
                     <div className="flex items-center gap-2">
                       <EnvelopeSimple size={16} className="text-[#FF6B1A]" weight="duotone" />
                       <span className="text-xs font-bold text-[#2A1A0F] font-display">
-                        Google Mail OAuth
+                        Gmail Account
                       </span>
                     </div>
                     <button
@@ -173,7 +161,7 @@ export const IslandHeader: React.FC<IslandHeaderProps> = ({
                       <div className="p-2.5 rounded-[16px] bg-[#1DA365]/8 border border-[#1DA365]/20 space-y-1">
                         <div className="text-[10px] uppercase font-mono text-[#1DA365] font-bold flex items-center gap-1.5">
                           <CheckCircle size={12} weight="fill" />
-                          <span>Active Sending Pipe</span>
+                          <span>Connected & Ready</span>
                         </div>
                         <div className="text-xs font-mono text-[#2A1A0F] font-medium truncate">
                           {gmailStatus.email}
@@ -182,7 +170,7 @@ export const IslandHeader: React.FC<IslandHeaderProps> = ({
 
                       <div className="flex items-center gap-1.5 text-[11px] text-[#735E50]">
                         <ShieldCheck size={14} className="text-[#1DA365]" weight="duotone" />
-                        <span>Scope: gmail.send (Strict TLS)</span>
+                        <span>Protected: Sends only with your permission</span>
                       </div>
 
                       <Link
@@ -199,10 +187,10 @@ export const IslandHeader: React.FC<IslandHeaderProps> = ({
                       <div className="p-2.5 rounded-[16px] bg-[#E63946]/8 border border-[#E63946]/20 space-y-1">
                         <div className="text-[10px] uppercase font-mono text-[#E63946] font-bold flex items-center gap-1.5">
                           <WarningCircle size={12} weight="fill" />
-                          <span>Not Linked</span>
+                          <span>Not Connected</span>
                         </div>
                         <div className="text-xs text-[#735E50]">
-                          Link your Gmail account to dispatch reviewed drafts safely.
+                          Connect your Gmail account to send approved emails safely.
                         </div>
                       </div>
 

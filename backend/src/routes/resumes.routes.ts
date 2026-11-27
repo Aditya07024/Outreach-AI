@@ -95,6 +95,38 @@ router.post('/', upload.single('resume'), async (req: AuthenticatedRequest, res)
   }
 });
 
+// View / Download PDF file inline
+router.get('/:id/file', async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = Number(req.params.id);
+    const userId = req.user!.id;
+    const resume = await prisma.resume.findFirst({
+      where: { id, userId },
+    });
+
+    if (!resume) {
+      return res.status(404).json({ error: 'Resume not found' });
+    }
+
+    if (resume.fileContent) {
+      const buffer = Buffer.from(resume.fileContent, 'base64');
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(resume.name)}.pdf"`);
+      return res.send(buffer);
+    }
+
+    if (resume.filePath && fs.existsSync(resume.filePath)) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(resume.name)}.pdf"`);
+      return fs.createReadStream(resume.filePath).pipe(res);
+    }
+
+    res.status(404).json({ error: 'Resume file content not available' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to retrieve resume' });
+  }
+});
+
 // Update resume details
 router.put('/:id', async (req: AuthenticatedRequest, res) => {
   try {

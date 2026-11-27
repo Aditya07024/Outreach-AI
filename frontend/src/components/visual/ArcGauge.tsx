@@ -118,7 +118,7 @@ export const ArcGauge: React.FC<ArcGaugeProps> = ({
           {value}
         </span>
         <span className="text-xs font-mono text-[#735E50] mt-0.5 font-medium">
-          / {max} cap
+          / {max} limit
         </span>
         <span className="text-[11px] font-semibold uppercase tracking-wider text-[#735E50]/90 mt-1">
           {label}

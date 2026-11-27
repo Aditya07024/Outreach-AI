@@ -136,3 +136,33 @@
   border-radius: 9999px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px -2px rgba(42, 26, 15, 0.05);
 }
+
+/* Dull / Locked state for cards when setup step is incomplete */
+.settings-dulled-card {
+  opacity: 0.18 !important;
+  filter: grayscale(100%) contrast(0.8) blur(0.5px) !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  cursor: not-allowed !important;
+  transition: opacity 0.3s ease, filter 0.3s ease !important;
+}
+
+.settings-dulled-card * {
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+}
+
+/* Nudge animation for directional arrow highlights */
+@keyframes arrow-nudge-x {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+}
+
+.animate-arrow-nudge {
+  display: inline-flex;
+  animation: arrow-nudge-x 1s ease-in-out infinite;
+}

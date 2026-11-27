@@ -36,12 +36,31 @@ export async function getSentEmailsInLast24Hours(userId?: number): Promise<numbe
   return count;
 }
 
+interface UserQueueState {
+  isRunning: boolean;
+  activeTimeout: NodeJS.Timeout | null;
+  activeTimeoutResolve: (() => void) | null;
+  skipNextQueueDelay: boolean;
+}
+
 export class SendingEngine {
-  private static isRunning = false;
+  // Map of userId -> UserQueueState for completely isolated, concurrent sending per user
+  private static userQueues = new Map<number, UserQueueState>();
   private static timerId: NodeJS.Timeout | null = null;
-  private static activeTimeout: NodeJS.Timeout | null = null;
-  private static activeTimeoutResolve: (() => void) | null = null;
-  private static skipNextQueueDelay = false;
+
+  private static getUserQueue(userId: number): UserQueueState {
+    let state = this.userQueues.get(userId);
+    if (!state) {
+      state = {
+        isRunning: false,
+        activeTimeout: null,
+        activeTimeoutResolve: null,
+        skipNextQueueDelay: false,
+      };
+      this.userQueues.set(userId, state);
+    }
+    return state;
+  }
 
   /**
    * Start the background scheduler loop.
@@ -49,14 +68,14 @@ export class SendingEngine {
   static startScheduler(): void {
     if (this.timerId) return;
 
-    // Check for campaigns in SENDING status every 10 seconds
+    // Check for campaigns in SENDING status every 10 seconds across all users
     this.timerId = setInterval(() => {
-      this.processQueue().catch((err) => {
-        console.error('Error in SendingEngine processQueue:', err);
+      this.processAllQueues().catch((err) => {
+        console.error('Error in SendingEngine processAllQueues:', err);
       });
     }, 10000);
 
-    console.log('[SendingEngine] Background scheduler started.');
+    console.log('[SendingEngine] Background scheduler started (Parallel Multi-User mode).');
   }
 
   /**
@@ -67,15 +86,19 @@ export class SendingEngine {
       clearInterval(this.timerId);
       this.timerId = null;
     }
-    if (this.activeTimeout) {
-      clearTimeout(this.activeTimeout);
-      this.activeTimeout = null;
+    for (const [userId, state] of this.userQueues.entries()) {
+      if (state.activeTimeout) {
+        clearTimeout(state.activeTimeout);
+        state.activeTimeout = null;
+      }
+      if (state.activeTimeoutResolve) {
+        state.activeTimeoutResolve();
+        state.activeTimeoutResolve = null;
+      }
+      state.skipNextQueueDelay = false;
+      state.isRunning = false;
     }
-    if (this.activeTimeoutResolve) {
-      this.activeTimeoutResolve();
-      this.activeTimeoutResolve = null;
-    }
-    this.skipNextQueueDelay = false;
+    this.userQueues.clear();
     console.log('[SendingEngine] Background scheduler stopped.');
   }
 
@@ -120,32 +143,77 @@ export class SendingEngine {
   }
 
   /**
-   * Main processing tick. Finds one active campaign and sends the next email.
+   * Main scheduler tick.
+   * Finds all distinct users who currently have campaigns in SENDING status,
+   * and triggers their independent queues in true parallel.
    */
-  private static async processQueue(): Promise<void> {
-    if (this.isRunning) return; // Prevent concurrent overlap
-    this.isRunning = true;
+  static async processAllQueues(): Promise<void> {
+    try {
+      // 1. Run automatic trial expiration check
+      await this.checkExpiredTrials();
+
+      // 2. Find all distinct users with active SENDING campaigns
+      const activeUsers = await prisma.campaign.findMany({
+        where: { status: 'SENDING' },
+        select: { userId: true },
+        distinct: ['userId'],
+      });
+
+      if (!activeUsers || activeUsers.length === 0) {
+        return;
+      }
+
+      // 3. Process every user's queue in parallel
+      await Promise.allSettled(
+        activeUsers.map(async (u) => {
+          const uid = u.userId || 1;
+          await this.processUserQueue(uid);
+        })
+      );
+    } catch (err) {
+      console.error('Error in SendingEngine processAllQueues:', err);
+    }
+  }
+
+  /**
+   * Backward-compatible alias for processAllQueues
+   */
+  static async processQueue(userId?: number): Promise<void> {
+    if (userId) {
+      return this.processUserQueue(userId);
+    }
+    return this.processAllQueues();
+  }
+
+  /**
+   * Processes the next pending email for a specific user.
+   * Runs concurrently and completely isolated from any other user.
+   */
+  static async processUserQueue(userId: number): Promise<void> {
+    const queueState = this.getUserQueue(userId);
+    if (queueState.isRunning) return; // Prevent concurrent overlap FOR THIS USER ONLY
+    queueState.isRunning = true;
     let campaign: any = null;
 
     try {
-      // Run automatic trial expiration check
-      await this.checkExpiredTrials();
-
-      // Find the first campaign currently in SENDING state
+      // Find the active campaign currently in SENDING state for this user
       campaign = await prisma.campaign.findFirst({
-        where: { status: 'SENDING' },
+        where: {
+          userId,
+          status: 'SENDING',
+        },
         include: {
           resume: true,
         },
+        orderBy: { id: 'asc' },
       });
 
       if (!campaign) {
-        this.isRunning = false;
+        queueState.isRunning = false;
         return;
       }
 
       // Check user safety settings & daily limits
-      const userId = campaign.userId || 1;
       const settings = (await prisma.settings.findUnique({ where: { id: userId } }))
         || (await prisma.settings.findUnique({ where: { id: 1 } }));
 
@@ -155,11 +223,11 @@ export class SendingEngine {
       if (sentInLast24h >= effectiveLimit) {
         await logger.warn(
           'EMAIL_SENDING',
-          `Daily email limit reached (${sentInLast24h}/${effectiveLimit} sent in last 24h${isWarmup ? `, Warmup Week ${warmupWeek}` : ''}). Pausing queue to protect Google Account.`,
+          `Daily email limit reached (${sentInLast24h}/${effectiveLimit} sent in last 24h${isWarmup ? `, Warmup Week ${warmupWeek}` : ''}). Pausing queue for user #${userId} to protect Google Account.`,
           { sentInLast24h, effectiveLimit, isWarmup, warmupWeek },
           userId
         );
-        this.isRunning = false;
+        queueState.isRunning = false;
         return;
       }
 
@@ -180,12 +248,19 @@ export class SendingEngine {
           where: { id: campaign.id },
           data: { status: 'COMPLETED' },
         });
-        await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" completed. No more pending contacts.`, null, campaign.userId || undefined);
-        this.isRunning = false;
+        await logger.info(
+          'EMAIL_SENDING',
+          `Campaign "${campaign.name}" completed. No more pending contacts.`,
+          null,
+          userId
+        );
+        queueState.isRunning = false;
+        // Check if user has another campaign waiting in SENDING
+        this.triggerNextTickForUser(userId);
         return;
       }
 
-      // Check if contact matches excluded domains or emails (e.g. .sparixglobal.com, specific email addresses)
+      // Check if contact matches excluded domains or emails (e.g. specific email addresses or domain suffixes)
       const campaignExclusions = (campaign as any).excludedEmails || '';
       const settingsExclusions = (settings as any)?.excludedEmails || '';
       if (isEmailExcluded(contact.email, campaignExclusions) || isEmailExcluded(contact.email, settingsExclusions)) {
@@ -197,11 +272,11 @@ export class SendingEngine {
           'EMAIL_SENDING',
           `Skipped sending to ${contact.email} (Contact #${contact.id}) for campaign "${campaign.name}" because it matches the excluded domain / email list.`,
           { contactId: contact.id, email: contact.email },
-          campaign.userId || undefined
+          userId
         );
-        // Continue sending queue immediately to next contact
-        this.isRunning = false;
-        setTimeout(() => this.processQueue(), 500);
+        // Continue sending queue immediately to next contact for this user
+        queueState.isRunning = false;
+        setTimeout(() => this.processUserQueue(userId), 500);
         return;
       }
 
@@ -215,14 +290,19 @@ export class SendingEngine {
           'EMAIL_SENDING',
           `Cannot send to ${contact.email}. Subject or Body is empty. Run email generation first.`,
           { contactId: contact.id },
-          campaign.userId || undefined
+          userId
         );
-        this.isRunning = false;
+        queueState.isRunning = false;
         return;
       }
 
-      // 3. Send the email
-      await logger.info('EMAIL_SENDING', `Sending email to ${contact.firstName || ''} (${contact.email}) for campaign "${campaign.name}"`, null, campaign.userId || undefined);
+      // Send the email scoped strictly to THIS user's Gmail connection
+      await logger.info(
+        'EMAIL_SENDING',
+        `Sending email to ${contact.firstName || ''} (${contact.email}) for campaign "${campaign.name}"`,
+        null,
+        userId
+      );
       
       let messageId: string | null = null;
       let sendError: string | null = null;
@@ -238,7 +318,7 @@ export class SendingEngine {
 
       try {
         messageId = await GmailService.sendEmail(
-          campaign.userId || 1, // Scope email send to campaign owner
+          userId, // Scope email send to campaign owner
           contact.email,
           contact.emailSubject,
           contact.emailBody,
@@ -275,7 +355,7 @@ export class SendingEngine {
           'EMAIL_SENDING',
           `Email sent successfully to ${contact.email}. Message ID: ${messageId}`,
           null,
-          campaign.userId || undefined
+          userId
         );
       } else {
         // Failure
@@ -312,18 +392,18 @@ export class SendingEngine {
             'EMAIL_SENDING',
             `Email failed ${newFailureCount} times for ${contact.email}. Setting status to SKIPPED to proceed with remaining queue. Error: ${sendError}`,
             null,
-            campaign.userId || undefined
+            userId
           );
         } else {
           await logger.error(
             'EMAIL_SENDING',
             `Email failed for ${contact.email} (Attempt ${newFailureCount}/2). Error: ${sendError}`,
             null,
-            campaign.userId || undefined
+            userId
           );
         }
 
-        // If it's a Gmail authentication/session failure, auto-pause the campaign to avoid repeat errors
+        // If it's a Gmail authentication/session failure, auto-pause the campaign for this user
         if (sendError && (sendError.includes('auth') || sendError.includes('expired') || sendError.includes('login') || sendError.includes('connect'))) {
           await prisma.campaign.update({
             where: { id: campaign.id },
@@ -333,19 +413,21 @@ export class SendingEngine {
             'EMAIL_SENDING',
             `Campaign "${campaign.name}" auto-paused due to Google authentication error.`,
             null,
-            campaign.userId || undefined
+            userId
           );
+          queueState.isRunning = false;
+          return;
         }
       }
 
-      // 4. Calculate and apply random delay (or consume one-time skip if requested)
-      if (this.skipNextQueueDelay) {
-        this.skipNextQueueDelay = false; // Reset: single press skips one time only
+      // Calculate and apply random delay for THIS user (or consume one-time skip if requested)
+      if (queueState.skipNextQueueDelay) {
+        queueState.skipNextQueueDelay = false; // Reset: single press skips one time only
         await logger.info(
           'EMAIL_SENDING',
           'Single-use queue skip consumed. Proceeding to next email without delay.',
           null,
-          campaign.userId || undefined
+          userId
         );
       } else {
         const delayMin = settings?.delayMin ?? 60;
@@ -356,28 +438,46 @@ export class SendingEngine {
           'EMAIL_SENDING',
           `Queue waiting for ${randomDelaySeconds} seconds before next send...`,
           null,
-          campaign.userId || undefined
+          userId
         );
 
-        // Wait for the random delay in a non-blocking timeout
+        // Wait for the random delay in a non-blocking timeout for this user
         await new Promise<void>((resolve) => {
-          this.activeTimeoutResolve = resolve;
-          this.activeTimeout = setTimeout(() => {
-            this.activeTimeout = null;
-            this.activeTimeoutResolve = null;
+          queueState.activeTimeoutResolve = resolve;
+          queueState.activeTimeout = setTimeout(() => {
+            queueState.activeTimeout = null;
+            queueState.activeTimeoutResolve = null;
             resolve();
           }, randomDelaySeconds * 1000);
         });
       }
 
     } catch (error: any) {
-      console.error('Critical error in sending loop:', error);
-      await logger.error('EMAIL_SENDING', 'Critical error in sending queue loop', error, campaign?.userId || undefined);
+      console.error(`Critical error in sending loop for user ${userId}:`, error);
+      await logger.error('EMAIL_SENDING', 'Critical error in sending queue loop', error, userId);
     } finally {
-      this.isRunning = false;
-      this.activeTimeout = null;
-      this.activeTimeoutResolve = null;
+      queueState.isRunning = false;
+      queueState.activeTimeout = null;
+      queueState.activeTimeoutResolve = null;
+      this.triggerNextTickForUser(userId);
     }
+  }
+
+  private static triggerNextTickForUser(userId: number): void {
+    setTimeout(async () => {
+      try {
+        const count = await prisma.campaign.count({
+          where: { userId, status: 'SENDING' },
+        });
+        if (count > 0) {
+          this.processUserQueue(userId).catch((err) => {
+            console.error(`Error in triggerNextTickForUser for user ${userId}:`, err);
+          });
+        }
+      } catch (e) {
+        // DB or connection blip, will be picked up by 10s interval
+      }
+    }, 50);
   }
 
   /**
@@ -387,7 +487,8 @@ export class SendingEngine {
     const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
     if (!campaign) throw new Error('Campaign not found');
 
-    const status = await GmailService.getConnectionStatus(campaign.userId || 1);
+    const userId = campaign.userId || 1;
+    const status = await GmailService.getConnectionStatus(userId);
     if (!status.connected) {
       throw new Error('Please connect your Gmail account before starting the campaign.');
     }
@@ -411,11 +512,11 @@ export class SendingEngine {
       data: { status: 'SENDING' },
     });
     
-    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" started/resumed.`, null, campaign.userId || undefined);
+    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" started/resumed.`, null, userId);
     
-    // Trigger tick immediately without waiting for interval
-    this.processQueue().catch((err) => {
-      console.error('Error in direct processQueue call:', err);
+    // Trigger tick immediately for THIS USER without waiting for interval
+    this.processUserQueue(userId).catch((err) => {
+      console.error(`Error in direct processUserQueue for user ${userId}:`, err);
     });
   }
 
@@ -426,12 +527,34 @@ export class SendingEngine {
     const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
     if (!campaign) throw new Error('Campaign not found');
 
+    const userId = campaign.userId || 1;
     await prisma.campaign.update({
       where: { id: campaignId },
       data: { status: 'PAUSED' },
     });
 
-    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" paused.`, null, campaign.userId || undefined);
+    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" paused.`, null, userId);
+
+    // If user has no more active SENDING campaigns, clear their active timeout
+    const remainingSending = await prisma.campaign.count({
+      where: { userId, status: 'SENDING' },
+    });
+
+    if (remainingSending === 0) {
+      const queueState = this.userQueues.get(userId);
+      if (queueState?.activeTimeout) {
+        clearTimeout(queueState.activeTimeout);
+        queueState.activeTimeout = null;
+      }
+      if (queueState?.activeTimeoutResolve) {
+        queueState.activeTimeoutResolve();
+        queueState.activeTimeoutResolve = null;
+      }
+      if (queueState) {
+        queueState.skipNextQueueDelay = false;
+        queueState.isRunning = false;
+      }
+    }
   }
 
   /**
@@ -441,12 +564,34 @@ export class SendingEngine {
     const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
     if (!campaign) throw new Error('Campaign not found');
 
+    const userId = campaign.userId || 1;
     await prisma.campaign.update({
       where: { id: campaignId },
-      data: { status: 'DRAFT' }, // Roll back to DRAFT or similar
+      data: { status: 'DRAFT' },
     });
 
-    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" cancelled/reset to draft.`, null, campaign.userId || undefined);
+    await logger.info('EMAIL_SENDING', `Campaign "${campaign.name}" cancelled/reset to draft.`, null, userId);
+
+    // If user has no more active SENDING campaigns, clear their active timeout
+    const remainingSending = await prisma.campaign.count({
+      where: { userId, status: 'SENDING' },
+    });
+
+    if (remainingSending === 0) {
+      const queueState = this.userQueues.get(userId);
+      if (queueState?.activeTimeout) {
+        clearTimeout(queueState.activeTimeout);
+        queueState.activeTimeout = null;
+      }
+      if (queueState?.activeTimeoutResolve) {
+        queueState.activeTimeoutResolve();
+        queueState.activeTimeoutResolve = null;
+      }
+      if (queueState) {
+        queueState.skipNextQueueDelay = false;
+        queueState.isRunning = false;
+      }
+    }
   }
 
   /**
@@ -475,47 +620,54 @@ export class SendingEngine {
   }
 
   /**
-   * Skips the queue wait time for the next email (one-time only).
+   * Skips the queue wait time for the next email (one-time only) for a specific user.
    * - If currently in a delay sleep, wakes up immediately.
    * - If between loops, sets skipNextQueueDelay = true so the next email proceeds with 0s delay.
    * - Once the next email is handled, normal delays automatically resume.
    */
   static async skipNextQueue(campaignId?: number, userId?: number): Promise<{ success: boolean; message: string }> {
+    let targetUserId = userId;
     if (campaignId) {
       const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
-      if (campaign && campaign.status !== 'SENDING') {
-        const status = await GmailService.getConnectionStatus(campaign.userId || 1);
-        if (!status.connected) {
-          throw new Error('Please connect your Gmail account before starting the campaign.');
+      if (campaign) {
+        targetUserId = campaign.userId || targetUserId || 1;
+        if (campaign.status !== 'SENDING') {
+          const status = await GmailService.getConnectionStatus(targetUserId);
+          if (!status.connected) {
+            throw new Error('Please connect your Gmail account before starting the campaign.');
+          }
+          await prisma.campaign.update({
+            where: { id: campaignId },
+            data: { status: 'SENDING' },
+          });
         }
-        await prisma.campaign.update({
-          where: { id: campaignId },
-          data: { status: 'SENDING' },
-        });
       }
     }
 
-    // Case 1: An active delay timeout is currently running
-    if (this.activeTimeout && this.activeTimeoutResolve) {
-      clearTimeout(this.activeTimeout);
-      this.activeTimeout = null;
-      const resolve = this.activeTimeoutResolve;
-      this.activeTimeoutResolve = null;
-      this.skipNextQueueDelay = false;
+    const uid = targetUserId || 1;
+    const queueState = this.getUserQueue(uid);
+
+    // Case 1: An active delay timeout is currently running for this user
+    if (queueState.activeTimeout && queueState.activeTimeoutResolve) {
+      clearTimeout(queueState.activeTimeout);
+      queueState.activeTimeout = null;
+      const resolve = queueState.activeTimeoutResolve;
+      queueState.activeTimeoutResolve = null;
+      queueState.skipNextQueueDelay = false;
 
       await logger.info(
         'EMAIL_SENDING',
         'Queue wait skipped by user! Triggering next email immediately.',
         null,
-        userId
+        uid
       );
 
       resolve();
 
       setTimeout(() => {
-        if (!this.isRunning) {
-          this.processQueue().catch((err) => {
-            console.error('Error running queue after skipping wait:', err);
+        if (!queueState.isRunning) {
+          this.processUserQueue(uid).catch((err) => {
+            console.error(`Error running queue after skipping wait for user ${uid}:`, err);
           });
         }
       }, 50);
@@ -526,20 +678,20 @@ export class SendingEngine {
       };
     }
 
-    // Case 2: Set one-time skip flag for the next email
-    this.skipNextQueueDelay = true;
+    // Case 2: Set one-time skip flag for the next email for this user
+    queueState.skipNextQueueDelay = true;
 
     await logger.info(
       'EMAIL_SENDING',
       'One-time queue delay skip armed for next email.',
       null,
-      userId
+      uid
     );
 
-    if (!this.isRunning) {
+    if (!queueState.isRunning) {
       setTimeout(() => {
-        this.processQueue().catch((err) => {
-          console.error('Error triggering queue after skipNextQueue:', err);
+        this.processUserQueue(uid).catch((err) => {
+          console.error(`Error triggering queue after skipNextQueue for user ${uid}:`, err);
         });
       }, 50);
     }

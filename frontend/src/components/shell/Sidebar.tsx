@@ -58,8 +58,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navContainerRef = useRef<HTMLDivElement>(null);
   const activeBubbleRef = useRef<HTMLDivElement>(null);
   const resumesLinkRef = useRef<HTMLAnchorElement>(null);
+  const warningCardRef = useRef<HTMLDivElement>(null);
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Resume status tracking: campaigns tab is disabled if resume quantity is 0
+  // Resume status tracking: campaigns requires at least 1 resume
   const [resumeCount, setResumeCount] = useState<number>(() => {
     const cached = localStorage.getItem('outreach_resume_count');
     return cached !== null ? parseInt(cached, 10) : 0;
@@ -67,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [showResumeWarning, setShowResumeWarning] = useState(false);
   const [warningTop, setWarningTop] = useState<number>(220);
 
-  const fetchResumeCount = async () => {
+  const fetchResumeCount = async (retries = 3) => {
     try {
       const res = await fetch('/api/resumes');
       if (res.ok) {
@@ -76,9 +78,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         const count = list.length;
         setResumeCount(count);
         localStorage.setItem('outreach_resume_count', String(count));
+        return;
+      }
+      if (res.status === 401 && retries > 0) {
+        setTimeout(() => fetchResumeCount(retries - 1), 800);
       }
     } catch (e) {
-      console.warn('Could not fetch resumes count', e);
+      if (retries > 0) {
+        setTimeout(() => fetchResumeCount(retries - 1), 800);
+      }
     }
   };
 
@@ -98,7 +106,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       setShowResumeWarning(false);
     };
     window.addEventListener('resumesUpdated', handleUpdate);
-    return () => window.removeEventListener('resumesUpdated', handleUpdate);
+
+    // Global listener so dashboard or any page can trigger the resume arrow warning
+    const handleGlobalTrigger = () => triggerResumeWarning();
+    window.addEventListener('showResumeWarning', handleGlobalTrigger);
+
+    return () => {
+      window.removeEventListener('resumesUpdated', handleUpdate);
+      window.removeEventListener('showResumeWarning', handleGlobalTrigger);
+    };
   }, []);
 
   // Update warning coordinates on resize or scroll
@@ -114,38 +130,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [showResumeWarning]);
 
+  // Dismiss warning when clicking outside
+  useEffect(() => {
+    if (!showResumeWarning) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (warningCardRef.current && !warningCardRef.current.contains(e.target as Node)) {
+        setShowResumeWarning(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showResumeWarning]);
+
   const triggerResumeWarning = () => {
     updateWarningPosition();
     setShowResumeWarning(true);
-    // Notice: NO auto-dismiss timer! The warning stays permanently visible until user acts.
+    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    warningTimerRef.current = setTimeout(() => {
+      setShowResumeWarning(false);
+    }, 8000);
   };
 
-  const isCampaignLocked = resumeCount === 0;
+  interface NavItem {
+    to: string;
+    name: string;
+    icon: React.ElementType;
+    badge: string | null;
+  }
 
-  const navigationSections = [
+  interface NavSection {
+    title: string;
+    items: NavItem[];
+  }
+
+  const navigationSections: NavSection[] = [
     {
-      title: 'Workflow',
+      title: 'Outreach',
       items: [
         { to: '/', name: 'Overview', icon: SquaresFour, badge: null },
-        { 
-          to: '/campaigns', 
-          name: 'Campaigns', 
-          icon: Stack, 
-          badge: isCampaignLocked ? 'LOCKED' : null 
-        },
-        { to: '/outbox', name: 'Review Outbox', icon: Tray, badge: null },
-        { to: '/compose', name: 'AI Studio', icon: Sparkle, badge: 'AI' },
+        { to: '/campaigns', name: 'Campaigns', icon: Stack, badge: null },
+        { to: '/outbox', name: 'Review Emails', icon: Tray, badge: null },
       ],
     },
     {
-      title: 'Assets & Logs',
+      title: 'Resumes & History',
       items: [
         { to: '/resumes', name: 'Resumes', icon: FileText, badge: null },
-        { to: '/history', name: 'Outreach History', icon: ClockCounterClockwise, badge: null },
+        { to: '/history', name: 'Sent Emails', icon: ClockCounterClockwise, badge: null },
       ],
     },
     {
-      title: 'Workspace',
+      title: 'Account & Settings',
       items: [
         { to: '/settings', name: 'Settings & Safety', icon: Gear, badge: null },
         { to: '/subscription', name: 'Billing & Plans', icon: CreditCard, badge: null },
@@ -156,9 +191,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   if (userRole === 'super_admin') {
     navigationSections.push({
-      title: 'Administration',
+      title: 'Admin',
       items: [
-        { to: '/admin-portal', name: 'Super Admin', icon: ShieldWarning, badge: 'PRO' },
+        { to: '/admin-portal', name: 'Admin Panel', icon: ShieldWarning, badge: 'PRO' },
       ],
     });
   }
@@ -203,7 +238,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           bg-white/80 backdrop-blur-[28px] saturate-[160%]
           border border-white/90
           shadow-[0_20px_45px_-12px_rgba(42,26,15,0.08),inset_0_1px_0_rgba(255,255,255,1),inset_0_-1px_0_rgba(42,26,15,0.03)]
-          rounded-[32px] flex flex-col justify-between
+          rounded-[32px] overflow-hidden flex flex-col justify-between
           transition-transform duration-300 ease-out
           lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-[115%]'
         }`}
@@ -255,15 +290,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   const isActive = location.pathname === link.to;
                   const isCampaigns = link.to === '/campaigns';
                   const isResumes = link.to === '/resumes';
-                  const isLocked = isCampaigns && isCampaignLocked;
 
                   return (
                     <div key={link.to} className="relative">
                       <NavLink
                         ref={isResumes ? resumesLinkRef : undefined}
-                        to={isLocked ? '#' : link.to}
+                        to={link.to}
                         onClick={(e) => {
-                          if (isLocked) {
+                          if (isCampaigns && resumeCount === 0) {
                             e.preventDefault();
                             triggerResumeWarning();
                             return;
@@ -273,10 +307,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         }}
                         data-active={isActive ? 'true' : 'false'}
                         className={`
-                          relative flex items-center justify-between px-3 py-2 rounded-[14px] text-xs font-medium transition-all duration-150 group
-                          ${isLocked 
-                            ? 'opacity-40 cursor-not-allowed bg-stone-100/60 text-[#735E50]/60 hover:bg-stone-200/50'
-                            : isActive
+                          relative flex items-center justify-between px-3 py-2 rounded-[14px] text-xs font-medium transition-all duration-150 group cursor-pointer
+                          ${isActive
                             ? 'text-[#2A1A0F] font-bold'
                             : 'text-[#735E50] hover:text-[#2A1A0F] hover:bg-white/60'
                           }
@@ -285,10 +317,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             : ''
                           }
                         `}
-                        title={isLocked ? 'Upload a resume first to unlock Campaigns' : undefined}
                       >
                         {/* Morphing Liquid Bubble for active item */}
-                        {isActive && !isLocked && (
+                        {isActive && (
                           <div
                             ref={activeBubbleRef}
                             className="absolute inset-0 rounded-[14px] bg-[#FF6B1A]/12 border border-[#FF6B1A]/25 -z-0 shadow-[0_2px_8px_rgba(255,107,26,0.12)]"
@@ -300,27 +331,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             size={17}
                             weight="duotone"
                             className={`shrink-0 transition-colors ${
-                              isLocked
-                                ? 'text-[#735E50]/40'
-                                : isActive
+                              isActive
                                 ? 'text-[#FF6B1A]'
                                 : isResumes && showResumeWarning
                                 ? 'text-[#FF6B1A]'
                                 : 'text-[#735E50] group-hover:text-[#2A1A0F]'
                             }`}
                           />
-                          <span className={`truncate ${isLocked ? 'line-through decoration-[#735E50]/40' : ''}`}>
+                          <span className="truncate">
                             {link.name}
                           </span>
                         </div>
 
                         {/* Status Badges */}
-                        {isLocked ? (
-                          <span className="relative z-10 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider bg-stone-200 text-[#735E50] border border-stone-300">
-                            <LockSimple size={10} weight="bold" />
-                            <span>LOCKED</span>
-                          </span>
-                        ) : isResumes && showResumeWarning ? (
+                        {isResumes && showResumeWarning ? (
                           <span className="relative z-10 px-1.5 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider bg-[#FF6B1A] text-white animate-pulse shadow-xs">
                             START HERE
                           </span>
@@ -347,7 +371,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Bottom Section: Trial status & Account Controls */}
-        <div className="p-3 bg-white/40 border-t border-[rgba(42,26,15,0.06)] space-y-2">
+        <div className="p-3 bg-white/40 border-t border-[rgba(42,26,15,0.06)] space-y-2 rounded-b-[31px]">
           {/* Trial / Quota warning badge */}
           {currentUser && !currentUser.paid && currentUser.role !== 'admin' && currentUser.role !== 'super_admin' && (
             <div className="p-2.5 rounded-[16px] bg-amber-50/80 border border-amber-200/80 flex items-center justify-between shadow-2xs">
@@ -359,7 +383,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div className="text-[11px] font-bold text-[#2A1A0F]">
                     {trialHoursLeft > 0 ? `${trialHoursLeft}h trial left` : 'Trial ended'}
                   </div>
-                  <div className="text-[9px] text-[#735E50] font-mono">Free evaluation</div>
+                  <div className="text-[9px] text-[#735E50] font-mono">Free trial</div>
                 </div>
               </div>
               <NavLink
@@ -381,10 +405,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`} />
               <div className="min-w-0">
                 <div className="text-[9px] font-mono text-[#735E50] uppercase tracking-wider font-semibold">
-                  {gmailStatus?.connected ? 'Gmail Active' : 'Gmail Alert'}
+                  {gmailStatus?.connected ? 'Gmail Connected' : 'Gmail Disconnected'}
                 </div>
                 <div className="text-xs font-semibold text-[#2A1A0F] truncate max-w-[120px]">
-                  {gmailStatus?.connected ? gmailStatus.email : 'Action Required'}
+                  {gmailStatus?.connected ? gmailStatus.email : 'Connect Gmail'}
                 </div>
               </div>
             </div>
@@ -420,6 +444,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
          ======================================================== */}
       {showResumeWarning && (
         <div
+          ref={warningCardRef}
           className={`
             fixed z-[9999] pointer-events-auto
             w-[320px] p-4 rounded-[22px]
@@ -454,15 +479,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Message */}
           <p className="text-xs text-[#735E50] leading-relaxed">
-            The <strong>Campaigns</strong> tab is locked. You must upload at least one candidate resume profile before creating or dispatching outreach campaigns.
+            Please upload your resume first. You need at least one resume profile before creating or viewing email campaigns.
           </p>
 
           {/* Action Footer */}
           <div className="pt-1 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-[#FF6B1A]">
+            {/* <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-[#FF6B1A]">
               <ArrowLeft size={13} weight="bold" className="animate-pulse" />
               <span>Click Resumes tab</span>
-            </div>
+            </div> */}
 
             <button
               onClick={() => {
@@ -472,7 +497,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }}
               className="px-3.5 py-1.5 rounded-[12px] bg-[#FF6B1A] hover:bg-[#FF6B1A]/90 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1 cursor-pointer active:scale-95"
             >
-              <span>Upload Now</span>
+              <span>Upload Resume</span>
               <ArrowRight size={13} weight="bold" />
             </button>
           </div>

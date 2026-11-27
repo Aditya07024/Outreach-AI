@@ -23,25 +23,25 @@ export const PipelineFunnel: React.FC<PipelineFunnelProps> = ({
 }) => {
   const steps: FunnelStep[] = [
     {
-      label: 'Recruiter Leads',
+      label: 'Recruiters Added',
       count: contactsCount,
       icon: Users,
       status: contactsCount > 0 ? 'completed' : 'pending',
     },
     {
-      label: 'AI Drafted',
+      label: 'Emails Written',
       count: draftsCount,
       icon: Sparkle,
       status: draftsCount > 0 ? 'completed' : contactsCount > 0 ? 'active' : 'pending',
     },
     {
-      label: 'Review Queue',
+      label: 'Ready to Review',
       count: reviewCount,
       icon: Tray,
       status: reviewCount > 0 ? 'active' : draftsCount > 0 ? 'completed' : 'pending',
     },
     {
-      label: 'Sent Dispatches',
+      label: 'Emails Sent',
       count: sentCount,
       icon: PaperPlaneRight,
       status: sentCount > 0 ? 'completed' : 'pending',
@@ -97,7 +97,7 @@ export const PipelineFunnel: React.FC<PipelineFunnelProps> = ({
                 {step.count.toLocaleString()}
               </span>
 
-              {/* Label */}
+              {/* Friendly Label */}
               <span className="text-xs font-semibold text-[#735E50] mt-0.5">
                 {step.label}
               </span>

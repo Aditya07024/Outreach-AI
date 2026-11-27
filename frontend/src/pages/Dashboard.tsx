@@ -55,7 +55,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [campaignFilter, setCampaignFilter] = useState<'ALL' | 'SENDING' | 'DRAFT' | 'PAUSED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Right column tab switcher: Dispatches vs System Logs
+  // Right column tab switcher: Sent Emails vs Activity Log
   const [activityTab, setActivityTab] = useState<'DISPATCHES' | 'LOGS'>('DISPATCHES');
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -110,7 +110,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       setLogs(Array.isArray(logsData) ? logsData : (logsData?.logs && Array.isArray(logsData.logs) ? logsData.logs : []));
     } catch (err: any) {
       console.warn('[Dashboard] Data fetch error:', err);
-      setFetchError('Backend connection initializing. Tap retry to reconnect.');
+      setFetchError('Connection is waking up. Tap retry to reconnect.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -194,8 +194,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         <Glass variant="strong" radius="inner" className="p-8 flex flex-col items-center gap-4 text-center">
           <div className="w-10 h-10 rounded-full border-2 border-stone-200 border-t-[#FF6B1A] animate-spin" />
           <div className="space-y-1">
-            <h3 className="text-sm font-bold font-display text-[#2A1A0F]">Syncing Outreach Engine</h3>
-            <p className="text-xs text-[#735E50]">Loading deliverability telemetry and review queues...</p>
+            <h3 className="text-sm font-bold font-display text-[#2A1A0F]">Opening Your Dashboard</h3>
+            <p className="text-xs text-[#735E50]">Loading your email drafts and sending status...</p>
           </div>
         </Glass>
       </div>
@@ -209,56 +209,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
          ======================================================== */}
       <div className="bento-reveal flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1DA365]/10 border border-[#1DA365]/25 text-[#1DA365] text-xs font-mono font-bold mb-1">
-            <span className="w-2 h-2 rounded-full bg-[#1DA365] animate-pulse" />
-            <span>{activeSendingCount > 0 ? `${activeSendingCount} Campaigns Active` : 'Engine Ready'}</span>
-            <span className="opacity-40">•</span>
-            <span>Gmail Protected</span>
-          </div>
+
 
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-display tracking-tight text-[#2A1A0F]">
             {totalPending > 0 ? (
               <>
-                You have <span className="text-[#FF6B1A] underline decoration-[#FF6B1A]/40 decoration-wavy decoration-2">{totalPending} drafts</span> awaiting review.
+                You have <span className="text-[#FF6B1A] underline decoration-[#FF6B1A]/40 decoration-wavy decoration-2">{totalPending} emails</span> ready to review.
               </>
             ) : (
               <>
-                Cold outreach is <span className="text-[#1DA365] underline decoration-[#1DA365]/40 decoration-wavy decoration-2">on track</span> for today.
+                Email outreach is <span className="text-[#1DA365] underline decoration-[#1DA365]/40 decoration-wavy decoration-2">all caught up</span> for today.
               </>
             )}
           </h1>
           <p className="text-xs sm:text-sm text-[#735E50]">
-            Review tailored recruiter drafts, manage prospect queues, and track Gmail throttle health.
+            Review your AI-written emails, view your job search lists, and keep sending safely via Gmail.
           </p>
         </div>
 
-        {/* Tactile Action Pills */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <button
-            onClick={() => fetchDashboardData(true)}
-            disabled={isRefreshing}
-            className="p-2.5 rounded-[14px] bg-white/70 hover:bg-white border border-white/90 text-[#735E50] hover:text-[#2A1A0F] shadow-2xs transition-all cursor-pointer"
-            title="Refresh Metrics"
-          >
-            <ArrowsClockwise size={16} className={isRefreshing ? 'animate-spin text-[#FF6B1A]' : ''} />
-          </button>
-
-          <Link
-            to="/outbox"
-            className="px-4 py-2.5 rounded-[14px] bg-white/80 hover:bg-white text-[#2A1A0F] border border-white/90 text-xs font-bold transition-all shadow-2xs flex items-center gap-2"
-          >
-            <Tray size={15} className="text-[#D99B00]" weight="duotone" />
-            <span>Review Queue ({totalPending})</span>
-          </Link>
-
-          <Link
-            to="/campaigns"
-            className="px-4 py-2.5 rounded-[14px] bg-[#FF6B1A] hover:bg-[#FF6B1A]/90 text-white text-xs font-bold transition-all shadow-[0_4px_14px_rgba(255,107,26,0.35)] flex items-center gap-2 active:scale-[0.98]"
-          >
-            <Plus size={15} weight="bold" />
-            <span>New Campaign</span>
-          </Link>
-        </div>
       </div>
 
       {fetchError && (
@@ -278,32 +246,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
       {/* ========================================================
           2. ASYMMETRIC HERO BENTO ROW (7 Cols vs 5 Cols)
-             Left (7 Cols): Tactical Velocity & Quota Engine Cockpit
-             Right (5 Cols): Next Actionable Review Card (Draft Spotlight)
+             Left (7 Cols): Today's Sending Limit & Pace
+             Right (5 Cols): Next Email to Review (Spotlight)
          ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        {/* HERO TILE (7 Cols): Sent Velocity & Quota Cockpit */}
+        {/* HERO TILE (7 Cols): Today's Sending Limit & Safe Pace */}
         <Glass
           variant="strong"
           radius="outer"
           className="bento-reveal lg:col-span-7 p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden"
         >
-          {/* Popped-out boundary badge */}
-          <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#FF6B1A]/10 border border-[#FF6B1A]/25 text-[#FF6B1A] text-[10px] font-mono font-bold flex items-center gap-1.5 shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B1A] animate-pulse" />
-            <span>Gmail Pacing Safe</span>
-          </div>
+
 
           <div>
             <div className="text-[11px] font-mono uppercase tracking-wider text-[#FF6B1A] font-bold">
-              Dispatch Telemetry
+              TODAY'S EMAILS
             </div>
             <h2 className="text-lg sm:text-xl font-bold font-display text-[#2A1A0F]">
-              Daily Velocity & Throttle Cap
+              Emails Sent Today & Daily Limit
             </h2>
             <p className="text-xs text-[#735E50] mt-0.5">
-              Automated spacing prevents rate limiting and spam flags.
+              We pause naturally between emails so they go straight to recruiter inboxes.
             </p>
           </div>
 
@@ -314,19 +278,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <ArcGauge
                 value={effectiveTodaySent}
                 max={dailyLimit}
-                label="Delivered"
-                sublabel="safe cap"
+                label="Sent Today"
+                sublabel="limit per day"
                 size={180}
               />
             </div>
 
-            {/* Live Metrics Telemetry Badges */}
+            {/* Live Metrics Cockpit */}
             <div className="sm:col-span-7 space-y-2.5">
               <div className="p-3 rounded-[16px] bg-white/60 border border-white/80 shadow-2xs flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] font-mono text-[#735E50] uppercase font-bold">Safe Buffer Remaining</div>
+                  <div className="text-[10px] font-mono text-[#735E50] uppercase font-bold">Emails Left Today</div>
                   <div className="text-xl font-bold font-display text-[#2A1A0F] tabular-nums">
-                    {Math.max(0, dailyLimit - effectiveTodaySent)} <span className="text-xs font-normal text-[#735E50]">emails</span>
+                    {Math.max(0, dailyLimit - effectiveTodaySent)} <span className="text-xs font-normal text-[#735E50]">emails left</span>
                   </div>
                 </div>
                 <div className="px-2.5 py-1 rounded-[10px] bg-stone-100 font-mono text-xs font-bold text-[#2A1A0F]">
@@ -336,13 +300,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2.5 rounded-[14px] bg-white/50 border border-white/70 shadow-2xs space-y-0.5">
-                  <div className="text-[10px] font-mono text-[#735E50]">Random Jitter</div>
-                  <div className="font-bold text-[#2A1A0F] font-mono">45–90s delay</div>
+                  <div className="text-[10px] font-mono text-[#735E50]">Pause Between Emails</div>
+                  <div className="font-bold text-[#2A1A0F] font-mono">45–90 seconds</div>
                 </div>
                 <div className="p-2.5 rounded-[14px] bg-white/50 border border-white/70 shadow-2xs space-y-0.5">
-                  <div className="text-[10px] font-mono text-[#735E50]">Warmup Strategy</div>
+                  <div className="text-[10px] font-mono text-[#735E50]">Sending Speed</div>
                   <div className="font-bold text-[#1DA365]">
-                    {quotaStats?.isWarmup ? `Week ${quotaStats.warmupWeek || 1}` : 'Active Mode'}
+                    {quotaStats?.isWarmup ? `Week ${quotaStats.warmupWeek || 1}` : 'Normal speed'}
                   </div>
                 </div>
               </div>
@@ -351,12 +315,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
           {/* Footer note */}
           <div className="pt-3 border-t border-[rgba(42,26,15,0.06)] flex items-center justify-between text-xs text-[#735E50]">
-            <span className="font-mono text-[11px]">Domain Health: 100% clean • 0 bounces</span>
+            <span className="font-mono text-[11px]">Email Delivery: 100% clean • 0 blocked</span>
             <Link
               to="/settings"
               className="text-xs font-bold text-[#FF6B1A] hover:underline flex items-center gap-1"
             >
-              <span>Throttle rules</span>
+              <span>Adjust speed & daily limit</span>
               <ArrowRight size={12} />
             </Link>
           </div>
@@ -372,17 +336,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-mono uppercase tracking-wider text-[#D99B00] font-bold flex items-center gap-1.5">
                 <Tray size={14} weight="fill" />
-                <span>Queue Spotlight</span>
+                <span>Next Email to Review</span>
               </span>
               <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[#D99B00] font-mono text-[10px] font-bold">
                 {totalPending} Ready
               </span>
             </div>
             <h3 className="text-lg font-bold font-display text-[#2A1A0F]">
-              Review & Approve Next Batch
+              Check & Send Next Email
             </h3>
             <p className="text-xs text-[#735E50] mt-0.5">
-              Every cold outreach email requires your 1-click verification before sending.
+              Nothing is sent without your review. Check each email here before sending.
             </p>
           </div>
 
@@ -403,7 +367,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 </div>
               </div>
               <span className="text-[10px] font-mono font-bold text-[#D99B00] shrink-0 bg-amber-50 px-2 py-0.5 rounded-md">
-                Pending
+                Ready to review
               </span>
             </div>
 
@@ -412,9 +376,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </p>
 
             <div className="flex items-center justify-between text-[11px] pt-1 text-[#735E50]">
-              <span className="font-mono">Pacing delay: 45–90s</span>
+              <span className="font-mono">Natural pause: ~1 min</span>
               <span className="text-[#1DA365] font-semibold flex items-center gap-1">
-                <CheckCircle size={12} weight="fill" /> Resume Matched
+                <CheckCircle size={12} weight="fill" /> Personalized from resume
               </span>
             </div>
           </div>
@@ -422,9 +386,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <div className="pt-2 flex items-center justify-between gap-3">
             <Link
               to="/outbox"
-              className="w-full flex-1 px-4 py-2 rounded-[12px] bg-[#FF6B1A] hover:bg-[#FF6B1A]/90 text-white text-xs font-bold transition-all shadow-[0_4px_12px_rgba(255,107,26,0.3)] flex items-center justify-center gap-1.5"
+              className="flex-1 px-4 py-2.5 rounded-[12px] bg-[#FF6B1A] hover:bg-[#FF6B1A]/90 text-white text-xs font-bold transition-all shadow-[0_4px_12px_rgba(255,107,26,0.3)] flex items-center justify-center gap-1.5"
             >
-              <span>Open Review Outbox</span>
+              <span>Review All Ready Emails</span>
               <ArrowRight size={13} weight="bold" />
             </Link>
           </div>
@@ -433,18 +397,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       </div>
 
       {/* ========================================================
-          3. FULL-WIDTH CONNECTED PIPELINE FUNNEL
+          3. FULL-WIDTH OUTREACH PROGRESS RIBBON
          ======================================================== */}
       <Glass variant="surface" radius="outer" className="bento-reveal p-5">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Broadcast size={17} className="text-[#FF6B1A]" weight="duotone" />
             <h2 className="text-xs font-bold uppercase tracking-wider text-[#735E50] font-mono">
-              Pipeline Stage Progression
+              Your Outreach Steps
             </h2>
           </div>
           <span className="text-[11px] font-mono text-[#735E50] font-medium">
-            {totalSent} sent / {totalContacts} total prospects
+            {totalSent} sent of {totalContacts} recruiters
           </span>
         </div>
         <PipelineFunnel
@@ -456,7 +420,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       </Glass>
 
       {/* ========================================================
-          4. CAMPAIGNS BENTO CARDS (Visual Cards, Not a Generic Table!)
+          4. CAMPAIGNS BENTO CARDS
          ======================================================== */}
       <div className="bento-reveal space-y-4">
         {/* Section Header with Liquid Filter Chips */}
@@ -464,10 +428,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <div>
             <h2 className="text-xl font-bold font-display text-[#2A1A0F] flex items-center gap-2">
               <Stack size={20} className="text-[#FF6B1A]" weight="duotone" />
-              <span>Active Outreach Campaigns</span>
+              <span>Your Campaigns</span>
             </h2>
             <p className="text-xs text-[#735E50] mt-0.5">
-              Personalized cold candidate campaigns and batch delivery status.
+              Manage your job search lists and email sending progress.
             </p>
           </div>
 
@@ -493,7 +457,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <MagnifyingGlass size={14} className="text-[#735E50] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Filter campaigns..."
+                placeholder="Search campaigns..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8.5 pr-3 py-1.5 text-xs bg-white/70 border border-white/90 rounded-full text-[#2A1A0F] placeholder-[#735E50]/60 focus:outline-none focus:border-[#FF6B1A] shadow-2xs w-48 sm:w-56"
@@ -511,7 +475,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <div className="space-y-1">
               <h4 className="text-sm font-bold font-display text-[#2A1A0F]">No campaigns created yet</h4>
               <p className="text-xs text-[#735E50]">
-                Import recruiter contacts or CSV to launch your first job outreach campaign.
+                Add recruiters or upload a list to start your first job outreach campaign.
               </p>
             </div>
             <Link
@@ -568,14 +532,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                       </span>
                     </div>
                     <p className="text-xs text-[#735E50] line-clamp-1">
-                      {c.description || 'Target recruiter & prospect outreach'}
+                      {c.description || 'Target recruiter outreach list'}
                     </p>
                   </div>
 
                   {/* Multi-Segment Delivery Bar */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs text-[#735E50] font-medium">
-                      <span>{sent} of {total} delivered</span>
+                      <span>{sent} of {total} sent</span>
                       <span className="font-mono text-[#2A1A0F] font-bold">{percent}%</span>
                     </div>
 
@@ -604,16 +568,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   {/* Metrics Footer & Jump Action */}
                   <div className="pt-3 border-t border-[rgba(42,26,15,0.06)] flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 text-[11px] font-mono text-[#735E50]">
-                      <span>{total} leads</span>
+                      <span>{total} recruiters</span>
                       <span>•</span>
-                      <span className="text-[#D99B00] font-bold">{pending} queued</span>
+                      <span className="text-[#D99B00] font-bold">{pending} to review</span>
                     </div>
 
                     <Link
                       to={`/outbox?campaignId=${c.id}`}
                       className="px-2.5 py-1 rounded-[10px] bg-stone-100 hover:bg-[#FF6B1A] hover:text-white font-bold text-xs text-[#2A1A0F] transition-all flex items-center gap-1 shadow-2xs"
                     >
-                      <span>Review</span>
+                      <span>Review Emails</span>
                       <ArrowRight size={11} />
                     </Link>
                   </div>
@@ -625,10 +589,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       </div>
 
       {/* ========================================================
-          5. BOTTOM SPLIT: LIVE FEED & SAFETY SHIELD
+          5. BOTTOM SPLIT: SENT EMAILS & INBOX PROTECTION
          ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left (8 Cols): Tabbed Activity Feed (Live Sends vs Diagnostics) */}
+        {/* Left (8 Cols): Sent Emails vs Activity Log */}
         <Glass variant="surface" radius="outer" className="bento-reveal lg:col-span-8 p-5 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-[rgba(42,26,15,0.06)]">
             <div className="flex items-center gap-1 p-1 bg-stone-100/80 rounded-[12px]">
@@ -640,7 +604,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     : 'text-[#735E50] hover:text-[#2A1A0F]'
                 }`}
               >
-                Live Sends
+                Sent Emails
               </button>
               <button
                 onClick={() => setActivityTab('LOGS')}
@@ -650,7 +614,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     : 'text-[#735E50] hover:text-[#2A1A0F]'
                 }`}
               >
-                System Telemetry
+                Activity Log
               </button>
             </div>
 
@@ -658,7 +622,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               to={activityTab === 'DISPATCHES' ? '/history' : '/logs'}
               className="text-xs font-bold text-[#FF6B1A] hover:underline"
             >
-              View All History →
+              View Full History →
             </Link>
           </div>
 
@@ -667,7 +631,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <div className="space-y-2">
               {safeHistory.length === 0 ? (
                 <p className="text-xs text-[#735E50]/60 py-6 text-center font-mono">
-                  No emails dispatched today yet. Review drafts to initiate outreach.
+                  No emails sent today yet. Check your drafts in the Review Queue to begin.
                 </p>
               ) : (
                 safeHistory.slice(0, 4).map((item) => (
@@ -683,7 +647,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                         <div className="font-bold text-[#2A1A0F] text-xs truncate">
                           {item.contact?.firstName
                             ? `${item.contact.firstName} ${item.contact.lastName || ''}`
-                            : item.contact?.email || 'Prospect'}
+                            : item.contact?.email || 'Contact'}
                           <span className="text-[#735E50] font-normal text-[11px] ml-1.5 font-mono">
                             ({item.contact?.company || 'Company'})
                           </span>
@@ -707,7 +671,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           ) : (
             <div className="space-y-2 font-mono text-[10px]">
               {safeLogs.length === 0 ? (
-                <p className="text-xs text-[#735E50]/60 py-6 text-center font-sans">No recent telemetry logs.</p>
+                <p className="text-xs text-[#735E50]/60 py-6 text-center font-sans">No recent activity.</p>
               ) : (
                 safeLogs.slice(0, 4).map((log) => (
                   <div
@@ -733,17 +697,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           )}
         </Glass>
 
-        {/* Right (4 Cols): Safety Shield Status Card */}
+        {/* Right (4 Cols): Spam & Inbox Protection Card */}
         <Glass variant="surface" radius="outer" className="bento-reveal lg:col-span-4 p-5 space-y-3.5 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck size={18} className="text-[#1DA365]" weight="duotone" />
               <h3 className="text-xs font-bold font-display uppercase tracking-wider text-[#2A1A0F]">
-                Safety & Deliverability Guard
+                Spam & Inbox Protection
               </h3>
             </div>
             <p className="text-xs text-[#735E50]">
-              Automated safeguards prevent spam detection and domain suspension.
+              Built-in protections to keep your Gmail account safe and trusted.
             </p>
           </div>
 
@@ -751,25 +715,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <div className="p-2.5 rounded-[14px] bg-white/60 border border-white/80 shadow-2xs flex items-center justify-between">
               <span className="text-[#2A1A0F] font-medium flex items-center gap-2">
                 <CheckCircle size={14} className="text-[#1DA365]" weight="fill" />
-                <span>Delay Jitter</span>
+                <span>Pause Between Emails</span>
               </span>
-              <span className="font-mono text-[#735E50] font-bold">45–90s random</span>
+              <span className="font-mono text-[#735E50] font-bold">45–90s pause</span>
             </div>
 
             <div className="p-2.5 rounded-[14px] bg-white/60 border border-white/80 shadow-2xs flex items-center justify-between">
               <span className="text-[#2A1A0F] font-medium flex items-center gap-2">
                 <CheckCircle size={14} className="text-[#1DA365]" weight="fill" />
-                <span>Duplicate Suppression</span>
+                <span>Never Email Same Person Twice</span>
               </span>
-              <span className="font-mono text-[#1DA365] font-bold">Active</span>
+              <span className="font-mono text-[#1DA365] font-bold">Protected</span>
             </div>
 
             <div className="p-2.5 rounded-[14px] bg-white/60 border border-white/80 shadow-2xs flex items-center justify-between">
               <span className="text-[#2A1A0F] font-medium flex items-center gap-2">
                 <CheckCircle size={14} className="text-[#1DA365]" weight="fill" />
-                <span>Bounce Guard</span>
+                <span>Bad Email Protection</span>
               </span>
-              <span className="font-mono text-[#1DA365] font-bold">0% Bounces</span>
+              <span className="font-mono text-[#1DA365] font-bold">0 blocked</span>
             </div>
           </div>
 
@@ -777,7 +741,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             to="/settings"
             className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-[12px] bg-stone-100 hover:bg-stone-200 text-xs font-bold text-[#2A1A0F] transition-all"
           >
-            <span>Configure Safety Rules</span>
+            <span>Change Safety Settings</span>
             <ArrowRight size={13} />
           </Link>
         </Glass>

@@ -40,6 +40,7 @@ export interface Resume {
   id: number;
   name: string;
   filePath: string;
+  fileContent?: string;
   description?: string | null;
   uploadedAt: string;
 }

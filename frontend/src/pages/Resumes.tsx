@@ -11,6 +11,9 @@ import {
   Clock,
   Sparkle,
   LockOpen,
+  Eye,
+  ArrowSquareOut,
+  DownloadSimple,
 } from '@phosphor-icons/react';
 import { Resume, Settings } from '../types';
 import { Glass } from '../components/glass/Glass';
@@ -25,6 +28,10 @@ export const Resumes: React.FC = () => {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // PDF Viewer state
+  const [viewingResume, setViewingResume] = useState<Resume | null>(null);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+
   // Editing state
   const [editingResume, setEditingResume] = useState<Resume | null>(null);
   const [editName, setEditName] = useState('');
@@ -32,7 +39,7 @@ export const Resumes: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (retries = 3) => {
     try {
       // Fetch resumes
       const resRes = await fetch('/api/resumes');
@@ -42,7 +49,10 @@ export const Resumes: React.FC = () => {
         setResumes(list);
         localStorage.setItem('outreach_resume_count', String(list.length));
         window.dispatchEvent(new CustomEvent('resumesUpdated'));
-      } else {
+      } else if (resRes.status === 401 && retries > 0) {
+        setTimeout(() => fetchData(retries - 1), 800);
+        return;
+      } else if (resRes.status !== 401) {
         setResumes([]);
         localStorage.setItem('outreach_resume_count', '0');
         window.dispatchEvent(new CustomEvent('resumesUpdated'));
@@ -55,6 +65,10 @@ export const Resumes: React.FC = () => {
         setSettings(setData);
       }
     } catch (err) {
+      if (retries > 0) {
+        setTimeout(() => fetchData(retries - 1), 800);
+        return;
+      }
       console.error(err);
       setResumes([]);
     } finally {
@@ -65,6 +79,36 @@ export const Resumes: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleOpenResume = (resume: Resume) => {
+    if (resume.fileContent) {
+      try {
+        const byteCharacters = atob(resume.fileContent);
+        const byteNumbers = new Uint8Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const blob = new Blob([byteNumbers], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        setPreviewBlobUrl(url);
+        setViewingResume(resume);
+        return;
+      } catch (err) {
+        console.warn('Could not decode fileContent as base64', err);
+      }
+    }
+    // Fallback to API route
+    setPreviewBlobUrl(`/api/resumes/${resume.id}/file`);
+    setViewingResume(resume);
+  };
+
+  const handleCloseViewer = () => {
+    if (previewBlobUrl && previewBlobUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewBlobUrl);
+    }
+    setPreviewBlobUrl(null);
+    setViewingResume(null);
+  };
 
   // Staggered GSAP entrance
   useEffect(() => {
@@ -381,14 +425,25 @@ export const Resumes: React.FC = () => {
                     {/* Top Row: File Icon, Name, and Badges */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3.5 min-w-0">
-                        <div className="w-10 h-10 rounded-[14px] bg-[#FF6B1A]/10 text-[#FF6B1A] flex items-center justify-center shrink-0 shadow-2xs">
-                          <FilePdf size={24} weight="duotone" />
+                        {/* Clickable PDF Icon */}
+                        <div
+                          onClick={() => handleOpenResume(resume)}
+                          className="w-10 h-10 rounded-[14px] bg-[#FF6B1A]/10 text-[#FF6B1A] hover:bg-[#FF6B1A]/20 flex items-center justify-center shrink-0 shadow-2xs cursor-pointer transition-all group/pdf active:scale-95"
+                          title="Click to open & preview PDF"
+                        >
+                          <FilePdf size={24} weight="duotone" className="group-hover/pdf:scale-110 transition-transform" />
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-bold font-display text-[#2A1A0F] truncate">
+                          {/* Clickable Title */}
+                          <div
+                            onClick={() => handleOpenResume(resume)}
+                            className="flex items-center gap-2 cursor-pointer group/title"
+                            title="Click to open & preview PDF"
+                          >
+                            <h3 className="text-sm font-bold font-display text-[#2A1A0F] group-hover/title:text-[#FF6B1A] transition-colors truncate">
                               {resume.name}
                             </h3>
+                            <ArrowSquareOut size={13} className="text-[#735E50] group-hover/title:text-[#FF6B1A] opacity-50 group-hover/title:opacity-100 transition-all shrink-0" />
                             {isDefault && (
                               <span className="px-2 py-0.5 rounded-full bg-[#D99B00]/15 text-[#D99B00] border border-[#D99B00]/30 text-[10px] font-mono font-bold flex items-center gap-1">
                                 <CheckCircle size={11} weight="fill" />
@@ -406,6 +461,13 @@ export const Resumes: React.FC = () => {
 
                       {/* Action Icon Buttons */}
                       <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleOpenResume(resume)}
+                          className="p-2 rounded-[10px] bg-white/70 hover:bg-[#FF6B1A]/10 text-[#735E50] hover:text-[#FF6B1A] border border-white/90 shadow-2xs transition-colors cursor-pointer"
+                          title="Open & view PDF"
+                        >
+                          <Eye size={14} weight="bold" />
+                        </button>
                         <button
                           onClick={() => handleStartEdit(resume)}
                           className="p-2 rounded-[10px] bg-white/70 hover:bg-white text-[#735E50] hover:text-[#2A1A0F] border border-white/90 shadow-2xs transition-colors cursor-pointer"
@@ -519,6 +581,74 @@ export const Resumes: React.FC = () => {
                 </button>
               </div>
             </form>
+          </Glass>
+        </div>
+      )}
+
+      {/* ========================================================
+          4. PDF VIEWER MODAL
+         ======================================================== */}
+      {viewingResume && previewBlobUrl && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+          <Glass
+            variant="strong"
+            radius="outer"
+            className="w-full max-w-4xl h-[90vh] flex flex-col p-4 sm:p-6 shadow-2xl relative overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[rgba(42,26,15,0.06)] shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-[12px] bg-[#FF6B1A]/10 text-[#FF6B1A] flex items-center justify-center shrink-0">
+                  <FilePdf size={22} weight="duotone" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold font-display text-[#2A1A0F] truncate">
+                    {viewingResume.name}.pdf
+                  </h3>
+                  <p className="text-[10px] text-[#735E50] font-mono">
+                    Uploaded on {new Date(viewingResume.uploadedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => window.open(previewBlobUrl, '_blank')}
+                  className="px-3 py-1.5 rounded-[10px] bg-white/80 hover:bg-white text-[#2A1A0F] border border-white/90 text-xs font-semibold shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  title="Open in a new browser tab"
+                >
+                  <ArrowSquareOut size={13} weight="bold" />
+                  <span className="hidden sm:inline">New Tab</span>
+                </button>
+
+                <a
+                  href={previewBlobUrl}
+                  download={`${viewingResume.name}.pdf`}
+                  className="px-3 py-1.5 rounded-[10px] bg-[#FF6B1A] hover:bg-[#FF6B1A]/90 text-white text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  title="Download PDF"
+                >
+                  <DownloadSimple size={13} weight="bold" />
+                  <span className="hidden sm:inline">Download</span>
+                </a>
+
+                <button
+                  onClick={handleCloseViewer}
+                  className="p-1.5 rounded-full text-[#735E50] hover:text-[#2A1A0F] hover:bg-black/5 transition-colors cursor-pointer"
+                  title="Close PDF viewer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Embedded PDF iframe */}
+            <div className="flex-1 my-3 rounded-[16px] overflow-hidden bg-stone-100 border border-stone-200/80 shadow-inner relative">
+              <iframe
+                src={previewBlobUrl}
+                className="w-full h-full border-0"
+                title={viewingResume.name}
+              />
+            </div>
           </Glass>
         </div>
       )}

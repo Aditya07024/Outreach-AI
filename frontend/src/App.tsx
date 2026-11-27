@@ -558,7 +558,7 @@ const CampaignsRouteGuard: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   useEffect(() => {
-    const check = async () => {
+    const check = async (retries = 3) => {
       try {
         const res = await fetch('/api/resumes');
         if (res.ok) {
@@ -566,8 +566,14 @@ const CampaignsRouteGuard: React.FC<{ children: React.ReactNode }> = ({ children
           const list = Array.isArray(data) ? data : data?.resumes || [];
           setResumeCount(list.length);
           localStorage.setItem('outreach_resume_count', String(list.length));
+          return;
         }
-      } catch (e) {}
+        if (res.status === 401 && retries > 0) {
+          setTimeout(() => check(retries - 1), 800);
+        }
+      } catch (e) {
+        if (retries > 0) setTimeout(() => check(retries - 1), 800);
+      }
     };
     check();
     const handleUpdate = () => check();
