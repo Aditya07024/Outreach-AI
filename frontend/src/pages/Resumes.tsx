@@ -6,15 +6,11 @@ import {
   Trash,
   CheckCircle,
   PencilSimple,
-  Plus,
   RadioButton,
-  WarningCircle,
-  FileText,
-  Sparkle,
-  ArrowRight,
-  ShieldCheck,
   X,
   Clock,
+  Sparkle,
+  LockOpen,
 } from '@phosphor-icons/react';
 import { Resume, Settings } from '../types';
 import { Glass } from '../components/glass/Glass';
@@ -89,7 +85,7 @@ export const Resumes: React.FC = () => {
       );
     });
     return () => mm.revert();
-  }, [isLoading]);
+  }, [isLoading, resumes.length]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -210,6 +206,93 @@ export const Resumes: React.FC = () => {
     }
   };
 
+  // Reusable Upload Form Component
+  const renderUploadForm = (isFullWidth = false) => (
+    <Glass variant="strong" radius="outer" className="resume-reveal p-6 sm:p-7 space-y-5">
+      <form onSubmit={handleUpload} className="space-y-4">
+        {/* Profile Name */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#735E50]">
+            Profile Label
+          </label>
+          <input
+            type="text"
+            value={uploadName}
+            onChange={(e) => setUploadName(e.target.value)}
+            placeholder="e.g. Full Stack Engineer"
+            className="w-full px-3.5 py-2.5 text-xs bg-white/80 border border-white/90 rounded-[12px] text-[#2A1A0F] placeholder-[#735E50]/50 focus:outline-none focus:border-[#FF6B1A] shadow-2xs transition-colors"
+            required
+          />
+        </div>
+
+        {/* PDF Dropzone */}
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          className={`
+            border-2 border-dashed rounded-[20px] p-8 flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer relative group
+            ${isDragging
+              ? 'border-[#FF6B1A] bg-[#FF6B1A]/5 scale-[1.01]'
+              : uploadFile
+              ? 'border-[#1DA365]/40 bg-[#1DA365]/5'
+              : 'border-stone-300 hover:border-[#FF6B1A]/50 bg-white/40 hover:bg-white/70'
+            }
+          `}
+        >
+          <input
+            type="file"
+            accept=".pdf"
+            onChange={handleFileChange}
+            className="absolute inset-0 opacity-0 cursor-pointer"
+            required
+          />
+
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+            uploadFile ? 'bg-[#1DA365]/10 text-[#1DA365]' : 'bg-stone-100 text-[#735E50] group-hover:text-[#FF6B1A]'
+          }`}>
+            {uploadFile ? (
+              <CheckCircle size={28} weight="fill" />
+            ) : (
+              <UploadSimple size={28} weight="duotone" />
+            )}
+          </div>
+
+          <div>
+            <span className="text-sm font-bold text-[#2A1A0F] block truncate max-w-sm">
+              {uploadFile ? uploadFile.name : 'Choose or drop PDF file'}
+            </span>
+            <span className="text-[11px] text-[#735E50] block mt-0.5 font-mono">
+              {uploadFile ? `${(uploadFile.size / 1024).toFixed(0)} KB • Ready to upload` : 'PDF format, up to 5MB'}
+            </span>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={isUploading || !uploadFile}
+          className="w-full py-3 bg-[#FF6B1A] hover:bg-[#FF6B1A]/90 text-white font-bold rounded-[14px] text-xs transition-all shadow-[0_4px_14px_rgba(255,107,26,0.35)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
+        >
+          {isUploading ? (
+            <>
+              <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              <span>Uploading & Parsing PDF...</span>
+            </>
+          ) : (
+            <>
+              <UploadSimple size={16} weight="bold" />
+              <span>Upload Resume Profile</span>
+            </>
+          )}
+        </button>
+      </form>
+    </Glass>
+  );
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[500px]">
@@ -240,46 +323,47 @@ export const Resumes: React.FC = () => {
             </span>
           </div>
           <p className="text-xs sm:text-sm text-[#735E50] mt-1">
-            Upload and manage tailored PDF profiles to personalize AI cold job applications.
+            {resumes.length === 0
+              ? 'Upload your primary resume to unlock Campaigns and personalize AI job applications.'
+              : 'Upload and manage tailored PDF profiles to personalize AI cold job applications.'}
           </p>
         </div>
       </div>
 
       {/* ========================================================
-          2. MAIN BENTO GRID (Uploaded Resumes vs Upload Studio)
+          2. RESUMES DISPLAY OR FULL-WIDTH UPLOAD STUDIO
          ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN (7 COLS): UPLOADED RESUME CARDS */}
-        <div className="lg:col-span-7 space-y-4">
+      {resumes.length === 0 ? (
+        /* FULL WIDTH UPLOAD STUDIO WHEN 0 RESUMES */
+        <div className="w-full space-y-4 pt-1">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold font-display uppercase tracking-wider text-[#735E50] flex items-center gap-2">
-              <FilePdf size={18} className="text-[#FF6B1A]" weight="duotone" />
-              <span>Active Profiles</span>
+              <UploadSimple size={18} className="text-[#FF6B1A]" weight="duotone" />
+              <span>Upload New Profile</span>
             </h2>
-            <span className="text-xs text-[#735E50]">
-              Campaigns attach the default profile automatically
-            </span>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF6B1A]/10 text-[#FF6B1A] font-mono text-xs font-bold border border-[#FF6B1A]/20">
+              <Sparkle size={13} weight="fill" />
+              <span>Step 1: Upload a resume to unlock Campaigns</span>
+            </div>
           </div>
 
-          {resumes.length === 0 ? (
-            <Glass variant="surface" radius="outer" className="resume-reveal p-10 text-center space-y-4 border-2 border-dashed border-stone-300">
-              <div className="w-14 h-14 rounded-[20px] bg-amber-50 text-[#D99B00] flex items-center justify-center mx-auto shadow-2xs">
-                <FilePdf size={28} weight="duotone" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-bold font-display text-[#2A1A0F]">
-                  No resume uploaded yet
-                </h3>
-                <p className="text-xs text-[#735E50] max-w-sm mx-auto">
-                  Upload your first PDF resume on the right to unlock Campaigns and start generating personalized recruiter drafts.
-                </p>
-              </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF6B1A]/10 text-[#FF6B1A] font-mono text-[11px] font-bold">
-                <span>Upload a PDF to unlock the workspace</span>
-                <ArrowRight size={12} weight="bold" />
-              </div>
-            </Glass>
-          ) : (
+          {renderUploadForm(true)}
+        </div>
+      ) : (
+        /* TWO-COLUMN LAYOUT WHEN RESUMES EXIST */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* LEFT COLUMN (7 COLS): UPLOADED RESUME CARDS */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold font-display uppercase tracking-wider text-[#735E50] flex items-center gap-2">
+                <FilePdf size={18} className="text-[#FF6B1A]" weight="duotone" />
+                <span>Active Profiles</span>
+              </h2>
+              <span className="text-xs text-[#735E50]">
+                Campaigns attach the default profile automatically
+              </span>
+            </div>
+
             <div className="space-y-3.5">
               {resumes.map((resume) => {
                 const isDefault = settings?.defaultResumeId === resume.id;
@@ -371,117 +455,21 @@ export const Resumes: React.FC = () => {
                 );
               })}
             </div>
-          )}
-        </div>
-
-        {/* RIGHT COLUMN (5 COLS): UPLOAD & PERSONA STUDIO */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold font-display uppercase tracking-wider text-[#735E50] flex items-center gap-2">
-              <UploadSimple size={18} className="text-[#FF6B1A]" weight="duotone" />
-              <span>Upload New Profile</span>
-            </h2>
           </div>
 
-          <Glass variant="strong" radius="outer" className="resume-reveal p-6 space-y-4">
-            <form onSubmit={handleUpload} className="space-y-4">
-              {/* Profile Name */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#735E50]">
-                  Profile Label
-                </label>
-                <input
-                  type="text"
-                  value={uploadName}
-                  onChange={(e) => setUploadName(e.target.value)}
-                  placeholder="e.g. Full Stack Engineer"
-                  className="w-full px-3.5 py-2 text-xs bg-white/80 border border-white/90 rounded-[12px] text-[#2A1A0F] placeholder-[#735E50]/50 focus:outline-none focus:border-[#FF6B1A] shadow-2xs transition-colors"
-                  required
-                />
-              </div>
+          {/* RIGHT COLUMN (5 COLS): UPLOAD & PERSONA STUDIO */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold font-display uppercase tracking-wider text-[#735E50] flex items-center gap-2">
+                <UploadSimple size={18} className="text-[#FF6B1A]" weight="duotone" />
+                <span>Upload New Profile</span>
+              </h2>
+            </div>
 
-              {/* Persona Description */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#735E50]">
-                  Target Role & Skills (Optional)
-                </label>
-                <textarea
-                  value={uploadDescription}
-                  onChange={(e) => setUploadDescription(e.target.value)}
-                  placeholder="e.g. Tailored for React, TypeScript, Go, and distributed systems roles..."
-                  rows={2}
-                  className="w-full px-3.5 py-2 text-xs bg-white/80 border border-white/90 rounded-[12px] text-[#2A1A0F] placeholder-[#735E50]/50 focus:outline-none focus:border-[#FF6B1A] shadow-2xs transition-colors resize-none"
-                />
-              </div>
-
-              {/* PDF Dropzone */}
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                className={`
-                  border-2 border-dashed rounded-[18px] p-6 flex flex-col items-center justify-center text-center gap-2 transition-all cursor-pointer relative group
-                  ${isDragging
-                    ? 'border-[#FF6B1A] bg-[#FF6B1A]/5 scale-[1.01]'
-                    : uploadFile
-                    ? 'border-[#1DA365]/40 bg-[#1DA365]/5'
-                    : 'border-stone-300 hover:border-[#FF6B1A]/50 bg-white/40 hover:bg-white/70'
-                  }
-                `}
-              >
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileChange}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  required
-                />
-
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-                  uploadFile ? 'bg-[#1DA365]/10 text-[#1DA365]' : 'bg-stone-100 text-[#735E50] group-hover:text-[#FF6B1A]'
-                }`}>
-                  {uploadFile ? (
-                    <CheckCircle size={24} weight="fill" />
-                  ) : (
-                    <UploadSimple size={24} weight="duotone" />
-                  )}
-                </div>
-
-                <div>
-                  <span className="text-xs font-bold text-[#2A1A0F] block truncate max-w-[200px]">
-                    {uploadFile ? uploadFile.name : 'Choose or drop PDF file'}
-                  </span>
-                  <span className="text-[10px] text-[#735E50] block mt-0.5 font-mono">
-                    {uploadFile ? `${(uploadFile.size / 1024).toFixed(0)} KB • Ready to upload` : 'PDF format, up to 5MB'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isUploading || !uploadFile}
-                className="w-full py-2.5 bg-[#FF6B1A] hover:bg-[#FF6B1A]/90 text-white font-bold rounded-[14px] text-xs transition-all shadow-[0_4px_14px_rgba(255,107,26,0.35)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
-              >
-                {isUploading ? (
-                  <>
-                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    <span>Uploading & Parsing PDF...</span>
-                  </>
-                ) : (
-                  <>
-                    <UploadSimple size={15} weight="bold" />
-                    <span>Upload Resume Profile</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </Glass>
+            {renderUploadForm(false)}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ========================================================
           3. EDIT RESUME MODAL
@@ -512,18 +500,6 @@ export const Resumes: React.FC = () => {
                   onChange={(e) => setEditName(e.target.value)}
                   className="w-full px-3.5 py-2 text-xs bg-white/80 border border-white/90 rounded-[12px] text-[#2A1A0F] focus:outline-none focus:border-[#FF6B1A] shadow-2xs"
                   required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#735E50]">
-                  Description
-                </label>
-                <textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  rows={3}
-                  className="w-full px-3.5 py-2 text-xs bg-white/80 border border-white/90 rounded-[12px] text-[#2A1A0F] focus:outline-none focus:border-[#FF6B1A] shadow-2xs resize-none"
                 />
               </div>
 
