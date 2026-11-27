@@ -245,7 +245,7 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         description,
         resumeId: resumeId ? Number(resumeId) : null,
         userId,
-        templateType: templateType || 'AI_GENERATED',
+        templateType: templateType || 'SAVED_TEMPLATE',
         templateSubject: templateSubject || null,
         templateBody: templateBody || null,
         autoSendExtension: Boolean(autoSendExtension),
@@ -407,7 +407,7 @@ router.post('/import-shared', async (req: AuthenticatedRequest, res) => {
           name: finalCampaignName,
           description: sourceCampaign.description,
           userId,
-          templateType: sourceCampaign.templateType || 'AI_GENERATED',
+          templateType: sourceCampaign.templateType || 'SAVED_TEMPLATE',
           templateSubject: sourceCampaign.templateSubject || null,
           templateBody: sourceCampaign.templateBody || null,
         },
@@ -945,16 +945,16 @@ router.post('/:id/generate', async (req: AuthenticatedRequest, res) => {
             let subject = '';
             let body = '';
 
-            if (currentCampaign.templateType === 'SAVED_TEMPLATE') {
-              subject = replacePlaceholders(currentCampaign.templateSubject, contact, settings);
-              body = replacePlaceholders(currentCampaign.templateBody, contact, settings);
+            if (currentCampaign.templateType === 'SAVED_TEMPLATE' || currentCampaign.templateSubject || currentCampaign.templateBody) {
+              subject = replacePlaceholders(currentCampaign.templateSubject || 'Opportunities at {company} - {role} Application', contact, settings);
+              body = replacePlaceholders(currentCampaign.templateBody || 'Hi {firstName},\n\nI am writing to express my interest in software engineering opportunities at {company}, specifically for the {role} role.\n\nBest regards,\n{name}', contact, settings);
             } else if (currentCampaign.templateType === 'MANUAL') {
               const defaultSubject = 'Opportunities at {company} - {role} Application';
               const defaultBody = 'Hi {firstName},\n\nI am writing to express my interest in software engineering opportunities at {company}, specifically for the {role} role.\n\n[Custom edits...]\n\nBest regards,\n{name}\n{portfolio}\n{github}';
               subject = replacePlaceholders(defaultSubject, contact, settings);
               body = replacePlaceholders(defaultBody, contact, settings);
             } else {
-              // Default: AI_GENERATED (Grok)
+              // Fallback
               const generated = await AIService.generateEmail(contact.id);
               subject = generated.subject;
               body = generated.body;

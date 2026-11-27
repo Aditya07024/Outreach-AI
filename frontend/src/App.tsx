@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth, useClerk } from '@clerk/clerk-react';
-import { Sidebar } from './components/Sidebar';
-import { Header } from './components/Header';
+import { Sidebar } from './components/shell/Sidebar';
+import { IslandHeader as Header } from './components/shell/IslandHeader';
+import { AmbientBackground } from './components/ambient/AmbientBackground';
 import { LandingPage } from './pages/LandingPage';
 
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
@@ -19,7 +20,6 @@ import { Resumes } from './pages/Resumes';
 import { History } from './pages/History';
 import { Logs } from './pages/Logs';
 import { Settings } from './pages/Settings';
-import { Compose } from './pages/Compose';
 import { PricingPage } from './pages/PricingPage';
 import { Subscription } from './pages/Subscription';
 import { AdminPortal } from './pages/AdminPortal';
@@ -403,7 +403,8 @@ export const App: React.FC = () => {
           <Route 
             path="*" 
             element={
-              <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans">
+              <div className="min-h-screen text-[#2A1A0F] font-sans selection:bg-[#FF6B1A]/20">
+                <AmbientBackground />
                 {/* Nav Sidebar */}
                 <Sidebar 
                   gmailStatus={gmailStatus} 
@@ -416,7 +417,7 @@ export const App: React.FC = () => {
                 />
 
                 {/* Main Content Pane */}
-                <div className="flex-1 md:pl-64 flex flex-col min-h-screen">
+                <div className="lg:pl-72 flex flex-col min-h-screen">
                   
                   {/* Top Navbar */}
                   <Header 
@@ -426,7 +427,7 @@ export const App: React.FC = () => {
                   />
 
                   {/* View Router */}
-                  <main className="flex-grow">
+                  <main className="flex-grow px-4 sm:px-6 max-w-7xl w-full mx-auto pb-16">
                     <Routes>
                       <Route 
                         path="/" 
@@ -445,17 +446,15 @@ export const App: React.FC = () => {
                       />
                       <Route 
                         path="/compose" 
-                        element={
-                          <PageWrapper title="Compose Email" setTitle={setCurrentTitle}>
-                            <Compose gmailStatus={gmailStatus} />
-                          </PageWrapper>
-                        } 
+                        element={<Navigate to="/campaigns" replace />} 
                       />
                       <Route 
                         path="/campaigns" 
                         element={
                           <PageWrapper title="Campaigns" setTitle={setCurrentTitle}>
-                            <Campaigns />
+                            <CampaignsRouteGuard>
+                              <Campaigns />
+                            </CampaignsRouteGuard>
                           </PageWrapper>
                         } 
                       />
@@ -549,6 +548,38 @@ export const App: React.FC = () => {
       </Routes>
     </BrowserRouter>
   );
+};
+
+// Guard ensuring campaigns is accessible only when at least 1 resume is uploaded
+const CampaignsRouteGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [resumeCount, setResumeCount] = useState<number | null>(() => {
+    const cached = localStorage.getItem('outreach_resume_count');
+    return cached !== null ? parseInt(cached, 10) : null;
+  });
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const res = await fetch('/api/resumes');
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : data?.resumes || [];
+          setResumeCount(list.length);
+          localStorage.setItem('outreach_resume_count', String(list.length));
+        }
+      } catch (e) {}
+    };
+    check();
+    const handleUpdate = () => check();
+    window.addEventListener('resumesUpdated', handleUpdate);
+    return () => window.removeEventListener('resumesUpdated', handleUpdate);
+  }, []);
+
+  if (resumeCount === 0) {
+    return <Navigate to="/resumes" replace />;
+  }
+
+  return <>{children}</>;
 };
 
 // Simple helper component to set document / header titles dynamically on load

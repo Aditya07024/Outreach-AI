@@ -1,6 +1,13 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import { getClerkKeys } from './config/clerk';
+const { isProd, mode, publishableKey, secretKey } = getClerkKeys();
+process.env.CLERK_PUBLISHABLE_KEY = publishableKey;
+process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = publishableKey;
+process.env.CLERK_SECRET_KEY = secretKey;
+console.log(`[Clerk Config] Mode: ${isProd ? 'PRODUCTION (LIVE KEYS)' : 'DEVELOPMENT (TEST KEYS)'} (${mode})`);
+
 import express from 'express';
 import cors from 'cors';
 import path from 'path';

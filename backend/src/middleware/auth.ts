@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { verifyToken, clerkClient } from '@clerk/express';
 import prisma from '../utils/prisma';
+import { getClerkKeys } from '../config/clerk';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
@@ -25,7 +26,7 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
   }
 
   const token = authHeader.split(' ')[1];
-  const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+  const clerkSecretKey = process.env.CLERK_SECRET_KEY || getClerkKeys().secretKey;
 
   // 1. Check if token is a Clerk JWT token by decoding payload
   try {

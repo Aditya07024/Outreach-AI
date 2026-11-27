@@ -67,7 +67,7 @@ export const Campaigns: React.FC = () => {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newResumeId, setNewResumeId] = useState<number | null>(null);
-  const [newTemplateType, setNewTemplateType] = useState<'AI_GENERATED' | 'SAVED_TEMPLATE' | 'MANUAL'>('AI_GENERATED');
+  const [newTemplateType, setNewTemplateType] = useState<'SAVED_TEMPLATE'>('SAVED_TEMPLATE');
   const [newTemplateSubject, setNewTemplateSubject] = useState('Opportunities at {company} - {role} Application');
   const [newTemplateBody, setNewTemplateBody] = useState('Hi {firstName},\n\nI have been following your engineering team at {company} and would love to express interest in the {role} role.\n\nI have attached my resume for your review. You can view my portfolio at {portfolio} and GitHub at {github}.\n\nBest regards,\n{name}');
   const [newAutoSendExtension, setNewAutoSendExtension] = useState(false);
@@ -80,7 +80,7 @@ export const Campaigns: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editResumeId, setEditResumeId] = useState<number | null>(null);
-  const [editTemplateType, setEditTemplateType] = useState<string>('AI_GENERATED');
+  const [editTemplateType, setEditTemplateType] = useState<string>('SAVED_TEMPLATE');
   const [editTemplateSubject, setEditTemplateSubject] = useState('');
   const [editTemplateBody, setEditTemplateBody] = useState('');
   const [editAutoSendExtension, setEditAutoSendExtension] = useState(false);
@@ -398,7 +398,7 @@ export const Campaigns: React.FC = () => {
       setEditName(campaignDetails.name);
       setEditDesc(campaignDetails.description || '');
       setEditResumeId(campaignDetails.resumeId);
-      setEditTemplateType(campaignDetails.templateType || 'AI_GENERATED');
+      setEditTemplateType('SAVED_TEMPLATE');
       setEditTemplateSubject(campaignDetails.templateSubject || '');
       setEditTemplateBody(campaignDetails.templateBody || '');
       setEditAutoSendExtension(Boolean(campaignDetails.autoSendExtension));
@@ -1022,9 +1022,7 @@ export const Campaigns: React.FC = () => {
                     onChange={(e) => setNewTemplateType(e.target.value as any)}
                     className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                   >
-                    <option value="AI_GENERATED">AI Generated (Grok)</option>
-                    <option value="SAVED_TEMPLATE">Saved Custom Template</option>
-                    <option value="MANUAL">Manual Setup (Review Individually)</option>
+                    <option value="SAVED_TEMPLATE">Custom Template</option>
                   </select>
                 </div>
 
@@ -1053,30 +1051,35 @@ export const Campaigns: React.FC = () => {
                   </button>
                 </div>
 
-                {newTemplateType === 'SAVED_TEMPLATE' && (
-                  <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Subject Template</label>
-                      <input
-                        type="text"
-                        value={newTemplateSubject}
-                        onChange={(e) => setNewTemplateSubject(e.target.value)}
-                        placeholder="Opportunities at {company} - {role}"
-                        className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900 transition-colors"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Body Template</label>
-                      <textarea
-                        placeholder="Hi {firstName}, ..."
-                        value={newTemplateBody}
-                        onChange={(e) => setNewTemplateBody(e.target.value)}
-                        rows={5}
-                        className="rounded-xl border border-slate-300 bg-white p-3 text-xs text-slate-900 focus:outline-none focus:border-slate-900 font-mono transition-colors"
-                      />
-                    </div>
+                <div className="space-y-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-700 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                      Custom Email Template
+                    </span>
+                    <span className="text-[9.5px] text-slate-400 font-mono">Variables: {"{firstName}"}, {"{company}"}, {"{role}"}, {"{name}"}</span>
                   </div>
-                )}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Subject Template</label>
+                    <input
+                      type="text"
+                      value={newTemplateSubject}
+                      onChange={(e) => setNewTemplateSubject(e.target.value)}
+                      placeholder="Opportunities at {company} - {role}"
+                      className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900 transition-colors"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Body Template</label>
+                    <textarea
+                      placeholder="Hi {firstName}, ..."
+                      value={newTemplateBody}
+                      onChange={(e) => setNewTemplateBody(e.target.value)}
+                      rows={5}
+                      className="rounded-xl border border-slate-300 bg-white p-3 text-xs text-slate-900 focus:outline-none focus:border-slate-900 font-mono transition-colors"
+                    />
+                  </div>
+                </div>
 
                 <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
                   <div>
@@ -1338,7 +1341,7 @@ export const Campaigns: React.FC = () => {
                     <span className="text-[11px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                       <span>Resume: <strong className="text-slate-800 font-bold">{campaignDetails.resume?.name || 'None'}</strong></span>
                       <span className="hidden sm:inline">•</span>
-                      <span>Mode: <strong className="text-slate-800 font-bold">{campaignDetails.templateType === 'AI_GENERATED' ? 'AI (Grok)' : campaignDetails.templateType === 'SAVED_TEMPLATE' ? 'Saved Template' : 'Manual'}</strong></span>
+                      <span>Mode: <strong className="text-slate-800 font-bold">Custom Template</strong></span>
                       <span className="hidden sm:inline">•</span>
                       <span className="inline-flex items-center gap-1">
                         <Zap className={`w-3.5 h-3.5 ${campaignDetails.autoSendExtension ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
@@ -1597,9 +1600,7 @@ export const Campaigns: React.FC = () => {
                         onChange={(e) => setEditTemplateType(e.target.value)}
                         className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
                       >
-                        <option value="AI_GENERATED">AI Generated (Grok)</option>
-                        <option value="SAVED_TEMPLATE">Saved Custom Template</option>
-                        <option value="MANUAL">Manual Setup (Review Individually)</option>
+                        <option value="SAVED_TEMPLATE">Custom Template</option>
                       </select>
                     </div>
                   </div>
@@ -1671,8 +1672,14 @@ export const Campaigns: React.FC = () => {
                     </button>
                   </div>
 
-                  {editTemplateType === 'SAVED_TEMPLATE' && (
                     <div className="space-y-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-slate-700 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                          Custom Email Template
+                        </span>
+                        <span className="text-[9.5px] text-slate-400 font-mono">Variables: {"{firstName}"}, {"{company}"}, {"{role}"}, {"{name}"}</span>
+                      </div>
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Subject Template</label>
                         <input
@@ -1694,7 +1701,6 @@ export const Campaigns: React.FC = () => {
                         />
                       </div>
                     </div>
-                  )}
 
                   <div className="flex flex-col gap-1.5 p-3.5 bg-rose-50/50 border border-rose-200/80 rounded-xl">
                     <div className="flex items-center justify-between">

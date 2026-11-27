@@ -156,16 +156,16 @@ router.post('/sync', async (req: AuthenticatedRequest, res) => {
               let subject = '';
               let body = '';
 
-              if (fullCampaign.templateType === 'SAVED_TEMPLATE') {
-                subject = replacePlaceholders(fullCampaign.templateSubject, contact, settings);
-                body = replacePlaceholders(fullCampaign.templateBody, contact, settings);
+              if (fullCampaign.templateType === 'SAVED_TEMPLATE' || fullCampaign.templateSubject || fullCampaign.templateBody) {
+                subject = replacePlaceholders(fullCampaign.templateSubject || 'Opportunities at {company} - {role} Application', contact, settings);
+                body = replacePlaceholders(fullCampaign.templateBody || 'Hi {firstName},\n\nI am writing to express my interest in software engineering opportunities at {company}, specifically for the {role} role.\n\nBest regards,\n{name}', contact, settings);
               } else if (fullCampaign.templateType === 'MANUAL') {
                 const defaultSubject = 'Opportunities at {company} - {role} Application';
                 const defaultBody = 'Hi {firstName},\n\nI am writing to express my interest in software engineering opportunities at {company}, specifically for the {role} role.\n\nBest regards,\n{name}';
                 subject = replacePlaceholders(defaultSubject, contact, settings);
                 body = replacePlaceholders(defaultBody, contact, settings);
               } else {
-                // Default: AI_GENERATED
+                // Default fallback
                 const generated = await AIService.generateEmail(contact.id);
                 subject = generated.subject;
                 body = generated.body;
@@ -304,7 +304,7 @@ router.post('/campaigns', async (req: AuthenticatedRequest, res) => {
         name,
         description: description || `Created from Chrome Extension`,
         userId,
-        templateType: 'AI_GENERATED',
+        templateType: 'SAVED_TEMPLATE',
         autoSendExtension: false,
         autoRemoveGmailExtension: true,
       }

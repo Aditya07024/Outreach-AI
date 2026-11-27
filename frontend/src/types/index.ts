@@ -61,7 +61,7 @@ export interface Campaign {
   status: 'DRAFT' | 'SENDING' | 'GENERATING' | 'PAUSED' | 'COMPLETED';
   resumeId: number | null;
   resume?: Resume | null;
-  templateType?: 'AI_GENERATED' | 'SAVED_TEMPLATE' | 'MANUAL';
+  templateType?: 'SAVED_TEMPLATE' | 'AI_GENERATED' | 'MANUAL';
   templateSubject?: string | null;
   templateBody?: string | null;
   autoSendExtension?: boolean;

@@ -1,25 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Users, 
-  Send, 
-  AlertOctagon, 
-  Clock, 
-  TrendingUp, 
-  CalendarDays,
-  PenSquare,
-  FileText,
-  Settings as SettingsIcon,
-  ArrowRight,
-  CheckCircle2,
-  Activity,
-  Layers,
-  Zap,
-  RefreshCw,
+import gsap from 'gsap';
+import {
+  Users,
+  PaperPlaneRight,
+  Tray,
+  ArrowsClockwise,
   Plus,
-  MailCheck
-} from 'lucide-react';
-import { Campaign, EmailHistory, Log } from '../types';
+  MagnifyingGlass,
+  CheckCircle,
+  WarningCircle,
+  ShieldCheck,
+  Flame,
+  Stack,
+  ArrowRight,
+  Sparkle,
+  Clock,
+  Broadcast,
+  Check,
+  EnvelopeSimple,
+  Briefcase,
+  Buildings,
+  Pulse,
+} from '@phosphor-icons/react';
+import { Campaign, EmailHistory, Log, QuotaStats } from '../types';
+import { Glass } from '../components/glass/Glass';
+import { ArcGauge } from '../components/visual/ArcGauge';
+import { PipelineFunnel } from '../components/visual/PipelineFunnel';
 
 interface DashboardProps {
   isPaid: boolean;
@@ -34,413 +41,746 @@ interface DashboardProps {
   onPaymentSuccess: (token: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ isPaid, user, onPaymentSuccess }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [history, setHistory] = useState<EmailHistory[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
   const [todaySentCount, setTodaySentCount] = useState<number>(0);
+  const [quotaStats, setQuotaStats] = useState<QuotaStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [retryAttempt, setRetryAttempt] = useState<number>(0);
 
-  const fetchDashboardData = async () => {
-    setIsLoading(true);
+  // Filter & Search states for Campaigns
+  const [campaignFilter, setCampaignFilter] = useState<'ALL' | 'SENDING' | 'DRAFT' | 'PAUSED'>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Right column tab switcher: Dispatches vs System Logs
+  const [activityTab, setActivityTab] = useState<'DISPATCHES' | 'LOGS'>('DISPATCHES');
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const fetchDashboardData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
+    else setIsRefreshing(true);
+
     setFetchError(null);
-    const maxRetries = 3;
-    const baseDelay = 1000;
+    try {
+      const [statsRes, settingsRes] = await Promise.allSettled([
+        fetch('/api/campaigns/dashboard-stats'),
+        fetch('/api/settings'),
+      ]);
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        setRetryAttempt(attempt);
-
-        // Try the fast single batch endpoint first
-        const res = await fetch('/api/campaigns/dashboard-stats');
-        if (res.ok) {
-          const data = await res.json();
-          setCampaigns(Array.isArray(data.campaigns) ? data.campaigns : []);
-          setLogs(Array.isArray(data.logs) ? data.logs : []);
-          if (typeof data.todaySentCount === 'number') {
-            setTodaySentCount(data.todaySentCount);
+      if (settingsRes.status === 'fulfilled' && settingsRes.value.ok) {
+        try {
+          const settingsData = await settingsRes.value.json();
+          if (settingsData.quotaStats) {
+            setQuotaStats(settingsData.quotaStats);
           }
-          setIsLoading(false);
-          setFetchError(null);
-          return;
-        }
-
-        // Fallback to individual endpoints if needed
-        const [campRes, histRes, logsRes] = await Promise.allSettled([
-          fetch('/api/campaigns'),
-          fetch('/api/history'),
-          fetch('/api/logs?limit=8')
-        ]);
-
-        const campData = campRes.status === 'fulfilled' && campRes.value.ok ? await campRes.value.json().catch(() => []) : [];
-        const histData = histRes.status === 'fulfilled' && histRes.value.ok ? await histRes.value.json().catch(() => []) : [];
-        const logsData = logsRes.status === 'fulfilled' && logsRes.value.ok ? await logsRes.value.json().catch(() => []) : [];
-
-        setCampaigns(Array.isArray(campData) ? campData : (campData?.campaigns && Array.isArray(campData.campaigns) ? campData.campaigns : []));
-        setHistory(Array.isArray(histData) ? histData : (histData?.history && Array.isArray(histData.history) ? histData.history : []));
-        setLogs(Array.isArray(logsData) ? logsData : (logsData?.logs && Array.isArray(logsData.logs) ? logsData.logs : []));
-        setIsLoading(false);
-        setFetchError(null);
-        return;
-      } catch (err: any) {
-        console.warn(`[Dashboard] Data fetch attempt ${attempt} failed:`, err);
-        if (attempt < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, baseDelay * attempt));
-        } else {
-          setFetchError('Database or server connection is waking up. Please retry.');
+        } catch (e) {
+          console.warn('[Dashboard] Could not parse settings response:', e);
         }
       }
+
+      if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+        const data = await statsRes.value.json();
+        setCampaigns(Array.isArray(data.campaigns) ? data.campaigns : []);
+        setLogs(Array.isArray(data.logs) ? data.logs : []);
+        if (typeof data.todaySentCount === 'number') {
+          setTodaySentCount(data.todaySentCount);
+        }
+        setIsLoading(false);
+        setIsRefreshing(false);
+        return;
+      }
+
+      // Fallback endpoints
+      const [campRes, histRes, logsRes] = await Promise.allSettled([
+        fetch('/api/campaigns'),
+        fetch('/api/history'),
+        fetch('/api/logs?limit=8'),
+      ]);
+
+      const campData = campRes.status === 'fulfilled' && campRes.value.ok ? await campRes.value.json().catch(() => []) : [];
+      const histData = histRes.status === 'fulfilled' && histRes.value.ok ? await histRes.value.json().catch(() => []) : [];
+      const logsData = logsRes.status === 'fulfilled' && logsRes.value.ok ? await logsRes.value.json().catch(() => []) : [];
+
+      setCampaigns(Array.isArray(campData) ? campData : (campData?.campaigns && Array.isArray(campData.campaigns) ? campData.campaigns : []));
+      setHistory(Array.isArray(histData) ? histData : (histData?.history && Array.isArray(histData.history) ? histData.history : []));
+      setLogs(Array.isArray(logsData) ? logsData : (logsData?.logs && Array.isArray(logsData.logs) ? logsData.logs : []));
+    } catch (err: any) {
+      console.warn('[Dashboard] Data fetch error:', err);
+      setFetchError('Backend connection initializing. Tap retry to reconnect.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
-    setIsLoading(false);
   };
 
   useEffect(() => {
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 30000);
+    const interval = setInterval(() => fetchDashboardData(true), 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // GSAP Page Load Reveal Animation
+  useEffect(() => {
+    if (isLoading || !containerRef.current) return;
+
+    const mm = gsap.matchMedia();
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      gsap.fromTo(
+        '.bento-reveal',
+        { y: 24, opacity: 0, filter: 'blur(6px)' },
+        {
+          y: 0,
+          opacity: 1,
+          filter: 'blur(0px)',
+          duration: 0.5,
+          stagger: 0.05,
+          ease: 'power3.out',
+        }
+      );
+    });
+
+    return () => mm.revert();
+  }, [isLoading]);
 
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
   const safeHistory = Array.isArray(history) ? history : [];
   const safeLogs = Array.isArray(logs) ? logs : [];
 
-  // Aggregated stats calculation
+  // Aggregated outreach metrics
   const totalContacts = safeCampaigns.reduce((acc, c) => acc + (c.metrics?.total || 0), 0);
   const totalSent = safeCampaigns.reduce((acc, c) => acc + (c.metrics?.sent || 0), 0);
   const totalFailed = safeCampaigns.reduce((acc, c) => acc + (c.metrics?.failed || 0), 0);
-  
-  const totalPending = safeCampaigns.reduce((acc, c) => 
-    acc + (c.metrics?.pending || 0) + (c.metrics?.generating || 0) + (c.metrics?.ready || 0), 0
+  const totalPending = safeCampaigns.reduce(
+    (acc, c) => acc + (c.metrics?.pending || 0) + (c.metrics?.generating || 0) + (c.metrics?.ready || 0),
+    0
   );
 
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
-  const effectiveTodaySent = safeHistory.length > 0
-    ? safeHistory.filter(h => {
-        const sentDate = new Date(h.sentAt);
-        return h.status === 'SENT' && sentDate >= startOfToday;
-      }).length
-    : todaySentCount;
+  const effectiveTodaySent =
+    safeHistory.length > 0
+      ? safeHistory.filter((h) => {
+          const sentDate = new Date(h.sentAt);
+          return h.status === 'SENT' && sentDate >= startOfToday;
+        }).length
+      : (quotaStats?.sentInLast24h ?? todaySentCount);
 
-  const overallProgress = totalContacts > 0 ? Math.round((totalSent / totalContacts) * 100) : 0;
+  const dailyLimit = quotaStats?.effectiveLimit || 50;
+  const warmupPercent = Math.min(100, Math.round((effectiveTodaySent / dailyLimit) * 100));
+  const activeSendingCount = safeCampaigns.filter((c) => c.status === 'SENDING').length;
+
+  // Filtered campaigns
+  const filteredCampaigns = useMemo(() => {
+    return safeCampaigns.filter((c) => {
+      const matchesFilter = campaignFilter === 'ALL' || c.status === campaignFilter;
+      const matchesSearch =
+        searchQuery === '' ||
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.description && c.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesFilter && matchesSearch;
+    });
+  }, [safeCampaigns, campaignFilter, searchQuery]);
+
+  // Extract top draft for the action card
+  const topActiveCampaign = safeCampaigns.find(c => (c.metrics?.pending || 0) > 0) || safeCampaigns[0];
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[600px] bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-slate-900"></div>
-          <span className="text-xs font-bold text-slate-600">
-            {retryAttempt > 1 ? `Waking up server engine... (Attempt ${retryAttempt}/3)` : 'Loading Outreach Dashboard...'}
-          </span>
-        </div>
+      <div className="flex-1 flex items-center justify-center min-h-[500px]">
+        <Glass variant="strong" radius="inner" className="p-8 flex flex-col items-center gap-4 text-center">
+          <div className="w-10 h-10 rounded-full border-2 border-stone-200 border-t-[#FF6B1A] animate-spin" />
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold font-display text-[#2A1A0F]">Syncing Outreach Engine</h3>
+            <p className="text-xs text-[#735E50]">Loading deliverability telemetry and review queues...</p>
+          </div>
+        </Glass>
       </div>
     );
   }
 
-  const statCards = [
-    { 
-      title: 'Total Contacts', 
-      value: totalContacts.toLocaleString(), 
-      badge: `${safeCampaigns.length} Campaigns`, 
-      icon: Users, 
-      color: 'text-indigo-600', 
-      bg: 'bg-indigo-50 border-indigo-100' 
-    },
-    { 
-      title: 'Emails Delivered', 
-      value: totalSent.toLocaleString(), 
-      badge: `${overallProgress}% Complete`, 
-      icon: Send, 
-      color: 'text-emerald-600', 
-      bg: 'bg-emerald-50 border-emerald-100' 
-    },
-    { 
-      title: 'Sent Today', 
-      value: effectiveTodaySent.toLocaleString(), 
-      badge: 'Last 24 Hours', 
-      icon: CalendarDays, 
-      color: 'text-blue-600', 
-      bg: 'bg-blue-50 border-blue-100' 
-    },
-    { 
-      title: 'Outbox Queue', 
-      value: totalPending.toLocaleString(), 
-      badge: totalFailed > 0 ? `${totalFailed} Failed` : 'Ready to Send', 
-      icon: Clock, 
-      color: totalFailed > 0 ? 'text-amber-600' : 'text-slate-700', 
-      bg: totalFailed > 0 ? 'bg-amber-50 border-amber-100' : 'bg-slate-100 border-slate-200' 
-    },
-  ];
-
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200">
-      
-      {/* Top Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Overview Dashboard</h1>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Engine Online
-            </span>
+    <div ref={containerRef} className="space-y-6">
+      {/* ========================================================
+          1. EDITORIAL GREETING & TACTILE COMMAND BAR
+         ======================================================== */}
+      <div className="bento-reveal flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1DA365]/10 border border-[#1DA365]/25 text-[#1DA365] text-xs font-mono font-bold mb-1">
+            <span className="w-2 h-2 rounded-full bg-[#1DA365] animate-pulse" />
+            <span>{activeSendingCount > 0 ? `${activeSendingCount} Campaigns Active` : 'Engine Ready'}</span>
+            <span className="opacity-40">•</span>
+            <span>Gmail Protected</span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Real-time cold email outreach campaign metrics and anti-spam deliverability logs.</p>
+
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-display tracking-tight text-[#2A1A0F]">
+            {totalPending > 0 ? (
+              <>
+                You have <span className="text-[#FF6B1A] underline decoration-[#FF6B1A]/40 decoration-wavy decoration-2">{totalPending} drafts</span> awaiting review.
+              </>
+            ) : (
+              <>
+                Cold outreach is <span className="text-[#1DA365] underline decoration-[#1DA365]/40 decoration-wavy decoration-2">on track</span> for today.
+              </>
+            )}
+          </h1>
+          <p className="text-xs sm:text-sm text-[#735E50]">
+            Review tailored recruiter drafts, manage prospect queues, and track Gmail throttle health.
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Tactile Action Pills */}
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
-            onClick={fetchDashboardData}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-all cursor-pointer shadow-2xs"
+            onClick={() => fetchDashboardData(true)}
+            disabled={isRefreshing}
+            className="p-2.5 rounded-[14px] bg-white/70 hover:bg-white border border-white/90 text-[#735E50] hover:text-[#2A1A0F] shadow-2xs transition-all cursor-pointer"
             title="Refresh Metrics"
           >
-            <RefreshCw className="w-4 h-4" />
+            <ArrowsClockwise size={16} className={isRefreshing ? 'animate-spin text-[#FF6B1A]' : ''} />
           </button>
-          
+
           <Link
-            to="/compose"
-            className="px-4 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+            to="/outbox"
+            className="px-4 py-2.5 rounded-[14px] bg-white/80 hover:bg-white text-[#2A1A0F] border border-white/90 text-xs font-bold transition-all shadow-2xs flex items-center gap-2"
           >
-            <PenSquare className="w-4 h-4" />
-            <span>AI Email Studio</span>
+            <Tray size={15} className="text-[#D99B00]" weight="duotone" />
+            <span>Review Queue ({totalPending})</span>
           </Link>
 
           <Link
             to="/campaigns"
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2.5 rounded-[14px] bg-[#FF6B1A] hover:bg-[#FF6B1A]/90 text-white text-xs font-bold transition-all shadow-[0_4px_14px_rgba(255,107,26,0.35)] flex items-center gap-2 active:scale-[0.98]"
           >
-            <Plus className="w-4 h-4" />
+            <Plus size={15} weight="bold" />
             <span>New Campaign</span>
           </Link>
         </div>
       </div>
 
       {fetchError && (
-        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertOctagon className="w-5 h-5 text-amber-600" />
-            <span className="text-xs font-semibold">{fetchError}</span>
+        <div className="p-3.5 rounded-[20px] bg-amber-50 border border-amber-200 text-amber-900 flex items-center justify-between text-xs shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <WarningCircle size={18} weight="fill" className="text-amber-600 shrink-0" />
+            <span>{fetchError}</span>
           </div>
           <button
-            onClick={fetchDashboardData}
-            className="px-3 py-1 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-all cursor-pointer flex items-center gap-1.5"
+            onClick={() => fetchDashboardData(false)}
+            className="font-bold underline cursor-pointer hover:text-amber-950"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Retry Now</span>
+            Retry Connection
           </button>
         </div>
       )}
 
-      {/* Metric Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((card, idx) => {
-          const Icon = card.icon;
-          return (
-            <div 
-              key={idx} 
-              className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-3"
-            >
-              <div className="flex justify-between items-start">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{card.title}</span>
-                <div className={`p-2 rounded-xl ${card.bg} border ${card.color}`}>
-                  <Icon className="w-4 h-4" />
+      {/* ========================================================
+          2. ASYMMETRIC HERO BENTO ROW (7 Cols vs 5 Cols)
+             Left (7 Cols): Tactical Velocity & Quota Engine Cockpit
+             Right (5 Cols): Next Actionable Review Card (Draft Spotlight)
+         ======================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* HERO TILE (7 Cols): Sent Velocity & Quota Cockpit */}
+        <Glass
+          variant="strong"
+          radius="outer"
+          className="bento-reveal lg:col-span-7 p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden"
+        >
+          {/* Popped-out boundary badge */}
+          <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#FF6B1A]/10 border border-[#FF6B1A]/25 text-[#FF6B1A] text-[10px] font-mono font-bold flex items-center gap-1.5 shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B1A] animate-pulse" />
+            <span>Gmail Pacing Safe</span>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-wider text-[#FF6B1A] font-bold">
+              Dispatch Telemetry
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold font-display text-[#2A1A0F]">
+              Daily Velocity & Throttle Cap
+            </h2>
+            <p className="text-xs text-[#735E50] mt-0.5">
+              Automated spacing prevents rate limiting and spam flags.
+            </p>
+          </div>
+
+          {/* Integrated Gauge + Metrics Cockpit */}
+          <div className="my-4 grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
+            {/* Circular Gauge */}
+            <div className="sm:col-span-5 flex justify-center py-1">
+              <ArcGauge
+                value={effectiveTodaySent}
+                max={dailyLimit}
+                label="Delivered"
+                sublabel="safe cap"
+                size={180}
+              />
+            </div>
+
+            {/* Live Metrics Telemetry Badges */}
+            <div className="sm:col-span-7 space-y-2.5">
+              <div className="p-3 rounded-[16px] bg-white/60 border border-white/80 shadow-2xs flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-mono text-[#735E50] uppercase font-bold">Safe Buffer Remaining</div>
+                  <div className="text-xl font-bold font-display text-[#2A1A0F] tabular-nums">
+                    {Math.max(0, dailyLimit - effectiveTodaySent)} <span className="text-xs font-normal text-[#735E50]">emails</span>
+                  </div>
+                </div>
+                <div className="px-2.5 py-1 rounded-[10px] bg-stone-100 font-mono text-xs font-bold text-[#2A1A0F]">
+                  {warmupPercent}% Used
                 </div>
               </div>
-              <div className="flex items-baseline justify-between pt-1">
-                <span className="text-3xl font-black text-slate-900 tracking-tight">{card.value}</span>
-                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
-                  {card.badge}
-                </span>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-[14px] bg-white/50 border border-white/70 shadow-2xs space-y-0.5">
+                  <div className="text-[10px] font-mono text-[#735E50]">Random Jitter</div>
+                  <div className="font-bold text-[#2A1A0F] font-mono">45–90s delay</div>
+                </div>
+                <div className="p-2.5 rounded-[14px] bg-white/50 border border-white/70 shadow-2xs space-y-0.5">
+                  <div className="text-[10px] font-mono text-[#735E50]">Warmup Strategy</div>
+                  <div className="font-bold text-[#1DA365]">
+                    {quotaStats?.isWarmup ? `Week ${quotaStats.warmupWeek || 1}` : 'Active Mode'}
+                  </div>
+                </div>
               </div>
             </div>
-          );
-        })}
+          </div>
+
+          {/* Footer note */}
+          <div className="pt-3 border-t border-[rgba(42,26,15,0.06)] flex items-center justify-between text-xs text-[#735E50]">
+            <span className="font-mono text-[11px]">Domain Health: 100% clean • 0 bounces</span>
+            <Link
+              to="/settings"
+              className="text-xs font-bold text-[#FF6B1A] hover:underline flex items-center gap-1"
+            >
+              <span>Throttle rules</span>
+              <ArrowRight size={12} />
+            </Link>
+          </div>
+        </Glass>
+
+        {/* HERO COMPANION (5 Cols): Next Actionable Review Spotlight Card */}
+        <Glass
+          variant="surface"
+          radius="outer"
+          className="bento-reveal lg:col-span-5 p-6 flex flex-col justify-between relative overflow-hidden"
+        >
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-[#D99B00] font-bold flex items-center gap-1.5">
+                <Tray size={14} weight="fill" />
+                <span>Queue Spotlight</span>
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[#D99B00] font-mono text-[10px] font-bold">
+                {totalPending} Ready
+              </span>
+            </div>
+            <h3 className="text-lg font-bold font-display text-[#2A1A0F]">
+              Review & Approve Next Batch
+            </h3>
+            <p className="text-xs text-[#735E50] mt-0.5">
+              Every cold outreach email requires your 1-click verification before sending.
+            </p>
+          </div>
+
+          {/* Mini Interactive Draft Preview */}
+          <div className="my-4 p-4 rounded-[20px] bg-white/80 border border-white/90 shadow-sm space-y-2.5">
+            <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-100">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-orange-100 text-[#FF6B1A] font-bold text-xs flex items-center justify-center shrink-0">
+                  {topActiveCampaign?.name?.charAt(0) || 'C'}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[#2A1A0F] truncate text-xs">
+                    {topActiveCampaign?.name || 'Recruiter Outreach'}
+                  </div>
+                  <div className="text-[10px] text-[#735E50] truncate">
+                    {topActiveCampaign?.description || 'Active job candidate pipeline'}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono font-bold text-[#D99B00] shrink-0 bg-amber-50 px-2 py-0.5 rounded-md">
+                Pending
+              </span>
+            </div>
+
+            <p className="text-xs text-[#735E50] line-clamp-2 leading-relaxed italic">
+              "Hi there — I noticed your team's recent expansion and wanted to share how my background aligns with your engineering goals..."
+            </p>
+
+            <div className="flex items-center justify-between text-[11px] pt-1 text-[#735E50]">
+              <span className="font-mono">Pacing delay: 45–90s</span>
+              <span className="text-[#1DA365] font-semibold flex items-center gap-1">
+                <CheckCircle size={12} weight="fill" /> Resume Matched
+              </span>
+            </div>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between gap-3">
+            <Link
+              to="/outbox"
+              className="w-full flex-1 px-4 py-2 rounded-[12px] bg-[#FF6B1A] hover:bg-[#FF6B1A]/90 text-white text-xs font-bold transition-all shadow-[0_4px_12px_rgba(255,107,26,0.3)] flex items-center justify-center gap-1.5"
+            >
+              <span>Open Review Outbox</span>
+              <ArrowRight size={13} weight="bold" />
+            </Link>
+          </div>
+        </Glass>
+
       </div>
 
-      {/* Main Grid: Left Column Campaigns & Progress, Right Column Logs & History */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Left Column: Campaigns & Outbox Summary (8 Cols) */}
-        <div className="lg:col-span-8 space-y-6">
-          
-          {/* Active Campaigns Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5 shadow-xs">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-indigo-600" />
-                  Active Outreach Campaigns
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">Manage and track your active cold email campaign queues.</p>
-              </div>
-              <Link 
-                to="/campaigns"
-                className="text-xs font-bold text-slate-900 hover:underline flex items-center gap-1"
-              >
-                View All <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
+      {/* ========================================================
+          3. FULL-WIDTH CONNECTED PIPELINE FUNNEL
+         ======================================================== */}
+      <Glass variant="surface" radius="outer" className="bento-reveal p-5">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Broadcast size={17} className="text-[#FF6B1A]" weight="duotone" />
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#735E50] font-mono">
+              Pipeline Stage Progression
+            </h2>
+          </div>
+          <span className="text-[11px] font-mono text-[#735E50] font-medium">
+            {totalSent} sent / {totalContacts} total prospects
+          </span>
+        </div>
+        <PipelineFunnel
+          contactsCount={totalContacts}
+          draftsCount={totalPending + totalSent}
+          reviewCount={totalPending}
+          sentCount={totalSent}
+        />
+      </Glass>
 
-            {safeCampaigns.length === 0 ? (
-              <div className="text-center py-10 border border-dashed border-slate-200 rounded-xl bg-slate-50 space-y-3">
-                <Layers className="w-8 h-8 text-slate-400 mx-auto" />
-                <div>
-                  <p className="text-xs font-bold text-slate-800">No Active Campaigns Found</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Create a campaign and import contacts to start sending automated emails.</p>
-                </div>
-                <Link
-                  to="/campaigns"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-900 text-slate-900 font-bold rounded-xl text-xs hover:bg-slate-900 hover:text-white transition-all shadow-2xs"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Create Campaign
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {safeCampaigns.slice(0, 4).map((c) => {
-                  const total = c.metrics?.total || 0;
-                  const sent = c.metrics?.sent || 0;
-                  const percent = total > 0 ? Math.round((sent / total) * 100) : 0;
-                  return (
-                    <div 
-                      key={c.id} 
-                      className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 transition-all space-y-3"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="text-xs font-bold text-slate-900">{c.name}</h4>
-                          <span className="text-[10px] text-slate-500">{c.description || 'General Cold Outreach'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            c.status === 'SENDING' 
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
-                              : 'bg-slate-100 text-slate-700 border border-slate-200'
-                          }`}>
-                            {c.status}
-                          </span>
-                          <Link
-                            to={`/outbox?campaignId=${c.id}`}
-                            className="px-3 py-1 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-lg text-[10px] transition-all shadow-2xs"
-                          >
-                            Review Queue
-                          </Link>
-                        </div>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] font-medium text-slate-500">
-                          <span>{sent} of {total} sent</span>
-                          <span className="font-bold text-slate-900">{percent}%</span>
-                        </div>
-                        <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                          <div 
-                            className="bg-slate-900 h-1.5 rounded-full transition-all duration-500" 
-                            style={{ width: `${percent}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+      {/* ========================================================
+          4. CAMPAIGNS BENTO CARDS (Visual Cards, Not a Generic Table!)
+         ======================================================== */}
+      <div className="bento-reveal space-y-4">
+        {/* Section Header with Liquid Filter Chips */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold font-display text-[#2A1A0F] flex items-center gap-2">
+              <Stack size={20} className="text-[#FF6B1A]" weight="duotone" />
+              <span>Active Outreach Campaigns</span>
+            </h2>
+            <p className="text-xs text-[#735E50] mt-0.5">
+              Personalized cold candidate campaigns and batch delivery status.
+            </p>
           </div>
 
-          {/* Quick Launcher Banner */}
-          {/* <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-md flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="space-y-1 text-center sm:text-left">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-indigo-300 font-bold">Cold Email Automation</span>
-              <h3 className="text-lg font-black tracking-tight text-white">Generate High-Converting Cold Email Drafts</h3>
-              <p className="text-xs text-slate-300 max-w-md">Our Grok-2 AI analyzes target recruiter roles and candidate resumes to craft personalized value propositions.</p>
+          {/* Filter Pills & Search */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 p-1 rounded-full bg-white/70 border border-white/90 shadow-2xs">
+              {(['ALL', 'SENDING', 'DRAFT', 'PAUSED'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setCampaignFilter(tab)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                    campaignFilter === tab
+                      ? 'bg-[#FF6B1A] text-white shadow-xs'
+                      : 'text-[#735E50] hover:text-[#2A1A0F]'
+                  }`}
+                >
+                  {tab === 'ALL' ? 'All' : tab.charAt(0) + tab.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative">
+              <MagnifyingGlass size={14} className="text-[#735E50] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Filter campaigns..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8.5 pr-3 py-1.5 text-xs bg-white/70 border border-white/90 rounded-full text-[#2A1A0F] placeholder-[#735E50]/60 focus:outline-none focus:border-[#FF6B1A] shadow-2xs w-48 sm:w-56"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Campaign Cards Grid */}
+        {safeCampaigns.length === 0 ? (
+          <Glass variant="surface" radius="outer" className="p-12 text-center space-y-4">
+            <div className="w-12 h-12 rounded-[20px] bg-stone-100 text-[#735E50] flex items-center justify-center mx-auto shadow-2xs">
+              <Stack size={24} weight="duotone" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold font-display text-[#2A1A0F]">No campaigns created yet</h4>
+              <p className="text-xs text-[#735E50]">
+                Import recruiter contacts or CSV to launch your first job outreach campaign.
+              </p>
             </div>
             <Link
-              to="/compose"
-              className="px-5 py-2.5 bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs rounded-xl transition-all shadow-sm shrink-0 flex items-center gap-2 cursor-pointer"
+              to="/campaigns"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#FF6B1A] hover:bg-[#FF6B1A]/90 text-white text-xs font-bold rounded-[12px] transition-all shadow-[0_4px_12px_rgba(255,107,26,0.3)]"
             >
-              <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
-              <span>Launch Draft Studio</span>
+              <Plus size={14} weight="bold" />
+              <span>Create Campaign</span>
             </Link>
-          </div> */}
+          </Glass>
+        ) : filteredCampaigns.length === 0 ? (
+          <Glass variant="surface" radius="inner" className="p-8 text-center text-xs text-[#735E50] font-mono">
+            No campaigns match "{searchQuery}"
+          </Glass>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredCampaigns.map((c) => {
+              const total = c.metrics?.total || 0;
+              const sent = c.metrics?.sent || 0;
+              const failed = c.metrics?.failed || 0;
+              const pending = (c.metrics?.pending || 0) + (c.metrics?.generating || 0) + (c.metrics?.ready || 0);
 
-        </div>
+              const sentPercent = total > 0 ? (sent / total) * 100 : 0;
+              const pendingPercent = total > 0 ? (pending / total) * 100 : 0;
+              const failedPercent = total > 0 ? (failed / total) * 100 : 0;
+              const percent = total > 0 ? Math.round((sent / total) * 100) : 0;
 
-        {/* Right Column: Recent Activity Feed & Quick Links (4 Cols) */}
-        <div className="lg:col-span-4 space-y-6">
-          
-          {/* Recent Sent Log Stream */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                <MailCheck className="w-4 h-4 text-emerald-600" />
-                Recent Dispatched Emails
-              </h3>
-              <Link to="/history" className="text-[11px] font-bold text-slate-600 hover:text-slate-900">
-                Log History
-              </Link>
+              return (
+                <Glass
+                  key={c.id}
+                  variant="surface"
+                  radius="inner"
+                  interactive
+                  className="p-5 flex flex-col justify-between space-y-4"
+                >
+                  {/* Card Header: Title & Status Capsule */}
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <h4 className="text-sm font-bold font-display text-[#2A1A0F] truncate leading-snug">
+                        {c.name}
+                      </h4>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 ${
+                          c.status === 'SENDING'
+                            ? 'bg-[#FF6B1A]/10 text-[#FF6B1A] border border-[#FF6B1A]/30'
+                            : c.status === 'COMPLETED'
+                            ? 'bg-[#1DA365]/10 text-[#1DA365] border border-[#1DA365]/30'
+                            : c.status === 'PAUSED'
+                            ? 'bg-stone-100 text-[#735E50]'
+                            : 'bg-[#D99B00]/10 text-[#D99B00] border border-[#D99B00]/30'
+                        }`}
+                      >
+                        {c.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#735E50] line-clamp-1">
+                      {c.description || 'Target recruiter & prospect outreach'}
+                    </p>
+                  </div>
+
+                  {/* Multi-Segment Delivery Bar */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs text-[#735E50] font-medium">
+                      <span>{sent} of {total} delivered</span>
+                      <span className="font-mono text-[#2A1A0F] font-bold">{percent}%</span>
+                    </div>
+
+                    <div className="w-full bg-[rgba(42,26,15,0.06)] rounded-full h-2 overflow-hidden flex shadow-2xs">
+                      {/* Sent Leaf Segment */}
+                      <div
+                        className="bg-[#1DA365] h-2 transition-all duration-500"
+                        style={{ width: `${sentPercent}%` }}
+                        title={`Sent: ${sent}`}
+                      />
+                      {/* Queued Saffron Segment */}
+                      <div
+                        className="bg-[#D99B00] h-2 transition-all duration-500"
+                        style={{ width: `${pendingPercent}%` }}
+                        title={`Queued: ${pending}`}
+                      />
+                      {/* Failed Signal Segment */}
+                      <div
+                        className="bg-[#E63946] h-2 transition-all duration-500"
+                        style={{ width: `${failedPercent}%` }}
+                        title={`Failed: ${failed}`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Metrics Footer & Jump Action */}
+                  <div className="pt-3 border-t border-[rgba(42,26,15,0.06)] flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 text-[11px] font-mono text-[#735E50]">
+                      <span>{total} leads</span>
+                      <span>•</span>
+                      <span className="text-[#D99B00] font-bold">{pending} queued</span>
+                    </div>
+
+                    <Link
+                      to={`/outbox?campaignId=${c.id}`}
+                      className="px-2.5 py-1 rounded-[10px] bg-stone-100 hover:bg-[#FF6B1A] hover:text-white font-bold text-xs text-[#2A1A0F] transition-all flex items-center gap-1 shadow-2xs"
+                    >
+                      <span>Review</span>
+                      <ArrowRight size={11} />
+                    </Link>
+                  </div>
+                </Glass>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ========================================================
+          5. BOTTOM SPLIT: LIVE FEED & SAFETY SHIELD
+         ======================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left (8 Cols): Tabbed Activity Feed (Live Sends vs Diagnostics) */}
+        <Glass variant="surface" radius="outer" className="bento-reveal lg:col-span-8 p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[rgba(42,26,15,0.06)]">
+            <div className="flex items-center gap-1 p-1 bg-stone-100/80 rounded-[12px]">
+              <button
+                onClick={() => setActivityTab('DISPATCHES')}
+                className={`px-3 py-1 rounded-[8px] text-xs font-bold transition-all cursor-pointer ${
+                  activityTab === 'DISPATCHES'
+                    ? 'bg-white text-[#2A1A0F] shadow-2xs'
+                    : 'text-[#735E50] hover:text-[#2A1A0F]'
+                }`}
+              >
+                Live Sends
+              </button>
+              <button
+                onClick={() => setActivityTab('LOGS')}
+                className={`px-3 py-1 rounded-[8px] text-xs font-bold transition-all cursor-pointer ${
+                  activityTab === 'LOGS'
+                    ? 'bg-white text-[#2A1A0F] shadow-2xs'
+                    : 'text-[#735E50] hover:text-[#2A1A0F]'
+                }`}
+              >
+                System Telemetry
+              </button>
             </div>
 
-            {safeHistory.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6">No emails sent yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {safeHistory.slice(0, 5).map((item) => (
-                  <div key={item.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200/60 space-y-1">
-                    <div className="flex justify-between items-start">
-                      <span className="text-xs font-bold text-slate-900 truncate max-w-[150px]">
-                        {item.contact?.firstName ? `${item.contact.firstName} ${item.contact.lastName || ''}` : item.contact?.email || 'Recruiter'}
-                      </span>
-                      <span className="text-[9px] font-mono text-slate-400">
+            <Link
+              to={activityTab === 'DISPATCHES' ? '/history' : '/logs'}
+              className="text-xs font-bold text-[#FF6B1A] hover:underline"
+            >
+              View All History →
+            </Link>
+          </div>
+
+          {/* Feed Content */}
+          {activityTab === 'DISPATCHES' ? (
+            <div className="space-y-2">
+              {safeHistory.length === 0 ? (
+                <p className="text-xs text-[#735E50]/60 py-6 text-center font-mono">
+                  No emails dispatched today yet. Review drafts to initiate outreach.
+                </p>
+              ) : (
+                safeHistory.slice(0, 4).map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3 bg-white/60 hover:bg-white/90 rounded-[16px] border border-white/80 shadow-2xs flex items-center justify-between gap-3 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-[#1DA365]/10 text-[#1DA365] flex items-center justify-center font-bold text-xs shrink-0">
+                        {item.contact?.firstName?.charAt(0) || 'P'}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-[#2A1A0F] text-xs truncate">
+                          {item.contact?.firstName
+                            ? `${item.contact.firstName} ${item.contact.lastName || ''}`
+                            : item.contact?.email || 'Prospect'}
+                          <span className="text-[#735E50] font-normal text-[11px] ml-1.5 font-mono">
+                            ({item.contact?.company || 'Company'})
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-[#735E50] truncate">{item.subject}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] font-mono text-[#735E50]">
                         {new Date(item.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 truncate">{item.subject}</p>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
-                      <span>{item.contact?.company || 'Direct Outreach'}</span>
-                      <span className="text-emerald-700 font-bold">Sent via Gmail</span>
+                      <span className="text-[#1DA365] text-xs font-bold flex items-center gap-1 bg-[#1DA365]/10 px-2 py-0.5 rounded-full">
+                        <CheckCircle size={12} weight="fill" /> Delivered
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* System Diagnostic Logs */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                <Activity className="w-4 h-4 text-blue-600" />
-                System Activity Stream
-              </h3>
-              <Link to="/logs" className="text-[11px] font-bold text-slate-600 hover:text-slate-900">
-                View Diagnostics
-              </Link>
+                ))
+              )}
             </div>
-
-            {safeLogs.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6">No recent logs recorded.</p>
-            ) : (
-              <div className="space-y-2 font-mono text-[10px]">
-                {safeLogs.slice(0, 5).map((log) => (
-                  <div key={log.id} className="p-2 bg-slate-50 rounded-lg border border-slate-200/50 flex items-start gap-2">
-                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase shrink-0 ${
-                      log.level === 'ERROR' ? 'bg-rose-100 text-rose-800' :
-                      log.level === 'WARN' ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-700'
-                    }`}>
+          ) : (
+            <div className="space-y-2 font-mono text-[10px]">
+              {safeLogs.length === 0 ? (
+                <p className="text-xs text-[#735E50]/60 py-6 text-center font-sans">No recent telemetry logs.</p>
+              ) : (
+                safeLogs.slice(0, 4).map((log) => (
+                  <div
+                    key={log.id}
+                    className="p-2.5 rounded-[12px] bg-white/60 border border-white/80 flex items-start gap-2 shadow-2xs"
+                  >
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-bold shrink-0 uppercase ${
+                        log.level === 'ERROR'
+                          ? 'bg-rose-100 text-rose-700'
+                          : log.level === 'WARN'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-stone-200 text-stone-700'
+                      }`}
+                    >
                       {log.level}
                     </span>
-                    <span className="text-slate-700 truncate">{log.message}</span>
+                    <span className="text-[#2A1A0F] truncate leading-relaxed">{log.message}</span>
                   </div>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
+          )}
+        </Glass>
+
+        {/* Right (4 Cols): Safety Shield Status Card */}
+        <Glass variant="surface" radius="outer" className="bento-reveal lg:col-span-4 p-5 space-y-3.5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <ShieldCheck size={18} className="text-[#1DA365]" weight="duotone" />
+              <h3 className="text-xs font-bold font-display uppercase tracking-wider text-[#2A1A0F]">
+                Safety & Deliverability Guard
+              </h3>
+            </div>
+            <p className="text-xs text-[#735E50]">
+              Automated safeguards prevent spam detection and domain suspension.
+            </p>
           </div>
 
-        </div>
+          <div className="space-y-2 text-xs">
+            <div className="p-2.5 rounded-[14px] bg-white/60 border border-white/80 shadow-2xs flex items-center justify-between">
+              <span className="text-[#2A1A0F] font-medium flex items-center gap-2">
+                <CheckCircle size={14} className="text-[#1DA365]" weight="fill" />
+                <span>Delay Jitter</span>
+              </span>
+              <span className="font-mono text-[#735E50] font-bold">45–90s random</span>
+            </div>
 
+            <div className="p-2.5 rounded-[14px] bg-white/60 border border-white/80 shadow-2xs flex items-center justify-between">
+              <span className="text-[#2A1A0F] font-medium flex items-center gap-2">
+                <CheckCircle size={14} className="text-[#1DA365]" weight="fill" />
+                <span>Duplicate Suppression</span>
+              </span>
+              <span className="font-mono text-[#1DA365] font-bold">Active</span>
+            </div>
+
+            <div className="p-2.5 rounded-[14px] bg-white/60 border border-white/80 shadow-2xs flex items-center justify-between">
+              <span className="text-[#2A1A0F] font-medium flex items-center gap-2">
+                <CheckCircle size={14} className="text-[#1DA365]" weight="fill" />
+                <span>Bounce Guard</span>
+              </span>
+              <span className="font-mono text-[#1DA365] font-bold">0% Bounces</span>
+            </div>
+          </div>
+
+          <Link
+            to="/settings"
+            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-[12px] bg-stone-100 hover:bg-stone-200 text-xs font-bold text-[#2A1A0F] transition-all"
+          >
+            <span>Configure Safety Rules</span>
+            <ArrowRight size={13} />
+          </Link>
+        </Glass>
       </div>
 
     </div>

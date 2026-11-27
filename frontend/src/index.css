@@ -1,39 +1,138 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-
 @import "tailwindcss";
+
+:root {
+  /* Functional Semantic Status Palette */
+  --flame: #FF6B1A;      /* Primary actions, active nav, "SENDING" live pulse */
+  --saffron: #D99B00;    /* Highlights, focus ring, DRAFT / PENDING (darkened for AA contrast on light) */
+  --signal: #E63946;     /* Destructive, FAILED, BOUNCED, DISCONNECTED only */
+  --leaf: #1DA365;       /* Sent, COMPLETED, healthy, connected (rich emerald for AA contrast) */
+
+  /* Light Theme Surfaces (Warm Cream Default) */
+  --bg-deep: #FDF8F3;            /* Soft luminous warm cream canvas */
+  --bg-surface: #FFFFFF;         /* Crisp translucent glass base */
+  --bg-surface-cream: #FFF5EA;   /* Warm cream tint */
+  --text-primary: #2A1A0F;       /* Deep warm espresso / dark brown-black (AA contrast) */
+  --text-muted: #735E50;         /* Warm medium brown */
+  --text-faint: #A69282;         /* Warm subtle hint */
+
+  /* Glass recipe tokens for Light Theme */
+  --glass-fill: rgba(255, 255, 255, 0.72);
+  --glass-fill-strong: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.90);
+  --glass-border-subtle: rgba(42, 26, 15, 0.08);
+  --glass-specular-top: rgba(255, 255, 255, 0.98);
+  --glass-specular-bottom: rgba(42, 26, 15, 0.04);
+  --glass-shadow: 0 20px 45px -12px rgba(255, 107, 26, 0.12);
+  --glass-shadow-ambient: 0 12px 32px -8px rgba(42, 26, 15, 0.07);
+
+  /* Concentric Radii Hierarchy */
+  --r-outer: 32px;     /* Shell, sidebar, main cards, modals */
+  --r-inner: 20px;     /* Nested containers, child sections */
+  --r-control: 14px;   /* Buttons, inputs, dropdown items */
+  --r-pill: 9999px;    /* Status pills, floating island, tags */
+
+  /* Typography */
+  --font-display: 'Bricolage Grotesque', sans-serif;
+  --font-sans: 'Instrument Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
 
 @layer base {
   html {
     font-size: 100%;
     scroll-behavior: smooth;
+    color-scheme: light;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased font-sans;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-color: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    antialiased: true;
+    overflow-x: hidden;
   }
 
-  /* Custom Scrollbar */
+  /* Font utility application */
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  /* Custom Light Warm Glass Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-slate-100;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+    background: rgba(42, 26, 15, 0.12);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 107, 26, 0.4);
   }
 }
 
-/* Minimalist Clean Panel Styling */
-.glass-panel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+/* Tabular numerals for high-precision stats */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
-.border-subtle {
-  border-color: #e2e8f0;
+/* Focus Ring in Saffron */
+*:focus-visible {
+  outline: 2px solid var(--saffron);
+  outline-offset: 2px;
+}
+
+/* Warm Glass Primitives (Light Theme) */
+.glass-surface {
+  background: var(--glass-fill);
+  backdrop-filter: blur(24px) saturate(160%) brightness(1.02);
+  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(1.02);
+  border: 1px solid var(--glass-border);
+  box-shadow: 
+    inset 0 1px 0 var(--glass-specular-top),
+    inset 0 -1px 0 var(--glass-specular-bottom),
+    var(--glass-shadow-ambient);
+}
+
+.glass-surface-interactive {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-surface-interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    inset 0 1px 0 var(--glass-specular-top),
+    inset 0 -1px 0 var(--glass-specular-bottom),
+    var(--glass-shadow),
+    var(--glass-shadow-ambient);
+}
+
+.glass-surface-interactive:active {
+  transform: scale(0.985);
+}
+
+/* Nested surfaces */
+.glass-surface-nested {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(42, 26, 15, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 9999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px -2px rgba(42, 26, 15, 0.05);
 }
