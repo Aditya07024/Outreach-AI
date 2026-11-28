@@ -556,7 +556,7 @@ export const Settings: React.FC<SettingsProps> = ({
   // Preset daily limit values
   const presetLimits: { value: number; label: string; desc: string; badge?: string }[] = [
     { value: 25, label: '25', desc: 'Ultra Safe' },
-    { value: 50, label: '50', desc: 'Personal Gmail', badge: 'Default' },
+    { value: 50, label: '50', desc: 'Personal Gmail'},
     { value: 100, label: '100', desc: 'High Volume' },
     { value: 200, label: '200', desc: 'Max Limit' },
   ];
