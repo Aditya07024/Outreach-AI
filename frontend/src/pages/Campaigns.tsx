@@ -46,7 +46,8 @@ import {
   Broadcast,
   Fire,
   Pulse,
-  UserCheck
+  UserCheck,
+  Info
 } from '@phosphor-icons/react';
 import { Campaign, Contact, Resume } from '../types';
 import { Glass } from '../components/glass/Glass';
@@ -62,7 +63,7 @@ export const Campaigns: React.FC = () => {
   // View controllers
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [campaignListFilter, setCampaignListFilter] = useState<'ALL' | 'SENDING' | 'PAUSED' | 'COMPLETED' | 'DRAFT'>('ALL');
-  const [detailTab, setDetailTab] = useState<'contacts' | 'import' | 'template' | 'logs'>('contacts');
+  const [detailTab, setDetailTab] = useState<'contacts' | 'import' | 'template' | 'exclusions' | 'logs'>('contacts');
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
 
   // Search & filter states
@@ -595,6 +596,15 @@ export const Campaigns: React.FC = () => {
     if (!selectedCampId) return;
     setIsSkippingExcluded(true);
     try {
+      // First save the current excludedEmails if modified
+      await fetch(`/api/campaigns/${selectedCampId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          excludedEmails: editExcludedEmails,
+        }),
+      });
+
       const response = await fetch(`/api/campaigns/${selectedCampId}/skip-excluded`, {
         method: 'POST',
       });
@@ -1019,7 +1029,7 @@ export const Campaigns: React.FC = () => {
 
             <Glass variant="surface" radius="outer" className="p-4 md:p-5 flex items-center justify-between shadow-sm">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#735E50] block">Recruiter Leads</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#735E50] block">Recruiter Emails</span>
                 <div className="text-2xl font-black text-[#2A1A0F] mt-1">{totalContactsAcrossAll}</div>
                 <div className="text-[10.5px] text-[#735E50] mt-0.5">In targeted pools</div>
               </div>
@@ -1159,17 +1169,6 @@ export const Campaigns: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Description</label>
-                    <textarea
-                      value={newDesc}
-                      onChange={(e) => setNewDesc(e.target.value)}
-                      placeholder="e.g. Engineering leaders and technical recruiters in fintech & AI..."
-                      rows={2}
-                      className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
                       <FilePdf className="w-3.5 h-3.5 text-[#FF6B1A]" weight="duotone" />
                       Attached Resume PDF *
@@ -1196,10 +1195,10 @@ export const Campaigns: React.FC = () => {
                     <div>
                       <div className="text-xs font-bold text-[#2A1A0F] flex items-center gap-1.5">
                         <Lightning className="w-4 h-4 text-[#FF6B1A]" weight="fill" />
-                        Auto-Send Extension Leads
+                        Auto-Send Extension Emails
                       </div>
                       <div className="text-[10.5px] text-[#735E50] mt-0.5">
-                        Automatically generate email & dispatch via Gmail when leads are added via extension.
+                        Automatically generate email & dispatch via Gmail when emails are added via extension.
                       </div>
                     </div>
                     <button
@@ -1253,10 +1252,10 @@ export const Campaigns: React.FC = () => {
                     <div>
                       <div className="text-xs font-bold text-[#2A1A0F] flex items-center gap-1.5">
                         <EnvelopeSimple className="w-4 h-4 text-[#E63946]" weight="duotone" />
-                        Auto-Remove @gmail Leads
+                        Auto-Remove @gmail Emails
                       </div>
                       <div className="text-[10.5px] text-[#735E50] mt-0.5">
-                        Automatically drop personal @gmail.com addresses when leads are synced from Chrome extension.
+                        Automatically drop personal @gmail.com addresses when emails are synced from Chrome extension.
                       </div>
                     </div>
                     <button
@@ -1411,7 +1410,7 @@ export const Campaigns: React.FC = () => {
                           <div className="text-[10px] font-bold text-[#7C3AED] flex items-center justify-between">
                             <span className="flex items-center gap-1">
                               <EnvelopeSimple className="w-3.5 h-3.5" weight="duotone" />
-                              <span>Matching lead:</span>
+                              <span>Matching email:</span>
                             </span>
                             <span className="font-mono">{camp.matchingContacts.length} found</span>
                           </div>
@@ -1439,7 +1438,7 @@ export const Campaigns: React.FC = () => {
                         <div className="flex items-center justify-between text-[11px] font-bold text-[#2A1A0F]">
                           <span className="flex items-center gap-1.5 text-[10.5px]">
                             <Lightning className={`w-3.5 h-3.5 ${camp.autoSendExtension ? 'text-[#FF6B1A]' : 'text-[#735E50]'}`} weight={camp.autoSendExtension ? 'fill' : 'regular'} />
-                            Auto-Send Leads
+                            Auto-Send Emails
                           </span>
                           <button
                             type="button"
@@ -1455,7 +1454,7 @@ export const Campaigns: React.FC = () => {
                         <div className="flex items-center justify-between text-[11px] font-bold text-[#2A1A0F]">
                           <span className="flex items-center gap-1.5 text-[10.5px]">
                             <EnvelopeSimple className={`w-3.5 h-3.5 ${camp.autoRemoveGmailExtension !== false ? 'text-[#E63946]' : 'text-[#735E50]'}`} weight="duotone" />
-                            Drop @gmail Leads
+                            Drop @gmail Emails
                           </span>
                           <button
                             type="button"
@@ -1575,7 +1574,7 @@ export const Campaigns: React.FC = () => {
                             <div className="w-36 space-y-1">
                               <div className="flex justify-between text-[10px] font-mono text-[#735E50]">
                                 <span>{sent} sent</span>
-                                <span>{total} leads ({percent}%)</span>
+                                <span>{total} emails ({percent}%)</span>
                               </div>
                               <div className="w-full h-1.5 bg-white/80 rounded-full overflow-hidden border border-[rgba(42,26,15,0.06)]">
                                 <div className="h-full bg-[#FF6B1A] rounded-full" style={{ width: `${percent}%` }} />
@@ -1682,19 +1681,6 @@ export const Campaigns: React.FC = () => {
                           {campaignDetails.status}
                         </span>
                       </div>
-
-                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-[#735E50] mt-1">
-                        <span className="inline-flex items-center gap-1 font-semibold text-[#2A1A0F]">
-                          <FilePdf className="w-3.5 h-3.5 text-[#FF6B1A]" weight="duotone" />
-                          {campaignDetails.resume?.name || 'No resume PDF attached'}
-                        </span>
-                        <span>•</span>
-                        <span>Mode: <strong className="text-[#2A1A0F]">Custom AI Template</strong></span>
-                        <span>•</span>
-                        <span>Auto-Send: <strong className={campaignDetails.autoSendExtension ? 'text-[#1DA365]' : 'text-[#735E50]'}>{campaignDetails.autoSendExtension ? 'ACTIVE' : 'OFF'}</strong></span>
-                        <span>•</span>
-                        <span>Gmail Filter: <strong className={campaignDetails.autoRemoveGmailExtension !== false ? 'text-[#E63946]' : 'text-[#735E50]'}>{campaignDetails.autoRemoveGmailExtension !== false ? 'FILTERING ON' : 'OFF'}</strong></span>
-                      </div>
                     </div>
                   </div>
 
@@ -1728,15 +1714,6 @@ export const Campaigns: React.FC = () => {
                     >
                       <FastForward className="w-4 h-4 text-[#7C3AED]" weight="bold" />
                       <span>{isSkippingQueue ? 'Skipping...' : 'Skip Queue Delay'}</span>
-                    </button>
-
-                    {/* Generate Drafts */}
-                    <button
-                      onClick={() => triggerAction('generate')}
-                      className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white/90 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[14px] text-xs transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
-                    >
-                      <Sparkle className="w-4 h-4 text-[#FF6B1A]" weight="fill" />
-                      <span>Generate AI</span>
                     </button>
 
                     {/* Grouped Secondary Action Dropdown */}
@@ -1810,7 +1787,7 @@ export const Campaigns: React.FC = () => {
                             className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#E63946]"
                           >
                             <Trash className="w-4 h-4" weight="bold" />
-                            <span>Delete Failed / Skipped Leads</span>
+                            <span>Delete Failed / Skipped Emails</span>
                           </button>
 
                           <button
@@ -1822,7 +1799,7 @@ export const Campaigns: React.FC = () => {
                             className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#E63946]"
                           >
                             <UserMinus className="w-4 h-4" weight="bold" />
-                            <span>Review & Remove @gmail Leads</span>
+                            <span>Review & Remove @gmail Emails</span>
                           </button>
                         </div>
                       )}
@@ -1839,7 +1816,7 @@ export const Campaigns: React.FC = () => {
                     <h3 className="text-xs font-bold text-[#2A1A0F] uppercase tracking-wider">Campaign Pipeline Funnel</h3>
                   </div>
                   <span className="text-[11px] font-mono text-[#735E50]">
-                    Total Lead Conversions: {campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0} / {campaignDetails.contacts?.length || 0} Delivered
+                    Total Emails Delivered: {campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0} / {campaignDetails.contacts?.length || 0} Delivered
                   </span>
                 </div>
 
@@ -1854,9 +1831,10 @@ export const Campaigns: React.FC = () => {
               {/* Workspace Navigation Tabs (Ground-up Structure) */}
               <div className="flex items-center gap-2 border-b border-[rgba(42,26,15,0.1)] pb-2 overflow-x-auto campaign-reveal">
                 {[
-                  { id: 'contacts', label: 'Recruiter Leads Table', icon: <Users className="w-4 h-4" weight="duotone" />, count: campaignDetails.contacts?.length || 0 },
-                  { id: 'import', label: 'Add & Import Leads', icon: <Plus className="w-4 h-4" weight="bold" /> },
+                  { id: 'contacts', label: 'Recruiter Emails Table', icon: <Users className="w-4 h-4" weight="duotone" />, count: campaignDetails.contacts?.length || 0 },
+                  { id: 'import', label: 'Add & Import Emails', icon: <Plus className="w-4 h-4" weight="bold" /> },
                   { id: 'template', label: 'Email Template & Rules', icon: <GearSix className="w-4 h-4" weight="duotone" /> },
+                  { id: 'exclusions', label: 'Do Not Contact List', icon: <Prohibit className="w-4 h-4" weight="bold" />, count: (editExcludedEmails ? editExcludedEmails.split(',').filter(x => x.trim().length > 0).length : 0) },
                   { id: 'logs', label: 'Live Dispatch Console', icon: <Terminal className="w-4 h-4" weight="duotone" />, count: activityLogs.length },
                 ].map((tab) => {
                   const isActive = detailTab === tab.id;
@@ -1885,7 +1863,7 @@ export const Campaigns: React.FC = () => {
               </div>
 
               {/* ========================================================= */}
-              {/* TAB 1: CONTACTS & LEADS DATATABLE */}
+              {/* TAB 1: CONTACTS & EMAILS DATATABLE */}
               {/* ========================================================= */}
               {detailTab === 'contacts' && (
                 <Glass variant="surface" radius="outer" className="overflow-hidden shadow-sm space-y-0 campaign-reveal">
@@ -1921,7 +1899,7 @@ export const Campaigns: React.FC = () => {
                           className="px-3.5 py-1.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white rounded-[10px] text-[10.5px] font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" weight="bold" />
-                          <span>Add More Leads</span>
+                          <span>Add More Emails</span>
                         </button>
                       </div>
                     </div>
@@ -1984,7 +1962,7 @@ export const Campaigns: React.FC = () => {
                     <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-[rgba(42,26,15,0.08)] bg-white/50 text-[#735E50] uppercase font-bold text-[9.5px] tracking-wider">
-                          <th className="p-4">Recruiter Lead</th>
+                          <th className="p-4">Recruiter Email</th>
                           <th className="p-4">Target Company</th>
                           <th className="p-4">Hiring Position</th>
                           <th className="p-4">Recruiter Classifier</th>
@@ -1998,15 +1976,15 @@ export const Campaigns: React.FC = () => {
                           <tr>
                             <td colSpan={7} className="p-10 text-center text-[#735E50] text-xs space-y-2">
                               <Users className="w-8 h-8 text-[#9C8E84] mx-auto" weight="duotone" />
-                              <p className="font-bold text-[#2A1A0F]">No leads found in this campaign.</p>
-                              <p className="text-[11px]">Click "Add & Import Leads" tab above to upload CSV or paste emails.</p>
+                              <p className="font-bold text-[#2A1A0F]">No emails found in this campaign.</p>
+                              <p className="text-[11px]">Click "Add & Import Emails" tab above to upload CSV or paste emails.</p>
                             </td>
                           </tr>
                         ) : filteredContacts.length === 0 ? (
                           <tr>
                             <td colSpan={7} className="p-10 text-center text-[#735E50] text-xs space-y-2">
                               <EnvelopeSimple className="w-8 h-8 text-[#9C8E84] mx-auto" weight="duotone" />
-                              <p className="font-bold text-[#2A1A0F]">No leads match your filter criteria.</p>
+                              <p className="font-bold text-[#2A1A0F]">No emails match your filter criteria.</p>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -2155,13 +2133,13 @@ export const Campaigns: React.FC = () => {
               )}
 
               {/* ========================================================= */}
-              {/* TAB 2: ADD & IMPORT LEADS */}
+              {/* TAB 2: ADD & IMPORT EMAILS */}
               {/* ========================================================= */}
               {detailTab === 'import' && (
                 <div className="campaign-reveal space-y-4">
                   <Glass variant="surface" radius="inner" className="p-5 flex items-center justify-between shadow-sm">
                     <div>
-                      <h3 className="text-sm font-extrabold text-[#2A1A0F]">Lead Importer & Sync Engine</h3>
+                      <h3 className="text-sm font-extrabold text-[#2A1A0F]">Email Importer & Sync Engine</h3>
                       <p className="text-[11px] text-[#735E50] mt-0.5">
                         Add candidates via spreadsheet, bulk email paste, manual entry, or shared campaign code.
                       </p>
@@ -2171,7 +2149,7 @@ export const Campaigns: React.FC = () => {
                       onClick={() => setDetailTab('contacts')}
                       className="px-3.5 py-1.5 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[10px] text-xs shadow-2xs"
                     >
-                      Return to Leads Queue
+                      Return to Emails Queue
                     </button>
                   </Glass>
 
@@ -2193,12 +2171,12 @@ export const Campaigns: React.FC = () => {
                   <div className="flex justify-between items-center pb-3 border-b border-[rgba(42,26,15,0.08)]">
                     <div>
                       <h3 className="text-base font-extrabold text-[#2A1A0F]">Campaign Configuration & AI Prompts</h3>
-                      <p className="text-[11px] text-[#735E50] mt-0.5">Customize candidate variables, attached resume, auto-send toggles, and blocklists.</p>
+                      <p className="text-[11px] text-[#735E50] mt-0.5">Customize candidate variables, attached resume, auto-send toggles, and outreach templates.</p>
                     </div>
                   </div>
 
                   <form onSubmit={handleUpdateCampaignSettings} className="space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Campaign Title</label>
                         <input
@@ -2206,16 +2184,6 @@ export const Campaigns: React.FC = () => {
                           required
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-all shadow-inner"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Campaign Target / Notes</label>
-                        <input
-                          type="text"
-                          value={editDesc}
-                          onChange={(e) => setEditDesc(e.target.value)}
                           className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-all shadow-inner"
                         />
                       </div>
@@ -2244,10 +2212,10 @@ export const Campaigns: React.FC = () => {
                         <div>
                           <div className="text-xs font-bold text-[#2A1A0F] flex items-center gap-1.5">
                             <Lightning className="w-4 h-4 text-[#FF6B1A]" weight="fill" />
-                            Auto-Send Extension Leads
+                            Auto-Send Extension Emails
                           </div>
                           <div className="text-[10.5px] text-[#735E50] mt-0.5">
-                            Auto-generate email & dispatch via Gmail as leads enter from Chrome extension
+                            Auto-generate email & dispatch via Gmail as emails enter from Chrome extension
                           </div>
                         </div>
                         <button
@@ -2265,7 +2233,7 @@ export const Campaigns: React.FC = () => {
                         <div>
                           <div className="text-xs font-bold text-[#2A1A0F] flex items-center gap-1.5">
                             <EnvelopeSimple className="w-4 h-4 text-[#E63946]" weight="duotone" />
-                            Auto-Remove @gmail Leads
+                            Auto-Remove @gmail Emails
                           </div>
                           <div className="text-[10.5px] text-[#735E50] mt-0.5">
                             Automatically drop personal @gmail.com addresses synced from extension
@@ -2322,34 +2290,6 @@ export const Campaigns: React.FC = () => {
                       </div>
                     </Glass>
 
-                    {/* Excluded Domains Rule Box */}
-                    <div className="p-4 rounded-[16px] bg-[#E63946]/5 border border-[#E63946]/20 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[11px] text-[#A01B26] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                          <Prohibit className="w-4 h-4 text-[#E63946]" weight="bold" />
-                          Do Not Contact List (Excluded Domains & Emails)
-                        </label>
-                        <button
-                          type="button"
-                          onClick={handleSkipExcluded}
-                          disabled={isSkippingExcluded}
-                          className="text-[9.5px] font-bold px-2.5 py-1 bg-white hover:bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/25 rounded-[8px] transition-colors cursor-pointer disabled:opacity-50"
-                        >
-                          {isSkippingExcluded ? 'Scanning...' : 'Apply & Skip Matching Leads'}
-                        </button>
-                      </div>
-                      <textarea
-                        value={editExcludedEmails}
-                        onChange={(e) => setEditExcludedEmails(e.target.value)}
-                        placeholder="e.g. @competitor.com, .corp.example.com, .edu, hr@company.com"
-                        rows={2}
-                        className="w-full rounded-[12px] border border-[#E63946]/20 bg-white px-3.5 py-2 text-xs text-[#2A1A0F] font-mono focus:outline-none focus:border-[#E63946] shadow-inner"
-                      />
-                      <span className="text-[10px] text-[#735E50] block">
-                        Emails matching these domain patterns will be automatically skipped by the dispatcher.
-                      </span>
-                    </div>
-
                     <div className="flex justify-end gap-3 pt-2">
                       <button
                         type="submit"
@@ -2364,7 +2304,148 @@ export const Campaigns: React.FC = () => {
               )}
 
               {/* ========================================================= */}
-              {/* TAB 4: LIVE DISPATCH CONSOLE */}
+              {/* TAB 4: DO NOT CONTACT LIST (EXCLUDED DOMAINS & EMAILS) */}
+              {/* ========================================================= */}
+              {detailTab === 'exclusions' && (
+                <Glass variant="surface" radius="outer" className="p-6 md:p-8 space-y-6 shadow-sm campaign-reveal text-[#2A1A0F]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[rgba(42,26,15,0.08)]">
+                    <div className="space-y-1">
+                      <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#E63946]/10 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">
+                        <Prohibit className="w-3.5 h-3.5" weight="bold" />
+                        <span>Safety & Exclusion Gate</span>
+                      </div>
+                      <h3 className="text-base md:text-lg font-black text-[#2A1A0F] tracking-tight">
+                        DO NOT CONTACT LIST (EXCLUDED DOMAINS & EMAILS)
+                      </h3>
+                      <p className="text-xs text-[#735E50] max-w-2xl leading-relaxed">
+                        Emails matching these domain patterns will be automatically skipped by the dispatcher.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleSkipExcluded}
+                        disabled={isSkippingExcluded}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B38] text-white font-bold rounded-[14px] text-xs uppercase tracking-wider transition-all shadow-[0_8px_20px_-4px_rgba(230,57,70,0.35)] cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+                      >
+                        <Prohibit className="w-4 h-4" weight="bold" />
+                        <span>{isSkippingExcluded ? 'Scanning & Skipping...' : 'Apply & Skip Matching Emails'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleUpdateCampaignSettings}
+                        disabled={isUpdatingSettings}
+                        className="px-4 py-2.5 bg-[#2A1A0F] hover:bg-[#3D2817] text-white font-bold rounded-[14px] text-xs transition-all shadow-sm cursor-pointer disabled:opacity-40"
+                      >
+                        {isUpdatingSettings ? 'Saving...' : 'Save Exclusions'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Form & Controls */}
+                  <div className="space-y-5">
+                    <div className="p-5 rounded-[18px] bg-white/70 border border-[rgba(42,26,15,0.08)] space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <label className="text-[11px] text-[#2A1A0F] font-bold uppercase tracking-wider flex items-center gap-2">
+                          <span>Excluded Domains & Address Patterns</span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[#E63946]">
+                            {editExcludedEmails ? editExcludedEmails.split(',').map(s => s.trim()).filter(Boolean).length : 0} Rules Active
+                          </span>
+                        </label>
+                        <span className="text-[10.5px] text-[#735E50]">Separate domains with commas or newlines</span>
+                      </div>
+
+                      <textarea
+                        value={editExcludedEmails}
+                        onChange={(e) => setEditExcludedEmails(e.target.value)}
+                        placeholder="e.g. @competitor.com, .corp.example.com, .edu, hr@company.com, @tempmail.com"
+                        rows={4}
+                        className="w-full rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white px-4 py-3 text-xs text-[#2A1A0F] font-mono leading-relaxed focus:outline-none focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 shadow-inner transition-all"
+                      />
+
+                      {/* Quick domain helper chips */}
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#735E50] mr-1">Quick Add:</span>
+                        {[
+                          { label: '+ @gmail.com', domain: '@gmail.com' },
+                          { label: '+ @yahoo.com', domain: '@yahoo.com' },
+                          { label: '+ @hotmail.com', domain: '@hotmail.com' },
+                          { label: '+ .edu', domain: '.edu' },
+                          { label: '+ @intern.com', domain: '@intern.com' },
+                        ].map((preset) => {
+                          const currentList = editExcludedEmails.split(',').map(s => s.trim()).filter(Boolean);
+                          const isAlreadyAdded = currentList.includes(preset.domain);
+                          return (
+                            <button
+                              key={preset.domain}
+                              type="button"
+                              disabled={isAlreadyAdded}
+                              onClick={() => {
+                                if (isAlreadyAdded) return;
+                                const updated = currentList.length > 0 ? `${editExcludedEmails.trim().replace(/,+$/, '')}, ${preset.domain}` : preset.domain;
+                                setEditExcludedEmails(updated);
+                              }}
+                              className={`text-[10.5px] font-medium px-2.5 py-1 rounded-[8px] transition-all cursor-pointer ${
+                                isAlreadyAdded 
+                                  ? 'bg-stone-100 text-[#9C8E84] cursor-not-allowed border border-transparent' 
+                                  : 'bg-white hover:bg-orange-50 text-[#735E50] hover:text-[#FF6B1A] border border-[rgba(42,26,15,0.1)] hover:border-[#FF6B1A]/30'
+                              }`}
+                            >
+                              {preset.label} {isAlreadyAdded && '✓'}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Parsed Active Badges */}
+                    {(() => {
+                      const parsed = (editExcludedEmails || '').split(',').map(s => s.trim()).filter(Boolean);
+                      if (parsed.length === 0) return null;
+                      return (
+                        <div className="p-4 rounded-[16px] bg-[#E63946]/5 border border-[#E63946]/15 space-y-2.5">
+                          <span className="text-[10.5px] font-bold text-[#A01B26] uppercase tracking-wider block">
+                            Active Pattern Filters ({parsed.length})
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {parsed.map((item, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[10px] bg-white border border-[#E63946]/20 text-[#A01B26] text-xs font-mono font-medium shadow-2xs"
+                              >
+                                <span>{item}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = parsed.filter((_, i) => i !== idx).join(', ');
+                                    setEditExcludedEmails(next);
+                                  }}
+                                  className="hover:text-red-700 p-0.5 rounded-full hover:bg-red-50 cursor-pointer"
+                                  title="Remove this exclusion pattern"
+                                >
+                                  <X className="w-3 h-3" weight="bold" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Information Card */}
+                    <div className="p-4 rounded-[16px] bg-[#2A1A0F]/5 border border-[rgba(42,26,15,0.08)] flex items-start gap-3">
+                      <Info className="w-5 h-5 text-[#FF6B1A] shrink-0 mt-0.5" weight="duotone" />
+                      <div className="text-xs text-[#735E50] leading-relaxed">
+                        <strong className="text-[#2A1A0F]">Dispatcher Safety Guarantee:</strong> Before sending each email, the dispatch engine evaluates the recipient domain against this exclusion list and your account safety rules. Contacts with matching domains are instantly stamped as <strong className="text-[#E63946]">SKIPPED</strong> in your pipeline, ensuring you never email competitors, personal domains, or internal addresses.
+                      </div>
+                    </div>
+                  </div>
+                </Glass>
+              )}
+
+              {/* ========================================================= */}
+              {/* TAB 5: LIVE DISPATCH CONSOLE */}
               {/* ========================================================= */}
               {detailTab === 'logs' && (
                 <Glass variant="strong" radius="outer" className="overflow-hidden shadow-sm space-y-0 text-white bg-[#2A1A0F] border border-[#3D2817] campaign-reveal">

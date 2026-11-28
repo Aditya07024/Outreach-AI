@@ -62,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'Workflow Pipeline',
       items: [
         { to: '/', name: 'Overview Dashboard', icon: LayoutDashboard, badge: null, color: 'text-blue-600' },
-        { to: '/campaigns', name: 'Campaigns & Leads', icon: Layers, badge: null, color: 'text-orange-500' },
+        { to: '/campaigns', name: 'Campaigns & Emails', icon: Layers, badge: null, color: 'text-orange-500' },
         { to: '/outbox', name: 'Outbox Queue', icon: Clock, badge: null, color: 'text-amber-500' },
       ]
     },

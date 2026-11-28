@@ -2,6 +2,7 @@ import prisma from '../utils/prisma';
 import { GmailService } from './gmail.service';
 import { logger } from '../utils/logger';
 import { isEmailExcluded } from '../utils/exclusion';
+import { replacePlaceholders } from '../utils/template';
 import fs from 'fs';
 
 export function getEffectiveDailyLimit(settings: any): { effectiveLimit: number; warmupWeek: number; isWarmup: boolean } {
@@ -232,7 +233,7 @@ export class SendingEngine {
       }
 
       // Find the next contact that is eligible for sending in this campaign
-      const contact = await prisma.contact.findFirst({
+      let contact = await prisma.contact.findFirst({
         where: {
           campaignId: campaign.id,
           status: { in: ['READY_TO_SEND', 'FAILED'] },
@@ -241,6 +242,22 @@ export class SendingEngine {
         },
         orderBy: { id: 'asc' },
       });
+
+      // If no ready contact, check if any pending contacts need auto-generation
+      if (!contact) {
+        const generated = await this.generatePendingEmailsForCampaign(campaign.id, userId);
+        if (generated > 0) {
+          contact = await prisma.contact.findFirst({
+            where: {
+              campaignId: campaign.id,
+              status: { in: ['READY_TO_SEND', 'FAILED'] },
+              emailSubject: { not: null },
+              emailBody: { not: null },
+            },
+            orderBy: { id: 'asc' },
+          });
+        }
+      }
 
       // If no contacts are left to send, complete the campaign
       if (!contact) {
@@ -481,7 +498,94 @@ export class SendingEngine {
   }
 
   /**
+   * Auto-generates email subjects and bodies for all PENDING or un-generated contacts in a campaign.
+   */
+  static async generatePendingEmailsForCampaign(campaignId: number, userId?: number): Promise<number> {
+    try {
+      const campaign = await prisma.campaign.findUnique({
+        where: { id: campaignId },
+        select: {
+          id: true,
+          name: true,
+          userId: true,
+          templateType: true,
+          templateSubject: true,
+          templateBody: true,
+        },
+      });
+      if (!campaign) return 0;
+
+      const ownerId = campaign.userId || userId || 1;
+      const settings = (await prisma.settings.findUnique({ where: { id: ownerId } })) || {
+        name: 'Candidate',
+        github: '',
+        portfolio: '',
+        phone: '',
+        linkedin: '',
+        preferredRole: 'Software Engineer',
+        location: '',
+      };
+
+      // Find all contacts in this campaign that need email generation
+      const pendingContacts = await prisma.contact.findMany({
+        where: {
+          campaignId,
+          OR: [
+            { status: 'PENDING' },
+            { emailSubject: null },
+            { emailBody: null },
+          ],
+        },
+      });
+
+      if (pendingContacts.length === 0) return 0;
+
+      const defaultSubject = 'Opportunities at {company} - {role} Application';
+      const defaultBody =
+        'Hi {firstName},\n\nI have been following your engineering team at {company} and would love to express interest in the {role} role.\n\nI have attached my resume for your review. You can view my portfolio at {portfolio} and GitHub at {github}.\n\nBest regards,\n{name}';
+
+      const subjectTemplate = campaign.templateSubject || defaultSubject;
+      const bodyTemplate = campaign.templateBody || defaultBody;
+
+      let updatedCount = 0;
+      for (const contact of pendingContacts) {
+        try {
+          const subject = replacePlaceholders(subjectTemplate, contact, settings);
+          const body = replacePlaceholders(bodyTemplate, contact, settings);
+
+          await prisma.contact.update({
+            where: { id: contact.id },
+            data: {
+              emailSubject: subject,
+              emailBody: body,
+              status: 'READY_TO_SEND',
+            },
+          });
+          updatedCount++;
+        } catch (err: any) {
+          console.error(`Failed to auto-generate email for contact ${contact.id}:`, err);
+        }
+      }
+
+      if (updatedCount > 0) {
+        await logger.info(
+          'EMAIL_GENERATION',
+          `Auto-generated ${updatedCount} email(s) for campaign "${campaign.name}" upon starting sequence.`,
+          null,
+          ownerId
+        );
+      }
+
+      return updatedCount;
+    } catch (err: any) {
+      console.error('Error in generatePendingEmailsForCampaign:', err);
+      return 0;
+    }
+  }
+
+  /**
    * Set campaign status to SENDING (resumes sending)
+   * Automatically generates emails for any pending/un-generated contacts first, then begins sending!
    */
   static async startCampaign(campaignId: number): Promise<void> {
     const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
@@ -493,18 +597,25 @@ export class SendingEngine {
       throw new Error('Please connect your Gmail account before starting the campaign.');
     }
 
-    // Check if there are any ready emails to send
+    // 1. Auto-generate any pending/ungenerated emails FIRST!
+    await this.generatePendingEmailsForCampaign(campaignId, userId);
+
+    // 2. Check if there are any ready emails to send
     const readyCount = await prisma.contact.count({
       where: {
         campaignId,
-        status: 'READY_TO_SEND',
+        status: { in: ['READY_TO_SEND', 'FAILED'] },
         emailSubject: { not: null },
         emailBody: { not: null },
       },
     });
 
     if (readyCount === 0) {
-      throw new Error('No ready emails to send. Please generate emails first by clicking the "Generate Emails" button.');
+      const totalCount = await prisma.contact.count({ where: { campaignId } });
+      if (totalCount === 0) {
+        throw new Error('No contacts found in this campaign. Please add contacts first.');
+      }
+      throw new Error('All contacts in this campaign have already been sent or skipped.');
     }
 
     await prisma.campaign.update({
