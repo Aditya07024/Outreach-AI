@@ -1081,7 +1081,7 @@ Sign-In Key (If you failed to sign-in then use this code)
                   </span>
                   <span className="text-[10px] text-[#735E50]">Tap to apply</span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {pausePresets.map((preset) => {
                     const isSelected = Number(delayMin) === preset.min && Number(delayMax) === preset.max;
                     return (
@@ -1120,45 +1120,6 @@ Sign-In Key (If you failed to sign-in then use this code)
                       </button>
                     );
                   })}
-
-                  {/* 4th Preset: Custom Toggle */}
-                  {(() => {
-                    const isCustomPreset = !pausePresets.some(
-                      (p) => Number(delayMin) === p.min && Number(delayMax) === p.max
-                    );
-                    const isCustomActive = isCustomPreset || showCustomPacing;
-                    return (
-                      <button
-                        type="button"
-                        onClick={() => setShowCustomPacing((prev) => !prev)}
-                        className={`p-2.5 rounded-[12px] text-left transition-all cursor-pointer border flex flex-col justify-between ${
-                          isCustomActive
-                            ? 'bg-[#2A1A0F] text-white border-[#2A1A0F] shadow-sm ring-2 ring-[#FF6B1A]/50'
-                            : 'bg-white/90 hover:bg-white text-[#2A1A0F] border-[rgba(42,26,15,0.08)]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
-                            isCustomActive
-                              ? 'bg-[#FF6B1A] text-white'
-                              : 'bg-stone-100 text-[#735E50] border border-stone-200'
-                          }`}>
-                            CUSTOM
-                          </span>
-                          {isCustomActive && (
-                            <Sliders size={12} weight="bold" className="text-[#1DA365]" />
-                          )}
-                        </div>
-                        <div className="text-xs font-bold font-display">Custom</div>
-                        <div className={`text-[10px] font-mono mt-0.5 ${isCustomActive ? 'text-[#FF6B1A]' : 'text-[#735E50]'}`}>
-                          {formatSeconds(delayMin)}–{formatSeconds(delayMax)}
-                        </div>
-                        <div className={`text-[9px] mt-1 leading-snug line-clamp-1 ${isCustomActive ? 'text-white/80' : 'text-[#735E50]'}`}>
-                          Click to {showCustomPacing ? 'hide' : 'open custom'}
-                        </div>
-                      </button>
-                    );
-                  })()}
                 </div>
               </div>
             </div>
