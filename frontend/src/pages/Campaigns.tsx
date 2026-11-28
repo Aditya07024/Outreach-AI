@@ -2548,12 +2548,12 @@ export const Campaigns: React.FC = () => {
                           rows={10}
                           className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 p-3.5 text-xs text-[#2A1A0F] focus:outline-none focus:bg-white focus:border-[#FF6B1A] font-mono leading-relaxed transition-all shadow-inner"
                         />
-                        <div className="flex items-start gap-2 p-2.5 bg-white/50 border border-[rgba(42,26,15,0.08)] rounded-[12px]">
+                        {/* <div className="flex items-start gap-2 p-2.5 bg-white/50 border border-[rgba(42,26,15,0.08)] rounded-[12px]">
                           <span className="text-[10px] text-[#735E50] font-semibold uppercase tracking-wider shrink-0">Footer:</span>
                           <span className="text-[10px] text-[#735E50] italic leading-tight">
                             "If you'd prefer not to hear from me regarding this, please reply 'unsubscribe' or <u className="underline cursor-pointer">click here to unsubscribe</u> and I will not contact you again."
                           </span>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
 
