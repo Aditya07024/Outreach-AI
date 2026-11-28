@@ -114,7 +114,7 @@ const pausePresets = [
     min: 60, 
     max: 180, 
     badge: 'Quick Send',
-    desc: 'Random jitter for faster sends.' 
+    desc: 'The emails can go in spam.' 
   },
 ];
 
@@ -153,6 +153,7 @@ export const Settings: React.FC<SettingsProps> = ({
   const [newBlockEntry, setNewBlockEntry] = useState('');
   const [blockList, setBlockList] = useState<string[]>([]);
   const [showCustomPacing, setShowCustomPacing] = useState(false);
+  const [isStep3Open, setIsStep3Open] = useState(false);
 
   const isConnected = !!gmailStatus?.connected;
   const [isExtensionDone, setIsExtensionDone] = useState<boolean>(() => {
@@ -904,6 +905,7 @@ Sign-In Key (If you failed to sign-in then use this code)
                 onClick={() => {
                   setIsExtensionDone(true);
                   localStorage.setItem('outreach_extension_done', 'true');
+                  setIsStep3Open(true);
                 }}
                 className="w-full py-2.5 px-4 rounded-[12px] bg-[#1DA365] hover:bg-[#178552] text-white text-xs font-bold transition-all shadow-md shadow-[#1DA365]/20 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] group"
               >
@@ -948,7 +950,7 @@ Sign-In Key (If you failed to sign-in then use this code)
           }
         >
           {/* Delays Callout Banner when Unlocked */}
-          {!areOtherSettingsDulled && (
+          {!areOtherSettingsDulled && isStep3Open && (
             <div className="mb-5 p-3 sm:p-3.5 rounded-[16px] bg-[#1DA365]/10 border border-[#1DA365]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#1DA365]">
               <div className="flex items-center gap-2.5">
                 <CheckCircle size={18} weight="fill" className="shrink-0 text-[#1DA365]" />
@@ -962,14 +964,24 @@ Sign-In Key (If you failed to sign-in then use this code)
             </div>
           )}
 
-          {/* Section Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 border-b border-[rgba(42,26,15,0.06)] pb-4">
+          {/* Section Header (Clickable Accordion Tab) */}
+          <div
+            onClick={() => {
+              if (areOtherSettingsDulled) return;
+              setIsStep3Open((prev) => !prev);
+            }}
+            className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
+              areOtherSettingsDulled
+                ? 'cursor-not-allowed'
+                : 'cursor-pointer group'
+            } ${isStep3Open ? 'mb-6 border-b border-[rgba(42,26,15,0.06)] pb-4' : ''}`}
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-[14px] bg-[#FF6B1A]/10 border border-[#FF6B1A]/20 flex items-center justify-center text-[#FF6B1A] shrink-0">
                 <ShieldCheck size={22} weight="duotone" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="px-2 py-0.5 rounded-full bg-[#FF6B1A] text-white font-mono text-[10px] font-bold uppercase tracking-wider shadow-2xs">
                     STEP 3
                   </span>
@@ -989,7 +1001,7 @@ Sign-In Key (If you failed to sign-in then use this code)
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto">
+            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
               {!isConnected ? (
                 <span className="px-3 py-1 rounded-full bg-stone-100 border border-stone-200 shadow-2xs font-mono text-[11px] font-semibold text-[#735E50] flex items-center gap-1.5">
                   <Lock size={13} weight="bold" />
@@ -1001,16 +1013,27 @@ Sign-In Key (If you failed to sign-in then use this code)
                   <span>Complete Step 2 (Extension) Above</span>
                 </span>
               ) : (
-                <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 shadow-2xs font-mono text-[11px] font-semibold text-[#1DA365] flex items-center gap-1.5">
-                  <CheckCircle size={14} weight="fill" className="text-[#1DA365]" />
-                  <span>Delays Active</span>
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 shadow-2xs font-mono text-[11px] font-semibold text-[#1DA365] flex items-center gap-1.5">
+                    <CheckCircle size={14} weight="fill" className="text-[#1DA365]" />
+                    <span>Delays Active</span>
+                  </span>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF6B1A]/10 text-[#FF6B1A] font-semibold text-xs border border-[#FF6B1A]/20 transition-all group-hover:bg-[#FF6B1A]/15">
+                    <span>{isStep3Open ? 'Click to hide' : 'Click to open'}</span>
+                    <CaretDown
+                      size={14}
+                      weight="bold"
+                      className={`transition-transform duration-200 ${isStep3Open ? 'rotate-180' : ''}`}
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </div>
 
-        {/* 2x2 Bento Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* 2x2 Bento Grid (Hidden by default, opens on click) */}
+          {isStep3Open && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pt-1">
           {/* Card 1: Anti-Spam Human Pacing Cockpit */}
           <div className="p-5 sm:p-6 rounded-[22px] bg-white/80 border border-white/95 shadow-sm flex flex-col justify-between space-y-4">
             <div className="space-y-4">
@@ -1248,7 +1271,7 @@ Sign-In Key (If you failed to sign-in then use this code)
               )}
 
               {/* Anti-Spam Safety Reassurance */}
-              <div className="p-3 rounded-[14px] bg-emerald-50/60 border border-emerald-200/70 flex items-start gap-2.5 text-xs text-[#1DA365]">
+              <div className="p-3 rounded-[14px]  border border-emerald-700 flex items-start gap-2.5 text-xs text-[#1DA365]">
                 <ShieldCheck size={18} weight="fill" className="shrink-0 mt-0.5 text-[#1DA365]" />
                 <p className="text-[11px] text-[#2A1A0F] leading-relaxed">
                   <strong>Why this stops spam:</strong> Google flags outreach accounts that blast emails in uniform bursts. Spacing sends with random human delays ({formatSeconds(delayMin)}–{formatSeconds(delayMax)}) ensures primary inbox placement and protects your sender score.
@@ -1391,7 +1414,7 @@ Sign-In Key (If you failed to sign-in then use this code)
             </div>
 
             {/* Why Warmup Comes First Educational Callout */}
-            <div className="p-3 rounded-[14px] bg-white/80 border border-[rgba(42,26,15,0.08)] flex items-start gap-2.5 text-xs text-[#735E50]">
+            <div className="p-3 rounded-[14px] bg-white/80 border border-emerald-7 flex items-start gap-2.5 text-xs text-[#735E50]">
               <ShieldCheck size={16} weight="fill" className="text-[#1DA365] shrink-0 mt-0.5" />
               <p className="text-[10.5px] leading-relaxed">
                 <strong>Why warm up first:</strong> Google actively monitors email spikes. Blasting 50+ emails immediately from a new sender flags anti-spam defenses. Conditioning your account over 3 weeks unlocks safe high-volume sending permanently.
@@ -1550,6 +1573,7 @@ Sign-In Key (If you failed to sign-in then use this code)
             </div>
           </div>
         </div>
+        )}
       </Glass>
       </div>
 
