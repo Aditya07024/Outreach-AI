@@ -611,11 +611,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
                   {/* Metrics Footer & Jump Action */}
                   <div className="pt-3 border-t border-[rgba(42,26,15,0.06)] flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 text-[11px] font-mono text-[#735E50]">
-                      <span>{total} recruiters</span>
-                      <span>•</span>
-                      <span className="text-[#D99B00] font-bold">{pending} to review</span>
-                    </div>
 
                     <Link
                       to={`/outbox?campaignId=${c.id}`}
