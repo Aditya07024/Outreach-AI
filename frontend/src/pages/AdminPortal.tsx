@@ -356,9 +356,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         {/* Users Table */}
         <div className="overflow-x-auto border border-neutral-900 rounded-lg">
           {isLoading ? (
-            <div className="text-center py-12 text-xs text-neutral-550 flex flex-col items-center justify-center gap-2">
-              <div className="w-5 h-5 rounded-full border border-neutral-800 border-t-purple-500 animate-spin" />
-              <span>Loading User Records...</span>
+            <div className="p-4 space-y-3">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-zinc-900/50 border border-neutral-850/60 animate-pulse">
+                  <div className="h-4 w-12 bg-neutral-800 rounded" />
+                  <div className="h-4 w-44 bg-neutral-800 rounded" />
+                  <div className="h-4 w-28 bg-neutral-800 rounded hidden md:block" />
+                  <div className="h-5 w-16 bg-neutral-800 rounded-full" />
+                  <div className="h-4 w-20 bg-neutral-800 rounded hidden sm:block" />
+                  <div className="h-7 w-20 bg-neutral-800 rounded" />
+                </div>
+              ))}
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-12 text-xs text-neutral-550">

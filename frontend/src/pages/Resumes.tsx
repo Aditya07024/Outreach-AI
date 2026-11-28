@@ -17,6 +17,7 @@ import {
 } from '@phosphor-icons/react';
 import { Resume, Settings } from '../types';
 import { Glass } from '../components/glass/Glass';
+import { ResumesSkeleton } from '../components/skeleton';
 
 export const Resumes: React.FC = () => {
   const [resumes, setResumes] = useState<Resume[]>([]);
@@ -338,17 +339,7 @@ export const Resumes: React.FC = () => {
   );
 
   if (isLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center min-h-[500px]">
-        <Glass variant="strong" radius="inner" className="p-8 flex flex-col items-center gap-4 text-center">
-          <div className="w-10 h-10 rounded-full border-2 border-stone-200 border-t-[#FF6B1A] animate-spin" />
-          <div className="space-y-1">
-            <h3 className="text-sm font-bold font-display text-[#2A1A0F]">Loading Resumes</h3>
-            <p className="text-xs text-[#735E50]">Fetching your candidate profiles and attachments...</p>
-          </div>
-        </Glass>
-      </div>
-    );
+    return <ResumesSkeleton />;
   }
 
   return (
@@ -368,7 +359,7 @@ export const Resumes: React.FC = () => {
           </div>
           <p className="text-xs sm:text-sm text-[#735E50] mt-1">
             {resumes.length === 0
-              ? 'Upload your primary resume to unlock Campaigns and personalize AI job applications.'
+              ? 'Upload your primary resume to unlock Email Folders and personalize AI job applications.'
               : 'Upload and manage tailored PDF profiles to personalize AI cold job applications.'}
           </p>
         </div>
@@ -387,7 +378,7 @@ export const Resumes: React.FC = () => {
             </h2>
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF6B1A]/10 text-[#FF6B1A] font-mono text-xs font-bold border border-[#FF6B1A]/20">
               <Sparkle size={13} weight="fill" />
-              <span>Step 1: Upload a resume to unlock Campaigns</span>
+              <span>Step 1: Upload a resume to unlock Email Folders</span>
             </div>
           </div>
 
@@ -404,7 +395,7 @@ export const Resumes: React.FC = () => {
                 <span>Active Profiles</span>
               </h2>
               <span className="text-xs text-[#735E50]">
-                Campaigns attach the default profile automatically
+                Email Folders attach the default profile automatically
               </span>
             </div>
 

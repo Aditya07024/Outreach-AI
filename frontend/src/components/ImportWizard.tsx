@@ -136,7 +136,7 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
 
       setStatusMsg({
         type: 'success',
-        text: data.message || `Successfully imported ${data.importedCount} contacts into this campaign.`,
+        text: data.message || `Successfully imported ${data.importedCount} contacts into this email folder.`,
         details: {
           imported: data.importedCount,
           duplicates: data.duplicateCount,
@@ -550,7 +550,7 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
             <div className="flex flex-col gap-2">
               <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <ShareNetwork className="w-3.5 h-3.5 text-[#7C3AED]" weight="duotone" />
-                Paste Campaign Share Link or Share Code
+                Paste Email Folder Share Link or Share Code
               </label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
@@ -581,7 +581,7 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
                 </button>
               </div>
               <span className="text-[10px] text-[#735E50]">
-                Paste a link or code shared by someone else to import their contacts directly into this campaign.
+                Paste a link or code shared by someone else to import their contacts directly into this email folder.
               </span>
             </div>
 
@@ -591,7 +591,7 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#7C3AED] block">
-                      Shared Source Campaign
+                      Shared Source Email Folder
                     </span>
                     <h4 className="text-sm font-bold text-[#2A1A0F]">{sharedPreview.campaignName}</h4>
                     {sharedPreview.campaignDescription && (

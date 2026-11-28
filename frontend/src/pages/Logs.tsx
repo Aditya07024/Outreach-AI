@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Trash2, AlertOctagon, Terminal } from 'lucide-react';
 import { Log } from '../types';
+import { TableRowsSkeleton } from '../components/skeleton';
 
 export const Logs: React.FC = () => {
   const [logs, setLogs] = useState<Log[]>([]);
@@ -124,11 +125,7 @@ export const Logs: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
-                <tr>
-                  <td colSpan={4} className="p-8 text-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-300 border-t-slate-800 mx-auto"></div>
-                  </td>
-                </tr>
+                <TableRowsSkeleton columns={4} rows={6} />
               ) : logs.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="p-8 text-center text-slate-500 text-xs font-sans">

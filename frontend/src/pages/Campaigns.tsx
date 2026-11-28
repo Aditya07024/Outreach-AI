@@ -53,12 +53,15 @@ import { Campaign, Contact, Resume } from '../types';
 import { Glass } from '../components/glass/Glass';
 import { ImportWizard } from '../components/ImportWizard';
 import { PipelineFunnel } from '../components/visual/PipelineFunnel';
+import { CampaignsSkeleton, CampaignCockpitSkeleton } from '../components/skeleton';
 
 export const Campaigns: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [selectedCampId, setSelectedCampId] = useState<number | null>(null);
   const [campaignDetails, setCampaignDetails] = useState<Campaign | null>(null);
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState<boolean>(true);
+  const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(false);
 
   // View controllers
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
@@ -187,6 +190,8 @@ export const Campaigns: React.FC = () => {
     } catch (err) {
       console.error('Failed to load campaigns list', err);
       setCampaigns([]);
+    } finally {
+      setIsLoadingCampaigns(false);
     }
   };
 
@@ -218,12 +223,17 @@ export const Campaigns: React.FC = () => {
   };
 
   const fetchCampaignDetails = async (id: number) => {
+    if (!campaignDetails || campaignDetails.id !== id) {
+      setIsLoadingDetails(true);
+    }
     try {
       const response = await fetch(`/api/campaigns/${id}`);
       const data = await response.json();
       setCampaignDetails(data);
     } catch (err) {
       console.error('Failed to fetch campaign details', err);
+    } finally {
+      setIsLoadingDetails(false);
     }
   };
 
@@ -348,7 +358,7 @@ export const Campaigns: React.FC = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to import shared contacts');
 
-      alert(data.message || 'Campaign and contacts imported successfully!');
+      alert(data.message || 'Email folder and contacts imported successfully!');
       setShowImportSharedModal(false);
       setImportShareInput('');
       setSharedPreviewData(null);
@@ -582,7 +592,7 @@ export const Campaigns: React.FC = () => {
       });
 
       if (!response.ok) throw new Error('Failed to update campaign settings');
-      alert('Campaign configuration saved successfully!');
+      alert('Folder configuration saved successfully!');
       fetchCampaignDetails(selectedCampId);
       fetchCampaigns();
     } catch (err: any) {
@@ -623,7 +633,7 @@ export const Campaigns: React.FC = () => {
   };
 
   const handleDeleteCampaign = async (id: number, name: string) => {
-    if (!confirm(`Are you sure you want to delete campaign "${name}"? This deletes all associated contacts.`)) return;
+    if (!confirm(`Are you sure you want to delete email folder "${name}"? This deletes all associated contacts.`)) return;
 
     try {
       await fetch(`/api/campaigns/${id}`, { method: 'DELETE' });
@@ -962,6 +972,9 @@ export const Campaigns: React.FC = () => {
   return (
     <div ref={containerRef} className="p-4 md:p-8 max-w-7xl mx-auto space-y-7">
       {!selectedCampId ? (
+        isLoadingCampaigns ? (
+          <CampaignsSkeleton />
+        ) : (
         // =========================================================================
         // GROUND-UP REDESIGNED CAMPAIGNS HUB (LIST VIEW)
         // =========================================================================
@@ -973,7 +986,7 @@ export const Campaigns: React.FC = () => {
                 <span className="w-2 h-2 rounded-full bg-[#FF6B1A] animate-pulse"></span>
                 <span>Outreach Operations Deck</span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-black text-[#2A1A0F] tracking-tight">Campaign Command Hub</h1>
+              <h1 className="text-3xl md:text-4xl font-black text-[#2A1A0F] tracking-tight">Email Folders Hub</h1>
               <p className="text-xs md:text-sm text-[#735E50] mt-1.5 max-w-2xl leading-relaxed">
                 Coordinate automated multi-channel sequences, monitor delivery velocity, and orchestrate verified recruiter connections.
               </p>
@@ -995,7 +1008,7 @@ export const Campaigns: React.FC = () => {
                 className="flex items-center gap-2.5 px-5 py-3 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[16px] text-xs transition-all shadow-[0_10px_24px_-4px_rgba(255,107,26,0.38)] cursor-pointer active:scale-[0.98]"
               >
                 <Plus className="w-4 h-4" weight="bold" />
-                <span>New Campaign</span>
+                <span>New Email Folder</span>
               </button>
             </div>
           </div>
@@ -1006,7 +1019,7 @@ export const Campaigns: React.FC = () => {
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#735E50] block">Active Pipelines</span>
                 <div className="text-2xl font-black text-[#2A1A0F] mt-1">{totalCampaigns}</div>
-                <div className="text-[10.5px] text-[#735E50] mt-0.5">Campaign workspaces</div>
+                <div className="text-[10.5px] text-[#735E50] mt-0.5">Email Folders</div>
               </div>
               <div className="w-11 h-11 rounded-[14px] bg-[#FF6B1A]/10 text-[#FF6B1A] flex items-center justify-center">
                 <Broadcast className="w-5 h-5" weight="duotone" />
@@ -1093,7 +1106,7 @@ export const Campaigns: React.FC = () => {
                   type="text"
                   value={campaignSearch}
                   onChange={(e) => setCampaignSearch(e.target.value)}
-                  placeholder="Search campaigns or recruiter emails..."
+                  placeholder="Search email folders or recruiter emails..."
                   className="w-full pl-9 pr-8 py-2 rounded-[12px] border border-[rgba(42,26,15,0.12)] bg-white/90 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-all shadow-inner"
                 />
                 {campaignSearch && (
@@ -1143,7 +1156,7 @@ export const Campaigns: React.FC = () => {
               <Glass variant="strong" radius="outer" className="w-full max-w-xl p-6 md:p-8 space-y-4 shadow-[0_24px_60px_-15px_rgba(42,26,15,0.25)] text-[#2A1A0F] max-h-[92vh] overflow-y-auto">
                 <div className="flex justify-between items-center pb-2 border-b border-[rgba(42,26,15,0.08)]">
                   <div>
-                    <h3 className="text-base font-extrabold text-[#2A1A0F] tracking-tight">Create Outreach Campaign</h3>
+                    <h3 className="text-base font-extrabold text-[#2A1A0F] tracking-tight">Create Email Folder</h3>
                     <p className="text-[11px] text-[#735E50] mt-0.5">Configure your outreach target, resume attachment, and automated actions.</p>
                   </div>
                   <button
@@ -1157,7 +1170,7 @@ export const Campaigns: React.FC = () => {
                 
                 <form onSubmit={handleCreateCampaign} className="space-y-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Campaign Name *</label>
+                    <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Email Folder Name *</label>
                     <input
                       type="text"
                       required
@@ -1301,7 +1314,7 @@ export const Campaigns: React.FC = () => {
                       disabled={isSubmitting || resumes.length === 0}
                       className="px-5 py-2.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[14px] text-xs transition-all shadow-[0_8px_20px_-4px_rgba(255,107,26,0.35)] cursor-pointer disabled:opacity-40"
                     >
-                      {isSubmitting ? 'Creating...' : 'Create Campaign'}
+                      {isSubmitting ? 'Creating...' : 'Create Email Folder'}
                     </button>
                   </div>
                 </form>
@@ -1315,8 +1328,8 @@ export const Campaigns: React.FC = () => {
               {campaignSearch.trim() ? (
                 <>
                   <EnvelopeSimple className="w-10 h-10 text-[#9C8E84] mx-auto" weight="duotone" />
-                  <p className="font-bold text-sm text-[#2A1A0F]">No campaigns or email IDs match "{campaignSearch}"</p>
-                  <p className="text-[11px] text-[#735E50]">Try searching for a different email address or campaign name.</p>
+                  <p className="font-bold text-sm text-[#2A1A0F]">No email folders match "{campaignSearch}"</p>
+                  <p className="text-[11px] text-[#735E50]">Try searching for a different email address or folder name.</p>
                   <button
                     type="button"
                     onClick={() => setCampaignSearch('')}
@@ -1328,8 +1341,8 @@ export const Campaigns: React.FC = () => {
               ) : (
                 <>
                   <EnvelopeSimple className="w-10 h-10 text-[#FF6B1A] mx-auto" weight="duotone" />
-                  <p className="font-bold text-sm text-[#2A1A0F]">No outreach campaigns match this filter.</p>
-                  <p className="text-[11px] text-[#735E50]">Click "New Campaign" above to launch your first job outreach pipeline.</p>
+                  <p className="font-bold text-sm text-[#2A1A0F]">No email folders match this filter.</p>
+                  <p className="text-[11px] text-[#735E50]">Click "New Email Folder" above to launch your first job outreach pipeline.</p>
                 </>
               )}
             </Glass>
@@ -1495,14 +1508,14 @@ export const Campaigns: React.FC = () => {
                           type="button"
                           onClick={() => openShareModal({ id: camp.id, name: camp.name, contactsCount: camp.metrics?.total || 0 })}
                           className="p-2 bg-white/80 hover:bg-[#7C3AED]/10 border border-[rgba(42,26,15,0.12)] hover:border-[#7C3AED]/30 text-[#735E50] hover:text-[#7C3AED] rounded-[10px] transition-all cursor-pointer shadow-2xs"
-                          title="Share Campaign Contacts"
+                          title="Share Email Folder Contacts"
                         >
                           <ShareNetwork className="w-3.5 h-3.5" weight="duotone" />
                         </button>
                         <button
                           onClick={() => handleDeleteCampaign(camp.id, camp.name)}
                           className="p-2 bg-white/80 hover:bg-[#E63946]/10 border border-[rgba(42,26,15,0.12)] hover:border-[#E63946]/30 text-[#735E50] hover:text-[#E63946] rounded-[10px] transition-all cursor-pointer shadow-2xs"
-                          title="Delete Campaign"
+                          title="Delete Email Folder"
                         >
                           <Trash className="w-3.5 h-3.5" weight="bold" />
                         </button>
@@ -1519,7 +1532,7 @@ export const Campaigns: React.FC = () => {
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-[rgba(42,26,15,0.08)] bg-white/50 text-[#735E50] uppercase font-bold text-[9.5px] tracking-wider">
-                      <th className="p-4">Campaign Name</th>
+                      <th className="p-4">Email Folder Name</th>
                       <th className="p-4">Status</th>
                       <th className="p-4">Resume Attached</th>
                       <th className="p-4">Progress & Delivery</th>
@@ -1625,7 +1638,7 @@ export const Campaigns: React.FC = () => {
                               <button
                                 onClick={() => handleDeleteCampaign(camp.id, camp.name)}
                                 className="p-1.5 bg-white/80 hover:bg-[#E63946]/10 text-[#735E50] hover:text-[#E63946] rounded-[8px]"
-                                title="Delete"
+                                title="Delete Email Folder"
                               >
                                 <Trash className="w-3.5 h-3.5" />
                               </button>
@@ -1640,6 +1653,7 @@ export const Campaigns: React.FC = () => {
             </Glass>
           )}
         </>
+        )
       ) : (
         // =========================================================================
         // GROUND-UP REDESIGNED CAMPAIGN COCKPIT (DETAIL WORKSPACE)
@@ -1813,7 +1827,7 @@ export const Campaigns: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[rgba(42,26,15,0.08)] pb-3">
                   <div className="flex items-center gap-2">
                     <Funnel className="w-4 h-4 text-[#FF6B1A]" weight="fill" />
-                    <h3 className="text-xs font-bold text-[#2A1A0F] uppercase tracking-wider">Campaign Pipeline Funnel</h3>
+                    <h3 className="text-xs font-bold text-[#2A1A0F] uppercase tracking-wider">Folder Pipeline Funnel</h3>
                   </div>
                   <span className="text-[11px] font-mono text-[#735E50]">
                     Total Emails Delivered: {campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0} / {campaignDetails.contacts?.length || 0} Delivered
@@ -2170,7 +2184,7 @@ export const Campaigns: React.FC = () => {
                 <Glass variant="surface" radius="outer" className="p-6 md:p-8 space-y-6 shadow-sm campaign-reveal text-[#2A1A0F]">
                   <div className="flex justify-between items-center pb-3 border-b border-[rgba(42,26,15,0.08)]">
                     <div>
-                      <h3 className="text-base font-extrabold text-[#2A1A0F]">Campaign Configuration & AI Prompts</h3>
+                      <h3 className="text-base font-extrabold text-[#2A1A0F]">Folder Configuration & AI Prompts</h3>
                       <p className="text-[11px] text-[#735E50] mt-0.5">Customize candidate variables, attached resume, auto-send toggles, and outreach templates.</p>
                     </div>
                   </div>
@@ -2178,7 +2192,7 @@ export const Campaigns: React.FC = () => {
                   <form onSubmit={handleUpdateCampaignSettings} className="space-y-5">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Campaign Title</label>
+                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Email Folder Name</label>
                         <input
                           type="text"
                           required
@@ -2455,7 +2469,7 @@ export const Campaigns: React.FC = () => {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1DA365] opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1DA365]"></span>
                       </span>
-                      Live Campaign Engine Terminal
+                      Live Dispatch Engine Terminal
                     </span>
                     <button
                       type="button"
@@ -2592,10 +2606,7 @@ export const Campaigns: React.FC = () => {
 
             </div>
           ) : (
-            <div className="text-center py-20">
-              <CircleNotch className="w-8 h-8 animate-spin text-[#FF6B1A] mx-auto" />
-              <p className="text-xs text-[#735E50] mt-2 font-medium">Loading campaign cockpit...</p>
-            </div>
+            <CampaignCockpitSkeleton />
           )}
         </>
       )}
@@ -2619,7 +2630,7 @@ export const Campaigns: React.FC = () => {
                 <ShareNetwork className="w-6 h-6" weight="duotone" />
               </div>
               <div>
-                <h3 className="text-lg font-extrabold text-[#2A1A0F]">Share Campaign Contacts</h3>
+                <h3 className="text-lg font-extrabold text-[#2A1A0F]">Share Email Folder Contacts</h3>
                 <p className="text-xs text-[#735E50] font-medium truncate max-w-[320px]">
                   {shareModalCampaign.name}
                 </p>
@@ -2627,7 +2638,7 @@ export const Campaigns: React.FC = () => {
             </div>
 
             <p className="text-xs text-[#735E50] leading-relaxed">
-              Anyone with this shareable link or code can import this campaign&apos;s contacts into their Outreach-AI account and immediately start sending outreach emails.
+              Anyone with this shareable link or code can import this email folder&apos;s contacts into their Outreach-AI account and immediately start sending outreach emails.
             </p>
 
             {isGeneratingShare ? (
@@ -2749,7 +2760,7 @@ export const Campaigns: React.FC = () => {
                 <ShareNetwork className="w-6 h-6" weight="duotone" />
               </div>
               <div>
-                <h3 className="text-lg font-extrabold text-[#2A1A0F]">Import Shared Campaign</h3>
+                <h3 className="text-lg font-extrabold text-[#2A1A0F]">Import Shared Email Folder</h3>
                 <p className="text-xs text-[#735E50] font-medium">
                   Paste a share link or share code to import contacts and start outreach.
                 </p>
@@ -2788,7 +2799,7 @@ export const Campaigns: React.FC = () => {
                 <Glass variant="nested" radius="inner" className="p-4 space-y-3 bg-[#7C3AED]/5 border-[#7C3AED]/20">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-[#7C3AED] tracking-wider">Campaign</span>
+                      <span className="text-[10px] uppercase font-bold text-[#7C3AED] tracking-wider">Email Folder</span>
                       <h4 className="text-sm font-bold text-[#2A1A0F]">{sharedPreviewData.campaignName}</h4>
                     </div>
                     <span className="px-2.5 py-1 bg-white border border-[#7C3AED]/25 text-[#7C3AED] font-bold rounded-[10px] text-xs shadow-2xs">
@@ -2802,7 +2813,7 @@ export const Campaigns: React.FC = () => {
 
                   <div>
                     <label className="text-xs font-bold text-[#2A1A0F] block mb-1">
-                      New Campaign Name in your workspace
+                      New Email Folder Name in your workspace
                     </label>
                     <input
                       type="text"

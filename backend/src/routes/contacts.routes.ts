@@ -376,6 +376,39 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
   }
 });
 
+// Get queued contacts across campaigns or for a specific campaign
+router.get('/queue', async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const campaignId = req.query.campaignId ? Number(req.query.campaignId) : undefined;
+    const limit = req.query.limit ? Number(req.query.limit) : 100;
+
+    const queue = await prisma.contact.findMany({
+      where: {
+        campaign: {
+          userId,
+          ...(campaignId ? { id: campaignId } : {}),
+        },
+        status: { in: ['READY_TO_SEND', 'PENDING'] },
+      },
+      include: {
+        campaign: {
+          select: { id: true, name: true, status: true },
+        },
+      },
+      orderBy: [
+        { status: 'desc' },
+        { id: 'asc' },
+      ],
+      take: limit,
+    });
+
+    res.json(queue);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch queued contacts' });
+  }
+});
+
 // Delete all failed/skipped contacts across all campaigns for this user
 router.delete('/failed', async (req: AuthenticatedRequest, res) => {
   try {

@@ -78,6 +78,7 @@ export interface Campaign {
 export interface Contact {
   id: number;
   campaignId: number;
+  campaign?: { id: number; name: string; status?: string } | null;
   email: string;
   firstName: string | null;
   lastName: string | null;

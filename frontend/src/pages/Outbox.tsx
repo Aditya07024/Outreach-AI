@@ -12,6 +12,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { Campaign, Contact } from '../types';
+import { Skeleton, OutboxSkeleton } from '../components/skeleton';
 
 export const Outbox: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -43,42 +44,25 @@ export const Outbox: React.FC = () => {
   const fetchQueue = async () => {
     setIsLoading(true);
     try {
-      let url = '/api/contacts';
-      
-      // If we filtered by campaign, fetch that campaign's contacts, otherwise we query all campaigns
-      if (selectedCampId !== 'all') {
-        const res = await fetch(`/api/campaigns/${selectedCampId}`);
-        if (!res.ok) {
-          setQueue([]);
-          return;
-        }
+      const url = selectedCampId !== 'all'
+        ? `/api/contacts/queue?campaignId=${selectedCampId}`
+        : `/api/contacts/queue`;
+      const res = await fetch(url);
+      if (res.ok) {
         const data = await res.json();
-        // Filter out only contacts in READY_TO_SEND or PENDING status
-        const filtered = (Array.isArray(data.contacts) ? data.contacts : []).filter(
-          (c: Contact) => c.status === 'READY_TO_SEND' || c.status === 'FAILED'
-        );
-        setQueue(filtered);
+        setQueue(Array.isArray(data) ? data : []);
       } else {
-        // Fetch all campaigns and aggregate their ready contacts
-        const res = await fetch('/api/campaigns');
-        if (!res.ok) {
-          setQueue([]);
-          return;
+        // Fallback to campaign detail fetch if endpoint returns non-ok
+        if (selectedCampId !== 'all') {
+          const detailRes = await fetch(`/api/campaigns/${selectedCampId}`);
+          if (detailRes.ok) {
+            const data = await detailRes.json();
+            const filtered = (Array.isArray(data.contacts) ? data.contacts : []).filter(
+              (c: Contact) => c.status === 'READY_TO_SEND' || c.status === 'FAILED'
+            );
+            setQueue(filtered);
+          }
         }
-        const data = await res.json();
-        const campList: Campaign[] = Array.isArray(data) ? data : (data?.campaigns && Array.isArray(data.campaigns) ? data.campaigns : []);
-        
-        let allReady: Contact[] = [];
-        for (const camp of campList) {
-          const detailsRes = await fetch(`/api/campaigns/${camp.id}`);
-          if (!detailsRes.ok) continue;
-          const details = await detailsRes.json();
-          const ready = (Array.isArray(details?.contacts) ? details.contacts : []).filter(
-            (c: Contact) => c.status === 'READY_TO_SEND' || c.status === 'FAILED'
-          );
-          allReady = [...allReady, ...ready];
-        }
-        setQueue(allReady);
       }
       setCurrentIndex(0);
     } catch (err) {
@@ -275,15 +259,15 @@ export const Outbox: React.FC = () => {
           </p>
         </div>
 
-        {/* Campaign Filter Selector */}
+        {/* Folder Filter Selector */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Filter Campaign:</span>
+          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Filter Folder:</span>
           <select
             value={selectedCampId}
             onChange={(e) => setSelectedCampId(e.target.value)}
             className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
           >
-            <option value="all">All Campaigns</option>
+            <option value="all">All Email Folders</option>
             {campaigns.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -292,13 +276,52 @@ export const Outbox: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-6 w-6 border-2 border-slate-300 border-t-slate-800 mx-auto"></div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="border border-stone-200 bg-white/80 rounded-[20px] p-5 space-y-3.5 h-fit shadow-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+              <Skeleton className="h-4 w-32 rounded-md" />
+              <Skeleton className="h-4 w-12 rounded-full" />
+            </div>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="p-3.5 rounded-[14px] bg-stone-50/80 border border-stone-200/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-28 rounded-md" />
+                  <Skeleton className="h-4 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-3 w-36 rounded-md" />
+                <Skeleton className="h-3 w-24 rounded-md" />
+              </div>
+            ))}
+          </div>
+          <div className="lg:col-span-2 border border-stone-200 bg-white/80 rounded-[20px] p-6 space-y-5 shadow-xs">
+            <div className="p-4 rounded-[14px] bg-stone-50 border border-stone-200 flex items-center justify-between">
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-40 rounded-md" />
+                <Skeleton className="h-3 w-52 rounded-md" />
+              </div>
+              <Skeleton className="h-5 w-20 rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3.5 w-20 rounded-md" />
+              <Skeleton className="h-10 w-full rounded-[12px]" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3.5 w-24 rounded-md" />
+              <Skeleton className="h-52 w-full rounded-[14px]" />
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-stone-100">
+              <Skeleton className="h-9 w-24 rounded-[12px]" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-9 w-28 rounded-[12px]" />
+                <Skeleton className="h-9 w-36 rounded-[12px]" />
+              </div>
+            </div>
+          </div>
         </div>
       ) : queue.length === 0 ? (
         <div className="border border-dashed border-slate-300 bg-white rounded-2xl p-12 text-center text-slate-500 text-xs shadow-sm">
           <MailWarning className="w-8 h-8 text-slate-400 mx-auto mb-3" />
-          No emails in the outbox queue. Import contacts and click "AI Gen Email" in Campaigns.
+          No emails in the outbox queue. Import contacts into an Email Folder to start reviewing your queue.
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

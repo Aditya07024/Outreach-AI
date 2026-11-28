@@ -2,6 +2,7 @@ import React from 'react';
 import { CreditCard, CheckCircle2, AlertCircle, Calendar, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PricingPage } from './PricingPage';
+import { SubscriptionSkeleton } from '../components/skeleton';
 
 interface SubscriptionProps {
   user: {
@@ -19,11 +20,7 @@ export const Subscription: React.FC<SubscriptionProps> = ({ user, onPaymentSucce
   const navigate = useNavigate();
 
   if (!user) {
-    return (
-      <div className="flex items-center justify-center h-[60vh] text-slate-500 font-medium">
-        Loading subscription data...
-      </div>
-    );
+    return <SubscriptionSkeleton />;
   }
 
   const isPaid = user.paid || user.role === 'admin';

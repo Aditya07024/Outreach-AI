@@ -139,7 +139,7 @@ router.get('/dashboard-stats', async (req: AuthenticatedRequest, res) => {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const [campaigns, todaySentCount, recentLogs] = await Promise.all([
+    const [campaigns, todaySentCount, recentLogs, queuedContacts] = await Promise.all([
       prisma.campaign.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
@@ -163,6 +163,22 @@ router.get('/dashboard-stats', async (req: AuthenticatedRequest, res) => {
           : { userId },
         take: 8,
         orderBy: { timestamp: 'desc' },
+      }),
+      prisma.contact.findMany({
+        where: {
+          campaign: { userId },
+          status: { in: ['READY_TO_SEND', 'PENDING'] },
+        },
+        include: {
+          campaign: {
+            select: { id: true, name: true, status: true },
+          },
+        },
+        orderBy: [
+          { status: 'desc' },
+          { id: 'asc' },
+        ],
+        take: 15,
       }),
     ]);
 
@@ -223,6 +239,7 @@ router.get('/dashboard-stats', async (req: AuthenticatedRequest, res) => {
       campaigns: enrichedCampaigns,
       todaySentCount,
       logs: recentLogs,
+      queue: queuedContacts,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {

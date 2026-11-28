@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Eye, AlertOctagon, CheckCircle2, RefreshCw, Mail } from 'lucide-react';
 import { EmailHistory } from '../types';
+import { TableRowsSkeleton } from '../components/skeleton';
 
 export const History: React.FC = () => {
   const [history, setHistory] = useState<EmailHistory[]>([]);
@@ -60,7 +61,7 @@ export const History: React.FC = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search company, email, or campaign..."
+              placeholder="Search company, email, or folder..."
               className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-900 shadow-2xs transition-colors"
             />
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
@@ -75,7 +76,7 @@ export const History: React.FC = () => {
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 uppercase font-bold text-[10px] tracking-wider">
                 <th className="p-4">Recipient</th>
-                <th className="p-4">Campaign</th>
+                <th className="p-4">Email Folder</th>
                 <th className="p-4">Email Subject</th>
                 <th className="p-4">Sent Date</th>
                 <th className="p-4">Status</th>
@@ -84,18 +85,13 @@ export const History: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="p-12 text-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-slate-300 border-t-slate-900 mx-auto mb-2"></div>
-                    <span className="text-xs text-slate-500 font-medium">Loading history logs...</span>
-                  </td>
-                </tr>
+                <TableRowsSkeleton columns={6} rows={6} />
               ) : !Array.isArray(history) || history.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-12 text-center text-slate-500">
                     <Mail className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                     <p className="font-bold text-slate-800">No Outreach History Found</p>
-                    <p className="text-[11px] text-slate-400 mt-1">Sent emails will automatically populate here after dispatching campaigns.</p>
+                    <p className="text-[11px] text-slate-400 mt-1">Sent emails will automatically populate here after dispatching from email folders.</p>
                   </td>
                 </tr>
               ) : (

@@ -23,6 +23,7 @@ import { Settings } from './pages/Settings';
 import { PricingPage } from './pages/PricingPage';
 import { Subscription } from './pages/Subscription';
 import { AdminPortal } from './pages/AdminPortal';
+import { AppShellSkeleton } from './components/skeleton';
 
 // Global dynamic token resolver for fetch interceptor
 let activeTokenResolver: () => Promise<string | null> = async () => {
@@ -347,12 +348,7 @@ export const App: React.FC = () => {
   }, []);
 
   if (!clerkLoaded || (loadingUser && isAuthenticated)) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-neutral-400 gap-4">
-        <div className="w-8 h-8 rounded-full border-2 border-neutral-800 border-t-purple-500 animate-spin" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 animate-pulse">Loading Session...</span>
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
 

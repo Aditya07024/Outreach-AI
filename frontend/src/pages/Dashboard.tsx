@@ -23,10 +23,11 @@ import {
   Buildings,
   Pulse,
 } from '@phosphor-icons/react';
-import { Campaign, EmailHistory, Log, QuotaStats } from '../types';
+import { Campaign, EmailHistory, Log, QuotaStats, Contact } from '../types';
 import { Glass } from '../components/glass/Glass';
 import { ArcGauge } from '../components/visual/ArcGauge';
 import { PipelineFunnel } from '../components/visual/PipelineFunnel';
+import { DashboardSkeleton } from '../components/skeleton';
 
 interface DashboardProps {
   isPaid: boolean;
@@ -45,6 +46,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [history, setHistory] = useState<EmailHistory[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
+  const [queue, setQueue] = useState<Contact[]>([]);
   const [todaySentCount, setTodaySentCount] = useState<number>(0);
   const [quotaStats, setQuotaStats] = useState<QuotaStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,6 +88,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         const data = await statsRes.value.json();
         setCampaigns(Array.isArray(data.campaigns) ? data.campaigns : []);
         setLogs(Array.isArray(data.logs) ? data.logs : []);
+        if (Array.isArray(data.queue)) {
+          setQueue(data.queue);
+        }
         if (typeof data.todaySentCount === 'number') {
           setTodaySentCount(data.todaySentCount);
         }
@@ -95,19 +100,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       }
 
       // Fallback endpoints
-      const [campRes, histRes, logsRes] = await Promise.allSettled([
+      const [campRes, histRes, logsRes, queueRes] = await Promise.allSettled([
         fetch('/api/campaigns'),
         fetch('/api/history'),
         fetch('/api/logs?limit=8'),
+        fetch('/api/contacts/queue?limit=10'),
       ]);
 
       const campData = campRes.status === 'fulfilled' && campRes.value.ok ? await campRes.value.json().catch(() => []) : [];
       const histData = histRes.status === 'fulfilled' && histRes.value.ok ? await histRes.value.json().catch(() => []) : [];
       const logsData = logsRes.status === 'fulfilled' && logsRes.value.ok ? await logsRes.value.json().catch(() => []) : [];
+      const queueData = queueRes.status === 'fulfilled' && queueRes.value.ok ? await queueRes.value.json().catch(() => []) : [];
 
       setCampaigns(Array.isArray(campData) ? campData : (campData?.campaigns && Array.isArray(campData.campaigns) ? campData.campaigns : []));
       setHistory(Array.isArray(histData) ? histData : (histData?.history && Array.isArray(histData.history) ? histData.history : []));
       setLogs(Array.isArray(logsData) ? logsData : (logsData?.logs && Array.isArray(logsData.logs) ? logsData.logs : []));
+      setQueue(Array.isArray(queueData) ? queueData : []);
     } catch (err: any) {
       console.warn('[Dashboard] Data fetch error:', err);
       setFetchError('Connection is waking up. Tap retry to reconnect.');
@@ -189,17 +197,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const topActiveCampaign = safeCampaigns.find(c => (c.metrics?.pending || 0) > 0) || safeCampaigns[0];
 
   if (isLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center min-h-[500px]">
-        <Glass variant="strong" radius="inner" className="p-8 flex flex-col items-center gap-4 text-center">
-          <div className="w-10 h-10 rounded-full border-2 border-stone-200 border-t-[#FF6B1A] animate-spin" />
-          <div className="space-y-1">
-            <h3 className="text-sm font-bold font-display text-[#2A1A0F]">Opening Your Dashboard</h3>
-            <p className="text-xs text-[#735E50]">Loading your email drafts and sending status...</p>
-          </div>
-        </Glass>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -350,35 +348,97 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </p>
           </div>
 
-          {/* Mini Interactive Draft Preview */}
-          <div className="my-4 p-4 rounded-[20px] bg-white/80 border border-white/90 shadow-sm space-y-2.5">
+          {/* Queued Emails Card */}
+          <div className="my-4 p-4 rounded-[20px] bg-white/80 border border-white/90 shadow-sm space-y-3">
             <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-100">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-orange-100 text-[#FF6B1A] font-bold text-xs flex items-center justify-center shrink-0">
-                  {topActiveCampaign?.name?.charAt(0) || 'C'}
+                <div className="w-6 h-6 rounded-full bg-orange-100 text-[#FF6B1A] font-bold text-[11px] flex items-center justify-center shrink-0">
+                  <Tray size={12} weight="bold" />
                 </div>
                 <div className="min-w-0">
                   <div className="font-bold text-[#2A1A0F] truncate text-xs">
-                    {topActiveCampaign?.name || 'Recruiter Outreach'}
+                    {topActiveCampaign?.name || 'Recruiter Outreach Queue'}
                   </div>
                   <div className="text-[10px] text-[#735E50] truncate">
-                    {topActiveCampaign?.description || 'Active job candidate pipeline'}
+                    {queue.length > 0 ? `${queue.length} emails waiting in sequence` : 'Queue is currently empty'}
                   </div>
                 </div>
               </div>
-              <span className="text-[10px] font-mono font-bold text-[#D99B00] shrink-0 bg-amber-50 px-2 py-0.5 rounded-md">
-                Ready to review
+              <span className="text-[10px] font-mono font-bold text-[#D99B00] shrink-0 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
+                {queue.length > 0 ? 'Ready in Queue' : 'Ready to review'}
               </span>
             </div>
 
-            <p className="text-xs text-[#735E50] line-clamp-2 leading-relaxed italic">
-              "Hi there — I noticed your team's recent expansion and wanted to share how my background aligns with your engineering goals..."
-            </p>
+            {/* List of Next Emails in Queue */}
+            {queue.length > 0 ? (
+              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-0.5">
+                {queue.slice(0, 4).map((item, idx) => {
+                  const contactName = [item.firstName, item.lastName].filter(Boolean).join(' ') || item.email.split('@')[0];
+                  return (
+                    <Link
+                      key={item.id}
+                      to="/outbox"
+                      className="p-2.5 rounded-[12px] bg-white/90 hover:bg-white border border-stone-200/80 hover:border-[#FF6B1A]/40 transition-all block group shadow-2xs"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-5 h-5 rounded-full bg-stone-100 group-hover:bg-[#FF6B1A]/10 text-stone-600 group-hover:text-[#FF6B1A] text-[10px] font-mono font-bold flex items-center justify-center shrink-0 transition-colors">
+                            #{idx + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="font-bold text-xs text-[#2A1A0F] truncate group-hover:text-[#FF6B1A] transition-colors">
+                              {contactName}
+                              {item.company && (
+                                <span className="font-normal text-[#735E50] text-[11px] ml-1">
+                                  @ {item.company}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-[#735E50] truncate font-mono">
+                              {item.email}
+                            </div>
+                          </div>
+                        </div>
+                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
+                          item.status === 'READY_TO_SEND'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                          {item.status === 'READY_TO_SEND' ? 'Ready' : 'Queued'}
+                        </span>
+                      </div>
+                      {item.emailSubject && (
+                        <p className="text-[10.5px] text-[#735E50] line-clamp-1 italic mt-1 pl-7">
+                          "{item.emailSubject}"
+                        </p>
+                      )}
+                    </Link>
+                  );
+                })}
+                {queue.length > 4 && (
+                  <div className="text-center pt-1">
+                    <Link
+                      to="/outbox"
+                      className="text-[10.5px] font-bold text-[#FF6B1A] hover:underline"
+                    >
+                      + {queue.length - 4} more emails in queue →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="py-4 px-3 rounded-[12px] bg-stone-50/70 border border-dashed border-stone-200 text-center space-y-1">
+                <p className="text-xs font-semibold text-[#2A1A0F]">No pending emails in queue</p>
+                <p className="text-[11px] text-[#735E50]">
+                  Import contacts in Email Folders or generate AI drafts to fill your outbox queue.
+                </p>
+              </div>
+            )}
 
-            <div className="flex items-center justify-between text-[11px] pt-1 text-[#735E50]">
-              <span className="font-mono">Natural pause: ~1 min</span>
-              <span className="text-[#1DA365] font-semibold flex items-center gap-1">
-                <CheckCircle size={12} weight="fill" /> Personalized from resume
+            <div className="flex items-center justify-between text-[11px] pt-1 text-[#735E50] border-t border-stone-100">
+              <span className="font-mono text-[10px]">Natural pause: 45–90s</span>
+              <span className="text-[#1DA365] font-semibold flex items-center gap-1 text-[10.5px]">
+                <CheckCircle size={12} weight="fill" /> Ready for one-click dispatch
               </span>
             </div>
           </div>
@@ -428,7 +488,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <div>
             <h2 className="text-xl font-bold font-display text-[#2A1A0F] flex items-center gap-2">
               <Stack size={20} className="text-[#FF6B1A]" weight="duotone" />
-              <span>Your Campaigns</span>
+              <span>Your Email Folders</span>
             </h2>
             <p className="text-xs text-[#735E50] mt-0.5">
               Manage your job search lists and email sending progress.
@@ -457,7 +517,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <MagnifyingGlass size={14} className="text-[#735E50] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search campaigns..."
+                placeholder="Search email folders..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8.5 pr-3 py-1.5 text-xs bg-white/70 border border-white/90 rounded-full text-[#2A1A0F] placeholder-[#735E50]/60 focus:outline-none focus:border-[#FF6B1A] shadow-2xs w-48 sm:w-56"
@@ -473,9 +533,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <Stack size={24} weight="duotone" />
             </div>
             <div className="space-y-1">
-              <h4 className="text-sm font-bold font-display text-[#2A1A0F]">No campaigns created yet</h4>
+              <h4 className="text-sm font-bold font-display text-[#2A1A0F]">No email folders created yet</h4>
               <p className="text-xs text-[#735E50]">
-                Add recruiters or upload a list to start your first job outreach campaign.
+                Add recruiters or upload a list to start your first job outreach email folder.
               </p>
             </div>
             <Link
@@ -483,12 +543,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#FF6B1A] hover:bg-[#FF6B1A]/90 text-white text-xs font-bold rounded-[12px] transition-all shadow-[0_4px_12px_rgba(255,107,26,0.3)]"
             >
               <Plus size={14} weight="bold" />
-              <span>Create Campaign</span>
+              <span>Create Email Folder</span>
             </Link>
           </Glass>
         ) : filteredCampaigns.length === 0 ? (
           <Glass variant="surface" radius="inner" className="p-8 text-center text-xs text-[#735E50] font-mono">
-            No campaigns match "{searchQuery}"
+            No email folders match "{searchQuery}"
           </Glass>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
