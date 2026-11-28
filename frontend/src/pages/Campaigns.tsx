@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import gsap from 'gsap';
 import {
   Plus,
@@ -33,17 +33,37 @@ import {
   Buildings,
   IdentificationBadge,
   Eye,
-  Sliders
+  Sliders,
+  SquaresFour,
+  ListBullets,
+  CaretDown,
+  PaperPlaneRight,
+  Tray,
+  Users,
+  Funnel,
+  Terminal,
+  GearSix,
+  Broadcast,
+  Fire,
+  Pulse,
+  UserCheck
 } from '@phosphor-icons/react';
 import { Campaign, Contact, Resume } from '../types';
 import { Glass } from '../components/glass/Glass';
 import { ImportWizard } from '../components/ImportWizard';
+import { PipelineFunnel } from '../components/visual/PipelineFunnel';
 
 export const Campaigns: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [selectedCampId, setSelectedCampId] = useState<number | null>(null);
   const [campaignDetails, setCampaignDetails] = useState<Campaign | null>(null);
+
+  // View controllers
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [campaignListFilter, setCampaignListFilter] = useState<'ALL' | 'SENDING' | 'PAUSED' | 'COMPLETED' | 'DRAFT'>('ALL');
+  const [detailTab, setDetailTab] = useState<'contacts' | 'import' | 'template' | 'logs'>('contacts');
+  const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
 
   // Search & filter states
   const [campaignSearch, setCampaignSearch] = useState('');
@@ -86,7 +106,6 @@ export const Campaigns: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Edit campaign settings state
-  const [showSettingsEdit, setShowSettingsEdit] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editResumeId, setEditResumeId] = useState<number | null>(null);
@@ -110,6 +129,13 @@ export const Campaigns: React.FC = () => {
   const [isSkippingQueue, setIsSkippingQueue] = useState(false);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
 
+  // Gmail Modal states
+  const [isDeletingGmail, setIsDeletingGmail] = useState(false);
+  const [showGmailModal, setShowGmailModal] = useState(false);
+  const [gmailSearchTerm, setGmailSearchTerm] = useState('');
+  const [selectedGmailIds, setSelectedGmailIds] = useState<number[]>([]);
+  const [copiedGmailList, setCopiedGmailList] = useState(false);
+
   // Staggered reveal animations
   useEffect(() => {
     if (!containerRef.current) return;
@@ -117,23 +143,23 @@ export const Campaigns: React.FC = () => {
     mm.add('(prefers-reduced-motion: no-preference)', () => {
       gsap.fromTo(
         '.campaign-reveal',
-        { y: 18, opacity: 0, filter: 'blur(5px)' },
+        { y: 16, opacity: 0, filter: 'blur(4px)' },
         {
           y: 0,
           opacity: 1,
           filter: 'blur(0px)',
-          duration: 0.45,
-          stagger: 0.05,
+          duration: 0.4,
+          stagger: 0.04,
           ease: 'power3.out',
         }
       );
     });
     return () => mm.revert();
-  }, [selectedCampId, campaigns.length]);
+  }, [selectedCampId, campaigns.length, viewMode, campaignListFilter, detailTab]);
 
   const fetchActivityLogs = async () => {
     try {
-      const res = await fetch('/api/logs?limit=30');
+      const res = await fetch('/api/logs?limit=40');
       if (res.ok) {
         const data = await res.json();
         const arr = Array.isArray(data) ? data : [];
@@ -163,7 +189,7 @@ export const Campaigns: React.FC = () => {
     }
   };
 
-  // Debounce campaign & email search
+  // Debounce campaign search
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchCampaigns(campaignSearch);
@@ -214,7 +240,6 @@ export const Campaigns: React.FC = () => {
     }
   }, []);
 
-  // Export contacts as CSV file
   const handleExportCampaignCsv = async (campaignId: number, campaignName: string) => {
     setIsExportingCsv(true);
     try {
@@ -240,7 +265,6 @@ export const Campaigns: React.FC = () => {
     }
   };
 
-  // Open Share modal & generate share token
   const openShareModal = async (camp: { id: number; name: string; contactsCount?: number }) => {
     setShareModalCampaign(camp);
     setShareToken('');
@@ -261,7 +285,6 @@ export const Campaigns: React.FC = () => {
     }
   };
 
-  // Copy all contact emails to clipboard
   const handleCopyEmails = async (campaignId: number) => {
     try {
       const res = await fetch(`/api/campaigns/${campaignId}/export?format=json`);
@@ -279,7 +302,6 @@ export const Campaigns: React.FC = () => {
     }
   };
 
-  // Fetch preview for shared campaign
   const fetchSharedPreview = async (inputToken?: string) => {
     const raw = (inputToken || importShareInput).trim();
     if (!raw) return;
@@ -306,7 +328,6 @@ export const Campaigns: React.FC = () => {
     }
   };
 
-  // Confirm import of shared campaign
   const handleConfirmImportShared = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!importShareInput.trim()) return;
@@ -333,6 +354,7 @@ export const Campaigns: React.FC = () => {
       await fetchCampaigns();
       if (data.campaignId) {
         setSelectedCampId(data.campaignId);
+        setDetailTab('contacts');
       }
     } catch (err: any) {
       alert(err.message || 'Failed to import shared campaign');
@@ -366,29 +388,35 @@ export const Campaigns: React.FC = () => {
     }
   }, [selectedCampId, campaignDetails?.status, campaignDetails?.contacts?.filter(c => c.status === 'GENERATING').length, isGeneratingEmails, campaignSearch]);
 
-  // Filtered contacts within the active campaign
-  const filteredContacts = (campaignDetails?.contacts || []).filter((contact) => {
-    const query = contactSearch.trim().toLowerCase();
-    const matchesSearch = !query ||
-      contact.email.toLowerCase().includes(query) ||
-      (contact.firstName && contact.firstName.toLowerCase().includes(query)) ||
-      (contact.lastName && contact.lastName.toLowerCase().includes(query)) ||
-      (`${contact.firstName || ''} ${contact.lastName || ''}`.toLowerCase().includes(query)) ||
-      (contact.company && contact.company.toLowerCase().includes(query)) ||
-      (contact.role && contact.role.toLowerCase().includes(query)) ||
-      (contact.title && contact.title.toLowerCase().includes(query));
+  const filteredCampaigns = useMemo(() => {
+    return campaigns.filter((camp) => {
+      if (campaignListFilter === 'ALL') return true;
+      return camp.status === campaignListFilter;
+    });
+  }, [campaigns, campaignListFilter]);
 
-    const matchesStatus = contactStatusFilter === 'ALL' || contact.status === contactStatusFilter;
+  const filteredContacts = useMemo(() => {
+    return (campaignDetails?.contacts || []).filter((contact) => {
+      const query = contactSearch.trim().toLowerCase();
+      const matchesSearch = !query ||
+        contact.email.toLowerCase().includes(query) ||
+        (contact.firstName && contact.firstName.toLowerCase().includes(query)) ||
+        (contact.lastName && contact.lastName.toLowerCase().includes(query)) ||
+        (`${contact.firstName || ''} ${contact.lastName || ''}`.toLowerCase().includes(query)) ||
+        (contact.company && contact.company.toLowerCase().includes(query)) ||
+        (contact.role && contact.role.toLowerCase().includes(query)) ||
+        (contact.title && contact.title.toLowerCase().includes(query));
 
-    return matchesSearch && matchesStatus;
-  });
+      const matchesStatus = contactStatusFilter === 'ALL' || contact.status === contactStatusFilter;
 
-  // Reset pagination count when switching campaigns or searching contacts
+      return matchesSearch && matchesStatus;
+    });
+  }, [campaignDetails?.contacts, contactSearch, contactStatusFilter]);
+
   useEffect(() => {
     setVisibleContactsCount(50);
   }, [selectedCampId, contactSearch, contactStatusFilter]);
 
-  // Infinite scroll observer to append next 50 contacts when user scrolls down
   useEffect(() => {
     if (!selectedCampId) return;
 
@@ -413,7 +441,6 @@ export const Campaigns: React.FC = () => {
     };
   }, [selectedCampId, filteredContacts.length, visibleContactsCount]);
 
-  // Turn off generation tracking when all pending/generating items are completed
   useEffect(() => {
     if (isGeneratingEmails && campaignDetails) {
       const pendingCount = campaignDetails.contacts?.filter(c => c.status === 'PENDING').length || 0;
@@ -554,7 +581,7 @@ export const Campaigns: React.FC = () => {
       });
 
       if (!response.ok) throw new Error('Failed to update campaign settings');
-      setShowSettingsEdit(false);
+      alert('Campaign configuration saved successfully!');
       fetchCampaignDetails(selectedCampId);
       fetchCampaigns();
     } catch (err: any) {
@@ -591,6 +618,7 @@ export const Campaigns: React.FC = () => {
     try {
       await fetch(`/api/campaigns/${id}`, { method: 'DELETE' });
       fetchCampaigns();
+      if (selectedCampId === id) setSelectedCampId(null);
     } catch (err) {
       console.error(err);
     }
@@ -602,7 +630,6 @@ export const Campaigns: React.FC = () => {
     const prevCampaignDetails = campaignDetails;
     const prevCampaigns = campaigns;
 
-    // Instant optimistic UI updates
     if (action === 'start') {
       setCampaignDetails(prev => prev ? { ...prev, status: 'SENDING' } : null);
       setCampaigns(prev => prev.map(c => c.id === selectedCampId ? { ...c, status: 'SENDING' } : c));
@@ -834,12 +861,6 @@ export const Campaigns: React.FC = () => {
     return lower.endsWith('@gmail.com') || lower.endsWith('@googlemail.com');
   };
 
-  const [isDeletingGmail, setIsDeletingGmail] = useState(false);
-  const [showGmailModal, setShowGmailModal] = useState(false);
-  const [gmailSearchTerm, setGmailSearchTerm] = useState('');
-  const [selectedGmailIds, setSelectedGmailIds] = useState<number[]>([]);
-  const [copiedGmailList, setCopiedGmailList] = useState(false);
-
   const handleOpenGmailModal = () => {
     if (!campaignDetails) return;
     const gmailContacts = (campaignDetails.contacts || []).filter(
@@ -922,73 +943,188 @@ export const Campaigns: React.FC = () => {
     }
   };
 
+  // Aggregated campaign overview metrics for the executive bar
+  const totalCampaigns = campaigns.length;
+  const activeSendingCount = campaigns.filter(c => c.status === 'SENDING').length;
+  const totalContactsAcrossAll = campaigns.reduce((acc, c) => acc + (c.metrics?.total || 0), 0);
+  const totalSentAcrossAll = campaigns.reduce((acc, c) => acc + (c.metrics?.sent || 0), 0);
+
   return (
-    <div ref={containerRef} className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div ref={containerRef} className="p-4 md:p-8 max-w-7xl mx-auto space-y-7">
       {!selectedCampId ? (
-        // ==========================================
-        // CAMPAIGNS LIST VIEW
-        // ==========================================
+        // =========================================================================
+        // GROUND-UP REDESIGNED CAMPAIGNS HUB (LIST VIEW)
+        // =========================================================================
         <>
-          {/* Header Bar */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 campaign-reveal">
+          {/* Top Command Center Header */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 campaign-reveal">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/70 border border-white/90 text-[10px] font-bold text-[#735E50] uppercase tracking-widest shadow-2xs mb-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B1A] animate-pulse"></span>
-                <span>Outreach Workspaces</span>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/80 border border-white/90 text-[10px] font-bold text-[#735E50] uppercase tracking-widest shadow-2xs mb-2">
+                <span className="w-2 h-2 rounded-full bg-[#FF6B1A] animate-pulse"></span>
+                <span>Outreach Operations Deck</span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-[#2A1A0F] tracking-tight">Campaigns</h1>
-              <p className="text-xs md:text-sm text-[#735E50] mt-1">
-                Create, orchestrate, and track high-converting outreach pipelines.
+              <h1 className="text-3xl md:text-4xl font-black text-[#2A1A0F] tracking-tight">Campaign Command Hub</h1>
+              <p className="text-xs md:text-sm text-[#735E50] mt-1.5 max-w-2xl leading-relaxed">
+                Coordinate automated multi-channel sequences, monitor delivery velocity, and orchestrate verified recruiter connections.
               </p>
             </div>
-            <div className="flex items-center gap-2.5">
+
+            <div className="flex items-center gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowImportSharedModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] hover:border-[#7C3AED]/50 font-bold rounded-[14px] text-xs text-[#2A1A0F] transition-all cursor-pointer shadow-sm hover:shadow active:scale-[0.98]"
+                className="flex items-center gap-2 px-4 py-3 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] hover:border-[#7C3AED]/40 font-bold rounded-[16px] text-xs text-[#2A1A0F] transition-all cursor-pointer shadow-sm hover:shadow active:scale-[0.98]"
                 title="Import campaign contacts shared by another user via link or code"
               >
                 <ShareNetwork className="w-4 h-4 text-[#7C3AED]" weight="duotone" />
-                <span>Import Shared</span>
+                <span>Import Shared Link</span>
               </button>
+              
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[14px] text-xs transition-all shadow-[0_8px_20px_-4px_rgba(255,107,26,0.35)] cursor-pointer active:scale-[0.98]"
+                className="flex items-center gap-2.5 px-5 py-3 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[16px] text-xs transition-all shadow-[0_10px_24px_-4px_rgba(255,107,26,0.38)] cursor-pointer active:scale-[0.98]"
               >
                 <Plus className="w-4 h-4" weight="bold" />
-                <span>Create Campaign</span>
+                <span>New Campaign</span>
               </button>
             </div>
           </div>
 
-          {/* Campaign & Email ID Search Bar */}
-          <Glass variant="surface" radius="inner" className="p-3 shadow-sm flex flex-col sm:flex-row items-center gap-3 campaign-reveal">
-            <div className="relative flex-1 w-full">
-              <MagnifyingGlass className="w-4 h-4 text-[#735E50] absolute left-3.5 top-1/2 -translate-y-1/2" weight="bold" />
-              <input
-                type="text"
-                value={campaignSearch}
-                onChange={(e) => setCampaignSearch(e.target.value)}
-                placeholder="Search campaigns by name, or find an email ID (e.g. recruiter@company.com)..."
-                className="w-full pl-10 pr-9 py-2.5 rounded-[12px] border border-[rgba(42,26,15,0.12)] bg-white/80 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
-              />
-              {campaignSearch && (
+          {/* Executive Overview Bento Bar */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 campaign-reveal">
+            <Glass variant="surface" radius="outer" className="p-4 md:p-5 flex items-center justify-between shadow-sm">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#735E50] block">Active Pipelines</span>
+                <div className="text-2xl font-black text-[#2A1A0F] mt-1">{totalCampaigns}</div>
+                <div className="text-[10.5px] text-[#735E50] mt-0.5">Campaign workspaces</div>
+              </div>
+              <div className="w-11 h-11 rounded-[14px] bg-[#FF6B1A]/10 text-[#FF6B1A] flex items-center justify-center">
+                <Broadcast className="w-5 h-5" weight="duotone" />
+              </div>
+            </Glass>
+
+            <Glass variant="surface" radius="outer" className="p-4 md:p-5 flex items-center justify-between shadow-sm">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#1DA365] block">Live Dispatching</span>
+                <div className="text-2xl font-black text-[#1DA365] mt-1 flex items-center gap-1.5">
+                  {activeSendingCount > 0 && <span className="w-2.5 h-2.5 rounded-full bg-[#1DA365] animate-ping inline-block" />}
+                  {activeSendingCount}
+                </div>
+                <div className="text-[10.5px] text-[#735E50] mt-0.5">Currently sending emails</div>
+              </div>
+              <div className="w-11 h-11 rounded-[14px] bg-[#1DA365]/10 text-[#1DA365] flex items-center justify-center">
+                <PaperPlaneRight className="w-5 h-5" weight="fill" />
+              </div>
+            </Glass>
+
+            <Glass variant="surface" radius="outer" className="p-4 md:p-5 flex items-center justify-between shadow-sm">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#735E50] block">Recruiter Leads</span>
+                <div className="text-2xl font-black text-[#2A1A0F] mt-1">{totalContactsAcrossAll}</div>
+                <div className="text-[10.5px] text-[#735E50] mt-0.5">In targeted pools</div>
+              </div>
+              <div className="w-11 h-11 rounded-[14px] bg-[#7C3AED]/10 text-[#7C3AED] flex items-center justify-center">
+                <Users className="w-5 h-5" weight="duotone" />
+              </div>
+            </Glass>
+
+            <Glass variant="surface" radius="outer" className="p-4 md:p-5 flex items-center justify-between shadow-sm">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#735E50] block">Delivered Letters</span>
+                <div className="text-2xl font-black text-[#2A1A0F] mt-1">{totalSentAcrossAll}</div>
+                <div className="text-[10.5px] text-[#1DA365] font-semibold mt-0.5">
+                  {totalContactsAcrossAll > 0 ? `${Math.round((totalSentAcrossAll / totalContactsAcrossAll) * 100)}% overall completion` : 'Ready to start'}
+                </div>
+              </div>
+              <div className="w-11 h-11 rounded-[14px] bg-[#2A1A0F]/5 text-[#2A1A0F] flex items-center justify-center">
+                <CheckCircle className="w-5 h-5" weight="fill" />
+              </div>
+            </Glass>
+          </div>
+
+          {/* Interactive Filter & View Controller Bar */}
+          <Glass variant="surface" radius="inner" className="p-3 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 campaign-reveal">
+            {/* Status Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+              {[
+                { id: 'ALL', label: 'All', count: campaigns.length },
+                { id: 'SENDING', label: 'Sending', count: campaigns.filter(c => c.status === 'SENDING').length },
+                { id: 'PAUSED', label: 'Paused', count: campaigns.filter(c => c.status === 'PAUSED').length },
+                { id: 'COMPLETED', label: 'Completed', count: campaigns.filter(c => c.status === 'COMPLETED').length },
+                { id: 'DRAFT', label: 'Drafts', count: campaigns.filter(c => c.status === 'DRAFT').length },
+              ].map((tab) => {
+                const isActive = campaignListFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setCampaignListFilter(tab.id as any)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-[12px] text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                      isActive
+                        ? 'bg-[#2A1A0F] text-white shadow-xs'
+                        : 'bg-white/60 hover:bg-white text-[#735E50] hover:text-[#2A1A0F]'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={`text-[9.5px] px-1.5 py-0.2 rounded-full font-mono ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-[rgba(42,26,15,0.06)] text-[#735E50]'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search Input & View Mode Toggles */}
+            <div className="flex items-center gap-2.5 w-full md:w-auto">
+              <div className="relative flex-1 md:w-80">
+                <MagnifyingGlass className="w-4 h-4 text-[#735E50] absolute left-3.5 top-1/2 -translate-y-1/2" weight="bold" />
+                <input
+                  type="text"
+                  value={campaignSearch}
+                  onChange={(e) => setCampaignSearch(e.target.value)}
+                  placeholder="Search campaigns or recruiter emails..."
+                  className="w-full pl-9 pr-8 py-2 rounded-[12px] border border-[rgba(42,26,15,0.12)] bg-white/90 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-all shadow-inner"
+                />
+                {campaignSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setCampaignSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[#735E50] hover:text-[#2A1A0F] rounded-full cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" weight="bold" />
+                  </button>
+                )}
+              </div>
+
+              {/* View Switcher: Grid vs Table */}
+              <div className="flex items-center bg-white/80 p-1 rounded-[12px] border border-[rgba(42,26,15,0.08)] shrink-0">
                 <button
                   type="button"
-                  onClick={() => setCampaignSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#735E50] hover:text-[#2A1A0F] rounded-full cursor-pointer hover:bg-black/5"
-                  title="Clear search"
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-[9px] transition-all cursor-pointer ${
+                    viewMode === 'grid'
+                      ? 'bg-[#2A1A0F] text-white shadow-2xs'
+                      : 'text-[#735E50] hover:text-[#2A1A0F]'
+                  }`}
+                  title="Bento Grid View"
                 >
-                  <X className="w-3.5 h-3.5" weight="bold" />
+                  <SquaresFour className="w-4 h-4" weight="bold" />
                 </button>
-              )}
-            </div>
-            {campaignSearch.trim() && (
-              <div className="text-[11px] font-mono text-[#735E50] flex items-center gap-1.5 self-start sm:self-center px-2 py-1 rounded-[8px] bg-white/60 border border-[rgba(42,26,15,0.06)] shrink-0">
-                <span className="w-2 h-2 rounded-full bg-[#1DA365]"></span>
-                <span>{campaigns.length} campaign{campaigns.length === 1 ? '' : 's'} matched</span>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('table')}
+                  className={`p-1.5 rounded-[9px] transition-all cursor-pointer ${
+                    viewMode === 'table'
+                      ? 'bg-[#2A1A0F] text-white shadow-2xs'
+                      : 'text-[#735E50] hover:text-[#2A1A0F]'
+                  }`}
+                  title="Dense Table View"
+                >
+                  <ListBullets className="w-4 h-4" weight="bold" />
+                </button>
               </div>
-            )}
+            </div>
           </Glass>
 
           {/* New Campaign Creation Modal */}
@@ -997,7 +1133,7 @@ export const Campaigns: React.FC = () => {
               <Glass variant="strong" radius="outer" className="w-full max-w-xl p-6 md:p-8 space-y-4 shadow-[0_24px_60px_-15px_rgba(42,26,15,0.25)] text-[#2A1A0F] max-h-[92vh] overflow-y-auto">
                 <div className="flex justify-between items-center pb-2 border-b border-[rgba(42,26,15,0.08)]">
                   <div>
-                    <h3 className="text-base font-bold text-[#2A1A0F] tracking-tight">New Outreach Campaign</h3>
+                    <h3 className="text-base font-extrabold text-[#2A1A0F] tracking-tight">Create Outreach Campaign</h3>
                     <p className="text-[11px] text-[#735E50] mt-0.5">Configure your outreach target, resume attachment, and automated actions.</p>
                   </div>
                   <button
@@ -1017,7 +1153,7 @@ export const Campaigns: React.FC = () => {
                       required
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
-                      placeholder="e.g. July Product Startups"
+                      placeholder="e.g. Q4 Senior Fullstack Outreach"
                       className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
                     />
                   </div>
@@ -1027,7 +1163,7 @@ export const Campaigns: React.FC = () => {
                     <textarea
                       value={newDesc}
                       onChange={(e) => setNewDesc(e.target.value)}
-                      placeholder="Brief description of targeted positions or locations..."
+                      placeholder="e.g. Engineering leaders and technical recruiters in fintech & AI..."
                       rows={2}
                       className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
                     />
@@ -1036,7 +1172,7 @@ export const Campaigns: React.FC = () => {
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
                       <FilePdf className="w-3.5 h-3.5 text-[#FF6B1A]" weight="duotone" />
-                      Select Resume PDF *
+                      Attached Resume PDF *
                     </label>
                     {resumes.length === 0 ? (
                       <div className="text-[11px] text-[#D97706] bg-[#D97706]/10 p-3 rounded-[14px] border border-[#D97706]/20">
@@ -1117,7 +1253,7 @@ export const Campaigns: React.FC = () => {
                     <div>
                       <div className="text-xs font-bold text-[#2A1A0F] flex items-center gap-1.5">
                         <EnvelopeSimple className="w-4 h-4 text-[#E63946]" weight="duotone" />
-                        Auto-Remove @gmail from Extension
+                        Auto-Remove @gmail Leads
                       </div>
                       <div className="text-[10.5px] text-[#735E50] mt-0.5">
                         Automatically drop personal @gmail.com addresses when leads are synced from Chrome extension.
@@ -1151,9 +1287,6 @@ export const Campaigns: React.FC = () => {
                       rows={2}
                       className="rounded-[12px] border border-[#E63946]/20 bg-white px-3.5 py-2 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:border-[#E63946] font-mono transition-all shadow-inner"
                     />
-                    <span className="text-[10px] text-[#735E50]">
-                      Domain suffixes (e.g. <code className="text-[#2A1A0F] font-bold">@competitor.com</code>) or exact emails to block. The engine will skip them.
-                    </span>
                   </div>
 
                   <div className="flex justify-end gap-2.5 pt-2">
@@ -1177,208 +1310,352 @@ export const Campaigns: React.FC = () => {
             </div>
           )}
 
-          {/* Campaigns Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {campaigns.length === 0 ? (
-              <Glass variant="surface" radius="outer" className="col-span-2 border-2 border-dashed border-[rgba(42,26,15,0.15)] p-12 text-center text-[#735E50] text-xs space-y-3 campaign-reveal">
-                {campaignSearch.trim() ? (
-                  <>
-                    <EnvelopeSimple className="w-10 h-10 text-[#9C8E84] mx-auto" weight="duotone" />
-                    <p className="font-bold text-sm text-[#2A1A0F]">No campaigns or email IDs match "{campaignSearch}"</p>
-                    <p className="text-[11px] text-[#735E50]">Try searching for a different email address or campaign name.</p>
-                    <button
-                      type="button"
-                      onClick={() => setCampaignSearch('')}
-                      className="mt-2 px-4 py-2 bg-white/90 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[12px] text-xs transition-colors cursor-pointer shadow-2xs"
-                    >
-                      Clear Search
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <EnvelopeSimple className="w-10 h-10 text-[#FF6B1A] mx-auto" weight="duotone" />
-                    <p className="font-bold text-sm text-[#2A1A0F]">No outreach campaigns created yet.</p>
-                    <p className="text-[11px] text-[#735E50]">Click "Create Campaign" above to launch your first job outreach pipeline.</p>
-                  </>
-                )}
-              </Glass>
-            ) : (
-              campaigns.map((camp) => (
-                <Glass 
-                  key={camp.id} 
-                  variant="surface"
-                  radius="outer"
-                  interactive
-                  className="p-6 md:p-7 flex flex-col justify-between campaign-reveal transition-all duration-200"
-                >
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-start gap-3">
-                      <div>
-                        <h3 className="font-extrabold text-[#2A1A0F] text-base tracking-tight">{camp.name}</h3>
-                        <p className="text-[11.5px] text-[#735E50] line-clamp-2 leading-relaxed mt-1">
-                          {camp.description || 'No description provided.'}
-                        </p>
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-[10px] text-[10px] font-bold border uppercase shrink-0 flex items-center gap-1.5 ${
-                        camp.status === 'SENDING' 
-                          ? 'bg-[#1DA365]/10 border-[#1DA365]/30 text-[#1DA365]' 
-                          : camp.status === 'COMPLETED'
-                          ? 'bg-[#2A1A0F]/10 border-[#2A1A0F]/20 text-[#2A1A0F]'
-                          : camp.status === 'PAUSED'
-                          ? 'bg-[#D97706]/10 border-[#D97706]/30 text-[#D97706]'
-                          : 'bg-[rgba(42,26,15,0.06)] border-[rgba(42,26,15,0.12)] text-[#735E50]'
-                      }`}>
-                        {camp.status === 'SENDING' && <span className="w-1.5 h-1.5 rounded-full bg-[#1DA365] animate-ping" />}
-                        {camp.status}
-                      </span>
-                    </div>
+          {/* Render Mode: Bento Grid View vs Table View */}
+          {filteredCampaigns.length === 0 ? (
+            <Glass variant="surface" radius="outer" className="border-2 border-dashed border-[rgba(42,26,15,0.15)] p-12 text-center text-[#735E50] text-xs space-y-3 campaign-reveal">
+              {campaignSearch.trim() ? (
+                <>
+                  <EnvelopeSimple className="w-10 h-10 text-[#9C8E84] mx-auto" weight="duotone" />
+                  <p className="font-bold text-sm text-[#2A1A0F]">No campaigns or email IDs match "{campaignSearch}"</p>
+                  <p className="text-[11px] text-[#735E50]">Try searching for a different email address or campaign name.</p>
+                  <button
+                    type="button"
+                    onClick={() => setCampaignSearch('')}
+                    className="mt-2 px-4 py-2 bg-white/90 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[12px] text-xs transition-colors cursor-pointer shadow-2xs"
+                  >
+                    Clear Search
+                  </button>
+                </>
+              ) : (
+                <>
+                  <EnvelopeSimple className="w-10 h-10 text-[#FF6B1A] mx-auto" weight="duotone" />
+                  <p className="font-bold text-sm text-[#2A1A0F]">No outreach campaigns match this filter.</p>
+                  <p className="text-[11px] text-[#735E50]">Click "New Campaign" above to launch your first job outreach pipeline.</p>
+                </>
+              )}
+            </Glass>
+          ) : viewMode === 'grid' ? (
+            // BENTO GRID CARDS
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredCampaigns.map((camp) => {
+                const total = camp.metrics?.total || 0;
+                const sent = camp.metrics?.sent || 0;
+                const percent = total > 0 ? Math.min(100, Math.round((sent / total) * 100)) : 0;
 
-                    {/* Matching Email IDs chip list if searched */}
-                    {camp.matchingContacts && camp.matchingContacts.length > 0 && (
-                      <Glass variant="nested" radius="control" className="mt-2.5 p-3 space-y-2 bg-[#7C3AED]/5 border-[#7C3AED]/20">
-                        <div className="text-[10px] font-bold text-[#7C3AED] flex items-center justify-between">
-                          <span className="flex items-center gap-1.5">
-                            <EnvelopeSimple className="w-3.5 h-3.5 text-[#7C3AED]" weight="duotone" />
-                            <span>Matching leads found in this campaign:</span>
-                          </span>
-                          <span className="text-[9.5px] font-mono text-[#7C3AED] font-bold">
-                            {camp.matchingContacts.length} matched
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {camp.matchingContacts.map((mc: any) => (
-                            <button
-                              key={mc.id}
-                              type="button"
-                              onClick={() => {
-                                setContactSearch(mc.email);
-                                setSelectedCampId(camp.id);
-                              }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-[#FF6B1A] hover:text-white border border-[rgba(42,26,15,0.12)] hover:border-[#FF6B1A] rounded-[8px] text-[10px] font-medium text-[#2A1A0F] transition-all cursor-pointer shadow-2xs group"
-                              title={`Open campaign and view contact: ${mc.email}`}
-                            >
-                              <span className="font-mono">{mc.email}</span>
-                              <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded uppercase ${
-                                mc.status === 'SENT' ? 'bg-[#1DA365]/15 text-[#146C43] group-hover:bg-white/20 group-hover:text-white' :
-                                mc.status === 'READY_TO_SEND' ? 'bg-[rgba(42,26,15,0.08)] text-[#2A1A0F] group-hover:bg-white/20 group-hover:text-white' :
-                                mc.status === 'FAILED' ? 'bg-[#E63946]/15 text-[#A01B26] group-hover:bg-white/20 group-hover:text-white' :
-                                'bg-[rgba(42,26,15,0.06)] text-[#735E50] group-hover:bg-white/20 group-hover:text-white'
-                              }`}>
-                                {mc.status}
+                return (
+                  <Glass 
+                    key={camp.id} 
+                    variant="surface"
+                    radius="outer"
+                    interactive
+                    onClick={() => {
+                      setSelectedCampId(camp.id);
+                      setDetailTab('contacts');
+                    }}
+                    className="p-6 md:p-7 flex flex-col justify-between campaign-reveal transition-all duration-200 group"
+                  >
+                    <div className="space-y-4">
+                      {/* Card Header */}
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="min-w-0">
+                          <h3 className="font-black text-[#2A1A0F] text-base tracking-tight truncate group-hover:text-[#FF6B1A] transition-colors">
+                            {camp.name}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            {camp.resume?.name && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#735E50] bg-white/80 border border-[rgba(42,26,15,0.08)] px-2 py-0.5 rounded-[6px]">
+                                <FilePdf className="w-3 h-3 text-[#FF6B1A]" weight="duotone" />
+                                <span className="truncate max-w-[120px]">{camp.resume.name}</span>
                               </span>
-                            </button>
-                          ))}
+                            )}
+                          </div>
                         </div>
-                      </Glass>
-                    )}
 
-                    {/* Auto-Send Extension Lead Toggle */}
-                    <div className="pt-3 border-t border-[rgba(42,26,15,0.08)] flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#2A1A0F]">
-                        <Lightning className={`w-3.5 h-3.5 ${camp.autoSendExtension ? 'text-[#FF6B1A]' : 'text-[#735E50]'}`} weight={camp.autoSendExtension ? 'fill' : 'regular'} />
-                        <span>Auto-Send Extension Leads</span>
+                        <span className={`px-2.5 py-1 rounded-[10px] text-[10px] font-bold border uppercase shrink-0 flex items-center gap-1.5 ${
+                          camp.status === 'SENDING' 
+                            ? 'bg-[#1DA365]/10 border-[#1DA365]/30 text-[#1DA365]' 
+                            : camp.status === 'COMPLETED'
+                            ? 'bg-[#2A1A0F]/10 border-[#2A1A0F]/20 text-[#2A1A0F]'
+                            : camp.status === 'PAUSED'
+                            ? 'bg-[#D97706]/10 border-[#D97706]/30 text-[#D97706]'
+                            : 'bg-[rgba(42,26,15,0.06)] border-[rgba(42,26,15,0.12)] text-[#735E50]'
+                        }`}>
+                          {camp.status === 'SENDING' && <span className="w-1.5 h-1.5 rounded-full bg-[#1DA365] animate-ping" />}
+                          {camp.status}
+                        </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => handleToggleAutoSendExtension(camp.id, Boolean(camp.autoSendExtension), e)}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          camp.autoSendExtension ? 'bg-[#1DA365]' : 'bg-[rgba(42,26,15,0.18)]'
-                        }`}
-                        title={camp.autoSendExtension ? 'Auto-Send ON: Extension leads auto-generate & send mail' : 'Auto-Send OFF: Extension leads added as pending'}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                            camp.autoSendExtension ? 'translate-x-4' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
 
-                    {/* Auto-Remove @gmail Extension Lead Toggle */}
-                    <div className="pt-2 border-t border-[rgba(42,26,15,0.06)] flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#2A1A0F]">
-                        <EnvelopeSimple className={`w-3.5 h-3.5 ${camp.autoRemoveGmailExtension !== false ? 'text-[#E63946]' : 'text-[#735E50]'}`} weight="duotone" />
-                        <span>Auto-Remove @gmail Leads</span>
+                      <p className="text-[11.5px] text-[#735E50] line-clamp-2 leading-relaxed">
+                        {camp.description || 'No description provided.'}
+                      </p>
+
+                      {/* Visual Progress Bar */}
+                      <div className="space-y-1.5 bg-white/50 p-3 rounded-[14px] border border-[rgba(42,26,15,0.06)]">
+                        <div className="flex justify-between items-center text-[10.5px] font-bold">
+                          <span className="text-[#735E50] uppercase tracking-wider">Outreach Progress</span>
+                          <span className="font-mono text-[#2A1A0F]">{sent} / {total} ({percent}%)</span>
+                        </div>
+                        <div className="w-full h-2 bg-white/80 rounded-full overflow-hidden border border-[rgba(42,26,15,0.06)]">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              camp.status === 'SENDING' ? 'bg-[#1DA365]' : 'bg-[#FF6B1A]'
+                            }`}
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => handleToggleAutoRemoveGmailExtension(camp.id, camp.autoRemoveGmailExtension !== false, e)}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          camp.autoRemoveGmailExtension !== false ? 'bg-[#E63946]' : 'bg-[rgba(42,26,15,0.18)]'
-                        }`}
-                        title={camp.autoRemoveGmailExtension !== false ? 'Auto-Remove ON: @gmail.com leads from extension are automatically dropped' : 'Auto-Remove OFF: @gmail.com leads from extension are kept'}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                            camp.autoRemoveGmailExtension !== false ? 'translate-x-4' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
 
-                  {/* Card Footer: Metrics & Actions */}
-                  <div className="mt-5 pt-3.5 border-t border-[rgba(42,26,15,0.08)] flex justify-between items-center gap-2">
-                    <div className="text-[11px] text-[#735E50] font-bold uppercase tracking-wider">
-                      Contacts: <span className="text-[#2A1A0F] font-extrabold">{camp.metrics?.total || 0}</span> | Sent: <span className="text-[#1DA365] font-extrabold">{camp.metrics?.sent || 0}</span>
+                      {/* Matching Contacts chip if searched */}
+                      {camp.matchingContacts && camp.matchingContacts.length > 0 && (
+                        <div className="p-2.5 rounded-[12px] bg-[#7C3AED]/5 border border-[#7C3AED]/20 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                          <div className="text-[10px] font-bold text-[#7C3AED] flex items-center justify-between">
+                            <span className="flex items-center gap-1">
+                              <EnvelopeSimple className="w-3.5 h-3.5" weight="duotone" />
+                              <span>Matching lead:</span>
+                            </span>
+                            <span className="font-mono">{camp.matchingContacts.length} found</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {camp.matchingContacts.slice(0, 3).map((mc: any) => (
+                              <button
+                                key={mc.id}
+                                type="button"
+                                onClick={() => {
+                                  setContactSearch(mc.email);
+                                  setSelectedCampId(camp.id);
+                                  setDetailTab('contacts');
+                                }}
+                                className="px-2 py-0.5 rounded-[6px] bg-white text-[9.5px] font-mono border border-[rgba(42,26,15,0.08)] hover:border-[#7C3AED] text-[#2A1A0F] truncate max-w-[180px]"
+                              >
+                                {mc.email}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Automation Switches */}
+                      <div className="space-y-2 pt-1 border-t border-[rgba(42,26,15,0.06)]" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between text-[11px] font-bold text-[#2A1A0F]">
+                          <span className="flex items-center gap-1.5 text-[10.5px]">
+                            <Lightning className={`w-3.5 h-3.5 ${camp.autoSendExtension ? 'text-[#FF6B1A]' : 'text-[#735E50]'}`} weight={camp.autoSendExtension ? 'fill' : 'regular'} />
+                            Auto-Send Leads
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleAutoSendExtension(camp.id, Boolean(camp.autoSendExtension), e)}
+                            className={`relative inline-flex h-4 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              camp.autoSendExtension ? 'bg-[#1DA365]' : 'bg-[rgba(42,26,15,0.18)]'
+                            }`}
+                          >
+                            <span className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${camp.autoSendExtension ? 'translate-x-4' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] font-bold text-[#2A1A0F]">
+                          <span className="flex items-center gap-1.5 text-[10.5px]">
+                            <EnvelopeSimple className={`w-3.5 h-3.5 ${camp.autoRemoveGmailExtension !== false ? 'text-[#E63946]' : 'text-[#735E50]'}`} weight="duotone" />
+                            Drop @gmail Leads
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleAutoRemoveGmailExtension(camp.id, camp.autoRemoveGmailExtension !== false, e)}
+                            className={`relative inline-flex h-4 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              camp.autoRemoveGmailExtension !== false ? 'bg-[#E63946]' : 'bg-[rgba(42,26,15,0.18)]'
+                            }`}
+                          >
+                            <span className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${camp.autoRemoveGmailExtension !== false ? 'translate-x-4' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
+
+                    {/* Card Actions Footer */}
+                    <div className="mt-5 pt-3.5 border-t border-[rgba(42,26,15,0.08)] flex justify-between items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => {
-                          if (campaignSearch.trim()) {
-                            setContactSearch(campaignSearch.trim());
-                          }
                           setSelectedCampId(camp.id);
+                          setDetailTab('contacts');
                         }}
-                        className="px-3.5 py-1.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white rounded-[10px] text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+                        className="px-4 py-2 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white rounded-[12px] text-xs font-bold transition-all cursor-pointer shadow-[0_4px_12px_-2px_rgba(255,107,26,0.3)] active:scale-[0.98] flex items-center gap-1.5"
                       >
-                        Manage
+                        <span>Open Cockpit</span>
+                        <ArrowSquareOut className="w-3.5 h-3.5" weight="bold" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleExportCampaignCsv(camp.id, camp.name)}
-                        className="p-2 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#735E50] hover:text-[#2A1A0F] rounded-[10px] transition-all cursor-pointer shadow-2xs"
-                        title="Export Contacts as CSV"
-                      >
-                        <DownloadSimple className="w-3.5 h-3.5" weight="bold" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openShareModal({ id: camp.id, name: camp.name, contactsCount: camp.metrics?.total || 0 })}
-                        className="p-2 bg-white/80 hover:bg-[#7C3AED]/10 border border-[rgba(42,26,15,0.12)] hover:border-[#7C3AED]/30 text-[#735E50] hover:text-[#7C3AED] rounded-[10px] transition-all cursor-pointer shadow-2xs"
-                        title="Share Campaign Contacts"
-                      >
-                        <ShareNetwork className="w-3.5 h-3.5" weight="duotone" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCampaign(camp.id, camp.name)}
-                        className="p-2 bg-white/80 hover:bg-[#E63946]/10 border border-[rgba(42,26,15,0.12)] hover:border-[#E63946]/30 text-[#735E50] hover:text-[#E63946] rounded-[10px] transition-all cursor-pointer shadow-2xs"
-                        title="Delete Campaign"
-                      >
-                        <Trash className="w-3.5 h-3.5" weight="bold" />
-                      </button>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleExportCampaignCsv(camp.id, camp.name)}
+                          className="p-2 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#735E50] hover:text-[#2A1A0F] rounded-[10px] transition-all cursor-pointer shadow-2xs"
+                          title="Export Contacts as CSV"
+                        >
+                          <DownloadSimple className="w-3.5 h-3.5" weight="bold" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openShareModal({ id: camp.id, name: camp.name, contactsCount: camp.metrics?.total || 0 })}
+                          className="p-2 bg-white/80 hover:bg-[#7C3AED]/10 border border-[rgba(42,26,15,0.12)] hover:border-[#7C3AED]/30 text-[#735E50] hover:text-[#7C3AED] rounded-[10px] transition-all cursor-pointer shadow-2xs"
+                          title="Share Campaign Contacts"
+                        >
+                          <ShareNetwork className="w-3.5 h-3.5" weight="duotone" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCampaign(camp.id, camp.name)}
+                          className="p-2 bg-white/80 hover:bg-[#E63946]/10 border border-[rgba(42,26,15,0.12)] hover:border-[#E63946]/30 text-[#735E50] hover:text-[#E63946] rounded-[10px] transition-all cursor-pointer shadow-2xs"
+                          title="Delete Campaign"
+                        >
+                          <Trash className="w-3.5 h-3.5" weight="bold" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </Glass>
-              ))
-            )}
-          </div>
+                  </Glass>
+                );
+              })}
+            </div>
+          ) : (
+            // DENSE TABLE VIEW
+            <Glass variant="surface" radius="outer" className="overflow-hidden shadow-sm campaign-reveal">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[rgba(42,26,15,0.08)] bg-white/50 text-[#735E50] uppercase font-bold text-[9.5px] tracking-wider">
+                      <th className="p-4">Campaign Name</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4">Resume Attached</th>
+                      <th className="p-4">Progress & Delivery</th>
+                      <th className="p-4">Automation Toggles</th>
+                      <th className="p-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[rgba(42,26,15,0.05)]">
+                    {filteredCampaigns.map((camp) => {
+                      const total = camp.metrics?.total || 0;
+                      const sent = camp.metrics?.sent || 0;
+                      const percent = total > 0 ? Math.min(100, Math.round((sent / total) * 100)) : 0;
+
+                      return (
+                        <tr 
+                          key={camp.id} 
+                          onClick={() => {
+                            setSelectedCampId(camp.id);
+                            setDetailTab('contacts');
+                          }}
+                          className="hover:bg-white/60 transition-colors cursor-pointer group"
+                        >
+                          <td className="p-4">
+                            <div className="font-extrabold text-[#2A1A0F] text-sm group-hover:text-[#FF6B1A] transition-colors">{camp.name}</div>
+                            <div className="text-[11px] text-[#735E50] truncate max-w-xs mt-0.5">{camp.description || 'No description'}</div>
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-2.5 py-1 rounded-[8px] text-[9.5px] font-bold border uppercase inline-flex items-center gap-1.5 ${
+                              camp.status === 'SENDING' 
+                                ? 'bg-[#1DA365]/10 border-[#1DA365]/30 text-[#1DA365]' 
+                                : camp.status === 'COMPLETED'
+                                ? 'bg-[#2A1A0F]/10 border-[#2A1A0F]/20 text-[#2A1A0F]'
+                                : camp.status === 'PAUSED'
+                                ? 'bg-[#D97706]/10 border-[#D97706]/30 text-[#D97706]'
+                                : 'bg-[rgba(42,26,15,0.06)] border-[rgba(42,26,15,0.12)] text-[#735E50]'
+                            }`}>
+                              {camp.status === 'SENDING' && <span className="w-1.5 h-1.5 rounded-full bg-[#1DA365] animate-ping" />}
+                              {camp.status}
+                            </span>
+                          </td>
+                          <td className="p-4 text-[#735E50]">
+                            {camp.resume?.name ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2A1A0F]">
+                                <FilePdf className="w-3.5 h-3.5 text-[#FF6B1A]" weight="duotone" />
+                                {camp.resume.name}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-[#9C8E84]">None</span>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            <div className="w-36 space-y-1">
+                              <div className="flex justify-between text-[10px] font-mono text-[#735E50]">
+                                <span>{sent} sent</span>
+                                <span>{total} leads ({percent}%)</span>
+                              </div>
+                              <div className="w-full h-1.5 bg-white/80 rounded-full overflow-hidden border border-[rgba(42,26,15,0.06)]">
+                                <div className="h-full bg-[#FF6B1A] rounded-full" style={{ width: `${percent}%` }} />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={(e) => handleToggleAutoSendExtension(camp.id, Boolean(camp.autoSendExtension), e)}
+                                className={`px-2 py-0.5 rounded-[6px] text-[9.5px] font-bold border transition-colors ${
+                                  camp.autoSendExtension ? 'bg-[#1DA365]/10 text-[#1DA365] border-[#1DA365]/30' : 'bg-white/60 text-[#735E50] border-[rgba(42,26,15,0.08)]'
+                                }`}
+                              >
+                                Auto-Send: {camp.autoSendExtension ? 'ON' : 'OFF'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => handleToggleAutoRemoveGmailExtension(camp.id, camp.autoRemoveGmailExtension !== false, e)}
+                                className={`px-2 py-0.5 rounded-[6px] text-[9.5px] font-bold border transition-colors ${
+                                  camp.autoRemoveGmailExtension !== false ? 'bg-[#E63946]/10 text-[#E63946] border-[#E63946]/30' : 'bg-white/60 text-[#735E50] border-[rgba(42,26,15,0.08)]'
+                                }`}
+                              >
+                                Filter Gmail: {camp.autoRemoveGmailExtension !== false ? 'ON' : 'OFF'}
+                              </button>
+                            </div>
+                          </td>
+                          <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setSelectedCampId(camp.id);
+                                  setDetailTab('contacts');
+                                }}
+                                className="px-3 py-1.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[8px] text-[10px] shadow-2xs"
+                              >
+                                Manage
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleExportCampaignCsv(camp.id, camp.name)}
+                                className="p-1.5 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.08)] text-[#735E50] rounded-[8px]"
+                                title="Export CSV"
+                              >
+                                <DownloadSimple className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCampaign(camp.id, camp.name)}
+                                className="p-1.5 bg-white/80 hover:bg-[#E63946]/10 text-[#735E50] hover:text-[#E63946] rounded-[8px]"
+                                title="Delete"
+                              >
+                                <Trash className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Glass>
+          )}
         </>
       ) : (
-        // ==========================================
-        // CAMPAIGN DETAILS VIEW
-        // ==========================================
+        // =========================================================================
+        // GROUND-UP REDESIGNED CAMPAIGN COCKPIT (DETAIL WORKSPACE)
+        // =========================================================================
         <>
           {campaignDetails ? (
             <div className="space-y-6">
-              {/* Header Cockpit */}
+              {/* Cockpit Executive Command Header */}
               <Glass variant="surface" radius="outer" className="p-5 md:p-6 shadow-sm campaign-reveal">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[rgba(42,26,15,0.08)]">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  {/* Left: Breadcrumbs & Title */}
                   <div className="flex items-center gap-3 min-w-0">
                     <button 
                       onClick={() => {
                         setSelectedCampId(null);
-                        setShowSettingsEdit(false);
                         setContactSearch('');
                         setContactStatusFilter('ALL');
                       }}
@@ -1387,10 +1664,13 @@ export const Campaigns: React.FC = () => {
                     >
                       <ArrowLeft className="w-4 h-4" weight="bold" />
                     </button>
+
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-xl md:text-2xl font-extrabold text-[#2A1A0F] tracking-tight truncate">{campaignDetails.name}</h2>
-                        <span className={`px-2 py-0.5 rounded-[8px] text-[9.5px] font-bold border uppercase shrink-0 ${
+                      <div className="flex items-center gap-2.5">
+                        <h2 className="text-xl md:text-2xl font-black text-[#2A1A0F] tracking-tight truncate">
+                          {campaignDetails.name}
+                        </h2>
+                        <span className={`px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold border uppercase shrink-0 ${
                           campaignDetails.status === 'SENDING' 
                             ? 'bg-[#1DA365]/10 border-[#1DA365]/30 text-[#1DA365]' 
                             : campaignDetails.status === 'COMPLETED'
@@ -1402,57 +1682,40 @@ export const Campaigns: React.FC = () => {
                           {campaignDetails.status}
                         </span>
                       </div>
-                      <span className="text-[11px] text-[#735E50] flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1">
-                        <span className="inline-flex items-center gap-1">
+
+                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-[#735E50] mt-1">
+                        <span className="inline-flex items-center gap-1 font-semibold text-[#2A1A0F]">
                           <FilePdf className="w-3.5 h-3.5 text-[#FF6B1A]" weight="duotone" />
-                          Resume: <strong className="text-[#2A1A0F] font-bold">{campaignDetails.resume?.name || 'None'}</strong>
+                          {campaignDetails.resume?.name || 'No resume PDF attached'}
                         </span>
                         <span>•</span>
-                        <span>Mode: <strong className="text-[#2A1A0F] font-bold">Custom Template</strong></span>
+                        <span>Mode: <strong className="text-[#2A1A0F]">Custom AI Template</strong></span>
                         <span>•</span>
-                        <span className="inline-flex items-center gap-1">
-                          <Lightning className={`w-3.5 h-3.5 ${campaignDetails.autoSendExtension ? 'text-[#FF6B1A]' : 'text-[#735E50]'}`} weight={campaignDetails.autoSendExtension ? 'fill' : 'regular'} />
-                          <span>Auto-Send: <strong className={campaignDetails.autoSendExtension ? 'text-[#1DA365] font-bold' : 'text-[#735E50]'}>{campaignDetails.autoSendExtension ? 'ON' : 'OFF'}</strong></span>
-                        </span>
+                        <span>Auto-Send: <strong className={campaignDetails.autoSendExtension ? 'text-[#1DA365]' : 'text-[#735E50]'}>{campaignDetails.autoSendExtension ? 'ACTIVE' : 'OFF'}</strong></span>
                         <span>•</span>
-                        <span className="inline-flex items-center gap-1">
-                          <EnvelopeSimple className={`w-3.5 h-3.5 ${campaignDetails.autoRemoveGmailExtension !== false ? 'text-[#E63946]' : 'text-[#735E50]'}`} weight="duotone" />
-                          <span>Auto-Remove @gmail: <strong className={campaignDetails.autoRemoveGmailExtension !== false ? 'text-[#E63946] font-bold' : 'text-[#735E50]'}>{campaignDetails.autoRemoveGmailExtension !== false ? 'ON' : 'OFF'}</strong></span>
-                        </span>
-                      </span>
+                        <span>Gmail Filter: <strong className={campaignDetails.autoRemoveGmailExtension !== false ? 'text-[#E63946]' : 'text-[#735E50]'}>{campaignDetails.autoRemoveGmailExtension !== false ? 'FILTERING ON' : 'OFF'}</strong></span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Edit Settings Toggle */}
-                    <button
-                      onClick={() => setShowSettingsEdit(!showSettingsEdit)}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 border rounded-[12px] text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-[0.98] ${
-                        showSettingsEdit 
-                          ? 'bg-[#2A1A0F] border-[#2A1A0F] text-white'
-                          : 'bg-white/80 border-[rgba(42,26,15,0.12)] text-[#2A1A0F] hover:bg-white hover:border-[#2A1A0F]'
-                      }`}
-                    >
-                      <Sliders className="w-3.5 h-3.5" weight="bold" />
-                      <span>Configure Mode</span>
-                    </button>
-
-                    {/* Campaign controls */}
+                  {/* Right: High-Impact Primary Actions */}
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {/* Primary Start / Pause Toggle */}
                     {campaignDetails.status !== 'SENDING' ? (
                       <button
                         onClick={() => triggerAction('start')}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all cursor-pointer shadow-[0_4px_12px_-2px_rgba(255,107,26,0.35)] active:scale-[0.98]"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[14px] text-xs uppercase tracking-wider transition-all cursor-pointer shadow-[0_8px_20px_-4px_rgba(255,107,26,0.35)] active:scale-[0.98]"
                       >
-                        <Play className="w-3.5 h-3.5" weight="fill" />
-                        <span>Start Send</span>
+                        <Play className="w-4 h-4" weight="fill" />
+                        <span>Start Sequence</span>
                       </button>
                     ) : (
                       <button
                         onClick={() => triggerAction('pause')}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-[#D97706]/10 border border-[#D97706]/30 text-[#D97706] hover:bg-[#D97706]/20 font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-[#D97706]/10 border border-[#D97706]/30 text-[#D97706] hover:bg-[#D97706]/20 font-bold rounded-[14px] text-xs uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-[0.98]"
                       >
-                        <Pause className="w-3.5 h-3.5" weight="fill" />
-                        <span>Pause</span>
+                        <Pause className="w-4 h-4" weight="fill" />
+                        <span>Pause Sequence</span>
                       </button>
                     )}
 
@@ -1460,230 +1723,512 @@ export const Campaigns: React.FC = () => {
                     <button
                       onClick={handleSkipQueue}
                       disabled={isSkippingQueue || (campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND' || c.status === 'FAILED').length || 0) === 0}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-[#7C3AED]/10 hover:bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-[#7C3AED] font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all cursor-pointer shadow-xs disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+                      className="flex items-center gap-1.5 px-3.5 py-2.5 bg-[#7C3AED]/10 hover:bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-[#7C3AED] font-bold rounded-[14px] text-xs transition-all cursor-pointer shadow-xs disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
                       title="Skip queue delay for the next email only (single use). Normal delays resume for following emails."
                     >
-                      <FastForward className="w-3.5 h-3.5 text-[#7C3AED]" weight="bold" />
-                      <span>{isSkippingQueue ? 'Skipping...' : 'Skip Queue (Next)'}</span>
+                      <FastForward className="w-4 h-4 text-[#7C3AED]" weight="bold" />
+                      <span>{isSkippingQueue ? 'Skipping...' : 'Skip Queue Delay'}</span>
                     </button>
 
+                    {/* Generate Drafts */}
                     <button
                       onClick={() => triggerAction('generate')}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
+                      className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white/90 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[14px] text-xs transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
                     >
-                      <Sparkle className="w-3.5 h-3.5 text-[#FF6B1A]" weight="fill" />
-                      <span>Generate</span>
+                      <Sparkle className="w-4 h-4 text-[#FF6B1A]" weight="fill" />
+                      <span>Generate AI</span>
                     </button>
 
-                    <button
-                      onClick={() => triggerAction('retry')}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
-                      title="Retry failures"
-                    >
-                      <ArrowCounterClockwise className="w-3.5 h-3.5 text-[#735E50]" weight="bold" />
-                      <span>Retry</span>
-                    </button>
+                    {/* Grouped Secondary Action Dropdown */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setActionsMenuOpen(!actionsMenuOpen)}
+                        className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[14px] text-xs transition-all cursor-pointer shadow-2xs"
+                      >
+                        <Sliders className="w-4 h-4" weight="bold" />
+                        <span>Tools</span>
+                        <CaretDown className="w-3.5 h-3.5" weight="bold" />
+                      </button>
 
-                    <button
-                      onClick={() => triggerAction('cancel')}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-white/80 hover:bg-[#E63946]/10 border border-[rgba(42,26,15,0.12)] hover:border-[#E63946]/30 text-[#735E50] hover:text-[#E63946] font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
-                      title="Reset to draft"
-                    >
-                      <span>Reset</span>
-                    </button>
+                      {actionsMenuOpen && (
+                        <div className="absolute right-0 mt-2 w-56 rounded-[16px] bg-white border border-[rgba(42,26,15,0.12)] shadow-[0_12px_32px_rgba(42,26,15,0.15)] py-2 z-50 text-xs text-[#2A1A0F] space-y-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActionsMenuOpen(false);
+                              handleExportCampaignCsv(campaignDetails.id, campaignDetails.name);
+                            }}
+                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium"
+                          >
+                            <DownloadSimple className="w-4 h-4 text-[#735E50]" weight="bold" />
+                            <span>Export CSV</span>
+                          </button>
 
-                    <button
-                      onClick={handleClearEmails}
-                      disabled={campaignDetails.status === 'SENDING'}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-white/80 hover:bg-[#E63946]/10 border border-[rgba(42,26,15,0.12)] hover:border-[#E63946]/30 text-[#735E50] hover:text-[#E63946] font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer shadow-2xs active:scale-[0.98]"
-                      title="Wipe generated email subjects and bodies back to pending"
-                    >
-                      <Trash className="w-3.5 h-3.5 text-[#E63946]" weight="bold" />
-                      <span>Clear Drafts</span>
-                    </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActionsMenuOpen(false);
+                              openShareModal({ id: campaignDetails.id, name: campaignDetails.name, contactsCount: campaignDetails.contacts?.length || 0 });
+                            }}
+                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#7C3AED]"
+                          >
+                            <ShareNetwork className="w-4 h-4" weight="duotone" />
+                            <span>Share Sequence</span>
+                          </button>
 
-                    <button
-                      onClick={handleDeleteFailedContacts}
-                      disabled={campaignDetails.status === 'SENDING' || (campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0) === 0}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-[#E63946]/10 hover:bg-[#E63946]/20 border border-[#E63946]/25 text-[#E63946] font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs active:scale-[0.98]"
-                      title="Delete all failed or skipped contact email ids from this campaign"
-                    >
-                      <Trash className="w-3.5 h-3.5 text-[#E63946]" weight="bold" />
-                      <span>Delete Failed ({campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0})</span>
-                    </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActionsMenuOpen(false);
+                              triggerAction('retry');
+                            }}
+                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium"
+                          >
+                            <ArrowCounterClockwise className="w-4 h-4 text-[#735E50]" weight="bold" />
+                            <span>Retry Failed Mails</span>
+                          </button>
 
-                    {/* Remove @gmail.com Contacts Button */}
-                    {(() => {
-                      const gmailCount = (campaignDetails.contacts || []).filter(
-                        c => isGmailEmail(c.email) && c.status !== 'SENT'
-                      ).length;
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActionsMenuOpen(false);
+                              handleClearEmails();
+                            }}
+                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#E63946]"
+                          >
+                            <Trash className="w-4 h-4" weight="bold" />
+                            <span>Clear Generated Drafts</span>
+                          </button>
 
-                      return (
-                        <button
-                          onClick={handleOpenGmailModal}
-                          disabled={campaignDetails.status === 'SENDING' || gmailCount === 0 || isDeletingGmail}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-[#E63946]/10 hover:bg-[#E63946]/20 border border-[#E63946]/25 text-[#E63946] font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs active:scale-[0.98]"
-                          title={gmailCount > 0 ? `Review & remove ${gmailCount} @gmail.com contacts` : 'No @gmail.com contacts to remove'}
-                        >
-                          <UserMinus className="w-3.5 h-3.5 text-[#E63946]" weight="bold" />
-                          <span>{isDeletingGmail ? 'Removing...' : `Remove @gmail (${gmailCount})`}</span>
-                        </button>
-                      );
-                    })()}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActionsMenuOpen(false);
+                              handleDeleteFailedContacts();
+                            }}
+                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#E63946]"
+                          >
+                            <Trash className="w-4 h-4" weight="bold" />
+                            <span>Delete Failed / Skipped Leads</span>
+                          </button>
 
-                    {/* Toggle: Auto-Remove @gmail from extension */}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleAutoRemoveGmailExtension(campaignDetails.id, campaignDetails.autoRemoveGmailExtension !== false)}
-                      className={`flex items-center gap-1.5 px-3 py-2 border rounded-[12px] text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer shadow-2xs active:scale-[0.98] ${
-                        campaignDetails.autoRemoveGmailExtension !== false
-                          ? 'bg-[#E63946]/10 border-[#E63946]/30 text-[#E63946]'
-                          : 'bg-white/80 border-[rgba(42,26,15,0.12)] text-[#735E50] hover:bg-white'
-                      }`}
-                    >
-                      <EnvelopeSimple className="w-3.5 h-3.5" weight="duotone" />
-                      <span>Auto-Remove @gmail: <strong>{campaignDetails.autoRemoveGmailExtension !== false ? 'ON' : 'OFF'}</strong></span>
-                    </button>
-
-                    {/* Export Contacts CSV */}
-                    <button
-                      onClick={() => handleExportCampaignCsv(campaignDetails.id, campaignDetails.name)}
-                      disabled={isExportingCsv}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
-                      title="Export contacts as CSV file"
-                    >
-                      <DownloadSimple className="w-3.5 h-3.5 text-[#735E50]" weight="bold" />
-                      <span>Export CSV</span>
-                    </button>
-
-                    {/* Share Contacts */}
-                    <button
-                      onClick={() => openShareModal({ id: campaignDetails.id, name: campaignDetails.name, contactsCount: campaignDetails.contacts?.length || 0 })}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-[#7C3AED]/10 hover:bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-[#7C3AED] font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
-                      title="Share campaign contacts with others via link or code"
-                    >
-                      <ShareNetwork className="w-3.5 h-3.5 text-[#7C3AED]" weight="duotone" />
-                      <span>Share</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Do-Not-Contact / Excluded Domains Banner */}
-                <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-start sm:items-center gap-3">
-                    <div className="p-2.5 bg-[#E63946]/10 text-[#E63946] rounded-[14px] border border-[#E63946]/20 shrink-0">
-                      <Prohibit className="w-4 h-4" weight="bold" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-[#2A1A0F] flex items-center gap-2">
-                        <span>Excluded Domains & Emails (Do Not Contact)</span>
-                        {campaignDetails.excludedEmails ? (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/25">
-                            {campaignDetails.excludedEmails.split(/[\n,;]+/).filter(Boolean).length} rule(s) configured
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-[#735E50] font-normal">None configured yet</span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-[#735E50] mt-0.5 leading-snug">
-                        Domain suffixes (e.g. <code className="font-mono text-[#2A1A0F] bg-white/70 px-1 py-0.5 rounded">@competitor.com</code>) or exact emails are automatically skipped.
-                      </p>
-                      {campaignDetails.excludedEmails && (
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {campaignDetails.excludedEmails.split(/[\n,;]+/).map(p => p.trim()).filter(Boolean).slice(0, 5).map((pat, idx) => (
-                            <span key={idx} className="inline-flex items-center text-[9px] font-mono bg-white/80 text-[#2A1A0F] px-2 py-0.5 rounded-[6px] border border-[rgba(42,26,15,0.08)]">
-                              {pat}
-                            </span>
-                          ))}
-                          {campaignDetails.excludedEmails.split(/[\n,;]+/).filter(Boolean).length > 5 && (
-                            <span className="text-[9px] text-[#735E50] self-center">
-                              +{campaignDetails.excludedEmails.split(/[\n,;]+/).filter(Boolean).length - 5} more
-                            </span>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActionsMenuOpen(false);
+                              handleOpenGmailModal();
+                            }}
+                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#E63946]"
+                          >
+                            <UserMinus className="w-4 h-4" weight="bold" />
+                            <span>Review & Remove @gmail Leads</span>
+                          </button>
                         </div>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowSettingsEdit(true)}
-                      className="px-3.5 py-1.5 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[12px] text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow-2xs"
-                    >
-                      {campaignDetails.excludedEmails ? 'Edit Exclusions' : '+ Add Exclusion'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSkipExcluded}
-                      disabled={isSkippingExcluded || !campaignDetails.excludedEmails}
-                      className="px-3.5 py-1.5 bg-[#E63946]/10 hover:bg-[#E63946]/20 border border-[#E63946]/25 text-[#E63946] font-bold rounded-[12px] text-[10px] uppercase tracking-wider transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
-                      title="Scan this campaign now and mark matching un-sent leads as SKIPPED"
-                    >
-                      {isSkippingExcluded ? 'Scanning...' : 'Apply & Skip Leads'}
-                    </button>
-                  </div>
                 </div>
               </Glass>
 
-              {/* Edit Settings Panel Block */}
-              {showSettingsEdit && (
-                <Glass variant="surface" radius="outer" className="p-6 md:p-8 space-y-4 shadow-sm text-[#2A1A0F] campaign-reveal">
-                  <div className="flex justify-between items-center pb-2 border-b border-[rgba(42,26,15,0.08)]">
-                    <h3 className="text-sm font-bold text-[#2A1A0F] uppercase tracking-wider">Configure Campaign Properties</h3>
+              {/* Visual Pipeline Funnel Command Deck */}
+              <Glass variant="surface" radius="outer" className="p-6 md:p-7 shadow-sm space-y-4 campaign-reveal">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[rgba(42,26,15,0.08)] pb-3">
+                  <div className="flex items-center gap-2">
+                    <Funnel className="w-4 h-4 text-[#FF6B1A]" weight="fill" />
+                    <h3 className="text-xs font-bold text-[#2A1A0F] uppercase tracking-wider">Campaign Pipeline Funnel</h3>
+                  </div>
+                  <span className="text-[11px] font-mono text-[#735E50]">
+                    Total Lead Conversions: {campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0} / {campaignDetails.contacts?.length || 0} Delivered
+                  </span>
+                </div>
+
+                <PipelineFunnel
+                  contactsCount={campaignDetails.contacts?.length || 0}
+                  draftsCount={campaignDetails.contacts?.filter(c => c.emailSubject || c.status === 'READY_TO_SEND' || c.status === 'SENT').length || 0}
+                  reviewCount={campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND').length || 0}
+                  sentCount={campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0}
+                />
+              </Glass>
+
+              {/* Workspace Navigation Tabs (Ground-up Structure) */}
+              <div className="flex items-center gap-2 border-b border-[rgba(42,26,15,0.1)] pb-2 overflow-x-auto campaign-reveal">
+                {[
+                  { id: 'contacts', label: 'Recruiter Leads Table', icon: <Users className="w-4 h-4" weight="duotone" />, count: campaignDetails.contacts?.length || 0 },
+                  { id: 'import', label: 'Add & Import Leads', icon: <Plus className="w-4 h-4" weight="bold" /> },
+                  { id: 'template', label: 'Email Template & Rules', icon: <GearSix className="w-4 h-4" weight="duotone" /> },
+                  { id: 'logs', label: 'Live Dispatch Console', icon: <Terminal className="w-4 h-4" weight="duotone" />, count: activityLogs.length },
+                ].map((tab) => {
+                  const isActive = detailTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setDetailTab(tab.id as any)}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-[14px] text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+                        isActive
+                          ? 'bg-[#2A1A0F] text-white shadow-md'
+                          : 'bg-white/70 hover:bg-white text-[#735E50] hover:text-[#2A1A0F] border border-[rgba(42,26,15,0.06)]'
+                      }`}
+                    >
+                      {tab.icon}
+                      <span>{tab.label}</span>
+                      {tab.count !== undefined && (
+                        <span className={`text-[10px] font-mono px-2 py-0.2 rounded-full ${
+                          isActive ? 'bg-white/20 text-white' : 'bg-stone-100 text-[#735E50]'
+                        }`}>
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* ========================================================= */}
+              {/* TAB 1: CONTACTS & LEADS DATATABLE */}
+              {/* ========================================================= */}
+              {detailTab === 'contacts' && (
+                <Glass variant="surface" radius="outer" className="overflow-hidden shadow-sm space-y-0 campaign-reveal">
+                  {/* Table Control Bar */}
+                  <div className="p-5 border-b border-[rgba(42,26,15,0.08)] bg-white/40 space-y-3.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-extrabold text-[#2A1A0F] tracking-tight">Active Recruiter Queue</h3>
+                        <p className="text-[11px] text-[#735E50] mt-0.5">
+                          Inspect AI-drafted subject lines, review personalized pitches, and track single-candidate delivery.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const gmailCount = (campaignDetails.contacts || []).filter(c => isGmailEmail(c.email) && c.status !== 'SENT').length;
+                          if (gmailCount === 0) return null;
+                          return (
+                            <button
+                              type="button"
+                              onClick={handleOpenGmailModal}
+                              className="px-3 py-1.5 rounded-[10px] bg-[#E63946]/10 hover:bg-[#E63946]/20 text-[#E63946] border border-[#E63946]/25 text-[10.5px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                            >
+                              <UserMinus className="w-3.5 h-3.5" weight="bold" />
+                              <span>Remove {gmailCount} @gmail</span>
+                            </button>
+                          );
+                        })()}
+
+                        <button
+                          type="button"
+                          onClick={() => setDetailTab('import')}
+                          className="px-3.5 py-1.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white rounded-[10px] text-[10.5px] font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" weight="bold" />
+                          <span>Add More Leads</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Filter & Search Bar */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
+                      <div className="relative flex-1">
+                        <MagnifyingGlass className="w-3.5 h-3.5 text-[#735E50] absolute left-3 top-1/2 -translate-y-1/2" weight="bold" />
+                        <input
+                          type="text"
+                          value={contactSearch}
+                          onChange={(e) => setContactSearch(e.target.value)}
+                          placeholder="Search candidate by name, company, role, or recruiter email..."
+                          className="w-full pl-9 pr-8 py-2 rounded-[12px] border border-[rgba(42,26,15,0.12)] bg-white/90 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-all shadow-inner"
+                        />
+                        {contactSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setContactSearch('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-[#735E50] hover:text-[#2A1A0F] rounded-full cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" weight="bold" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <select
+                          value={contactStatusFilter}
+                          onChange={(e) => setContactStatusFilter(e.target.value)}
+                          className="rounded-[12px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3 py-2 text-xs font-semibold text-[#2A1A0F] focus:outline-none focus:border-[#FF6B1A] transition-all shadow-2xs cursor-pointer"
+                        >
+                          <option value="ALL">All Statuses ({campaignDetails.contacts?.length || 0})</option>
+                          <option value="READY_TO_SEND">Ready to Send ({campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND').length || 0})</option>
+                          <option value="PENDING">Pending AI ({campaignDetails.contacts?.filter(c => c.status === 'PENDING').length || 0})</option>
+                          <option value="GENERATING">Generating ({campaignDetails.contacts?.filter(c => c.status === 'GENERATING').length || 0})</option>
+                          <option value="SENT">Sent ({campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0})</option>
+                          <option value="FAILED">Failed ({campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0})</option>
+                          <option value="SKIPPED">Skipped ({campaignDetails.contacts?.filter(c => c.status === 'SKIPPED').length || 0})</option>
+                        </select>
+
+                        {(contactSearch.trim() || contactStatusFilter !== 'ALL') && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setContactSearch('');
+                              setContactStatusFilter('ALL');
+                            }}
+                            className="px-3 py-2 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[12px] text-[10px] transition-all cursor-pointer shrink-0 shadow-2xs"
+                          >
+                            Reset
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Datatable Body */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-[rgba(42,26,15,0.08)] bg-white/50 text-[#735E50] uppercase font-bold text-[9.5px] tracking-wider">
+                          <th className="p-4">Recruiter Lead</th>
+                          <th className="p-4">Target Company</th>
+                          <th className="p-4">Hiring Position</th>
+                          <th className="p-4">Recruiter Classifier</th>
+                          <th className="p-4">Dispatch Status</th>
+                          <th className="p-4">Generated Email Pitch</th>
+                          <th className="p-4 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[rgba(42,26,15,0.05)]">
+                        {(!campaignDetails.contacts || campaignDetails.contacts.length === 0) ? (
+                          <tr>
+                            <td colSpan={7} className="p-10 text-center text-[#735E50] text-xs space-y-2">
+                              <Users className="w-8 h-8 text-[#9C8E84] mx-auto" weight="duotone" />
+                              <p className="font-bold text-[#2A1A0F]">No leads found in this campaign.</p>
+                              <p className="text-[11px]">Click "Add & Import Leads" tab above to upload CSV or paste emails.</p>
+                            </td>
+                          </tr>
+                        ) : filteredContacts.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="p-10 text-center text-[#735E50] text-xs space-y-2">
+                              <EnvelopeSimple className="w-8 h-8 text-[#9C8E84] mx-auto" weight="duotone" />
+                              <p className="font-bold text-[#2A1A0F]">No leads match your filter criteria.</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setContactSearch('');
+                                  setContactStatusFilter('ALL');
+                                }}
+                                className="px-3.5 py-1.5 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[12px] text-[10px] transition-colors cursor-pointer"
+                              >
+                                Clear Filter
+                              </button>
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredContacts.slice(0, visibleContactsCount).map((contact) => (
+                            <tr key={contact.id} className="hover:bg-white/60 transition-colors">
+                              <td className="p-4">
+                                <div className="font-bold text-[#2A1A0F] text-sm flex items-center gap-1.5">
+                                  <span>{contact.firstName ? `${contact.firstName} ${contact.lastName || ''}` : 'Recruiter'}</span>
+                                  {contact.linkedin && (
+                                    <a href={contact.linkedin} target="_blank" rel="noreferrer" className="text-[#0A66C2] hover:opacity-80">
+                                      <ArrowSquareOut className="w-3.5 h-3.5" />
+                                    </a>
+                                  )}
+                                </div>
+                                <div className={`text-[10.5px] font-mono mt-0.5 inline-block ${
+                                  contactSearch.trim() && contact.email.toLowerCase().includes(contactSearch.trim().toLowerCase())
+                                    ? 'text-[#FF6B1A] bg-[#FF6B1A]/10 border border-[#FF6B1A]/25 px-1.5 py-0.5 rounded-[6px]'
+                                    : 'text-[#735E50]'
+                                }`}>
+                                  {contact.email}
+                                </div>
+                              </td>
+
+                              <td className="p-4">
+                                <span className="font-semibold text-[#2A1A0F] bg-white/70 border border-[rgba(42,26,15,0.08)] px-2.5 py-1 rounded-[8px]">
+                                  {contact.company || '—'}
+                                </span>
+                              </td>
+
+                              <td className="p-4 text-[#735E50] font-medium">
+                                {contact.title || contact.role || '—'}
+                              </td>
+
+                              <td className="p-4">
+                                <span className={`px-2.5 py-1 rounded-[8px] text-[9px] font-bold uppercase border shadow-2xs ${
+                                  contact.isTechnical 
+                                    ? 'bg-[#1DA365]/10 text-[#146C43] border-[#1DA365]/25' 
+                                    : 'bg-white/80 text-[#735E50] border-[rgba(42,26,15,0.08)]'
+                                }`}>
+                                  {contact.isTechnical ? 'Technical Recruiter' : 'General HR'}
+                                </span>
+                              </td>
+
+                              <td className="p-4">
+                                <span className={`px-2.5 py-1 rounded-[8px] text-[9.5px] font-bold uppercase border inline-flex items-center gap-1 ${
+                                  contact.status === 'SENT' 
+                                    ? 'bg-[#1DA365]/10 border-[#1DA365]/30 text-[#1DA365]'
+                                    : contact.status === 'READY_TO_SEND'
+                                    ? 'bg-[#2A1A0F]/10 border-[#2A1A0F]/20 text-[#2A1A0F]'
+                                    : contact.status === 'FAILED'
+                                    ? 'bg-[#E63946]/10 border-[#E63946]/30 text-[#E63946]'
+                                    : contact.status === 'SKIPPED'
+                                    ? 'bg-[#D97706]/10 border-[#D97706]/30 text-[#D97706]'
+                                    : 'bg-[rgba(42,26,15,0.06)] border-[rgba(42,26,15,0.12)] text-[#735E50]'
+                                }`}>
+                                  {contact.status === 'SENT' && <Check className="w-3 h-3" weight="bold" />}
+                                  {contact.status}
+                                </span>
+                              </td>
+
+                              <td className="p-4">
+                                {contact.emailSubject ? (
+                                  <div className="flex items-center gap-2.5">
+                                    <button
+                                      onClick={() => openContactEditor(contact)}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/90 hover:bg-[#FF6B1A] hover:text-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[10px] text-[10.5px] transition-all cursor-pointer shadow-2xs group"
+                                    >
+                                      <Sparkle className="w-3.5 h-3.5 text-[#FF6B1A] group-hover:text-white" weight="fill" />
+                                      <span>Review Email</span>
+                                    </button>
+                                    <button
+                                      onClick={() => handleRegenerateContactDirect(contact.id)}
+                                      className="p-1.5 bg-white/70 hover:bg-white text-[#735E50] hover:text-[#2A1A0F] rounded-[8px] border border-[rgba(42,26,15,0.08)] transition-colors cursor-pointer"
+                                      title="Regenerate this specific email using AI"
+                                    >
+                                      <ArrowCounterClockwise className="w-3.5 h-3.5" weight="bold" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => handleRegenerateContactDirect(contact.id)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6B1A]/10 hover:bg-[#FF6B1A] hover:text-white border border-[#FF6B1A]/25 text-[#FF6B1A] font-bold rounded-[10px] text-[10.5px] transition-all cursor-pointer shadow-2xs"
+                                    title="Generate email for this contact using AI"
+                                  >
+                                    <Sparkle className="w-3.5 h-3.5" weight="fill" />
+                                    <span>Draft Pitch</span>
+                                  </button>
+                                )}
+                              </td>
+
+                              <td className="p-4 text-center">
+                                <button
+                                  onClick={() => handleDeleteContact(contact.id)}
+                                  className="p-1.5 text-[#735E50] hover:text-[#E63946] hover:bg-[#E63946]/10 rounded-[8px] transition-colors cursor-pointer"
+                                  title="Remove contact"
+                                >
+                                  <UserMinus className="w-4 h-4" weight="bold" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Infinite Scroll Sentinel */}
+                  {filteredContacts.length > visibleContactsCount && (
+                    <div 
+                      ref={loadMoreSentinelRef}
+                      className="p-4 bg-white/40 border-t border-[rgba(42,26,15,0.08)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#735E50]"
+                    >
+                      <span className="text-[11px] font-mono flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#FF6B1A] animate-ping" />
+                        Showing {Math.min(visibleContactsCount, filteredContacts.length)} of {filteredContacts.length} loaded
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setVisibleContactsCount(prev => prev + 50)}
+                          className="px-4 py-2 bg-white/90 hover:bg-[#FF6B1A] hover:text-white border border-[rgba(42,26,15,0.12)] font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all cursor-pointer shadow-2xs"
+                        >
+                          Load 50 More (+50)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setVisibleContactsCount(filteredContacts.length)}
+                          className="px-4 py-2 bg-white/70 hover:bg-white text-[#2A1A0F] font-bold rounded-[12px] text-[10.5px] uppercase tracking-wider transition-all cursor-pointer border border-[rgba(42,26,15,0.08)] shadow-2xs"
+                        >
+                          Load All ({filteredContacts.length})
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </Glass>
+              )}
+
+              {/* ========================================================= */}
+              {/* TAB 2: ADD & IMPORT LEADS */}
+              {/* ========================================================= */}
+              {detailTab === 'import' && (
+                <div className="campaign-reveal space-y-4">
+                  <Glass variant="surface" radius="inner" className="p-5 flex items-center justify-between shadow-sm">
+                    <div>
+                      <h3 className="text-sm font-extrabold text-[#2A1A0F]">Lead Importer & Sync Engine</h3>
+                      <p className="text-[11px] text-[#735E50] mt-0.5">
+                        Add candidates via spreadsheet, bulk email paste, manual entry, or shared campaign code.
+                      </p>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => setShowSettingsEdit(false)}
-                      className="text-[#735E50] hover:text-[#2A1A0F] p-1"
+                      onClick={() => setDetailTab('contacts')}
+                      className="px-3.5 py-1.5 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[10px] text-xs shadow-2xs"
                     >
-                      <X className="w-4 h-4" weight="bold" />
+                      Return to Leads Queue
                     </button>
+                  </Glass>
+
+                  <ImportWizard 
+                    campaignId={selectedCampId} 
+                    onImportComplete={() => {
+                      fetchCampaignDetails(selectedCampId);
+                      setDetailTab('contacts');
+                    }} 
+                  />
+                </div>
+              )}
+
+              {/* ========================================================= */}
+              {/* TAB 3: EMAIL TEMPLATE & SETTINGS */}
+              {/* ========================================================= */}
+              {detailTab === 'template' && (
+                <Glass variant="surface" radius="outer" className="p-6 md:p-8 space-y-6 shadow-sm campaign-reveal text-[#2A1A0F]">
+                  <div className="flex justify-between items-center pb-3 border-b border-[rgba(42,26,15,0.08)]">
+                    <div>
+                      <h3 className="text-base font-extrabold text-[#2A1A0F]">Campaign Configuration & AI Prompts</h3>
+                      <p className="text-[11px] text-[#735E50] mt-0.5">Customize candidate variables, attached resume, auto-send toggles, and blocklists.</p>
+                    </div>
                   </div>
-                  
-                  <form onSubmit={handleUpdateCampaignSettings} className="space-y-4">
+
+                  <form onSubmit={handleUpdateCampaignSettings} className="space-y-5">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Campaign Name</label>
+                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Campaign Title</label>
                         <input
                           type="text"
                           required
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
+                          className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-all shadow-inner"
                         />
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Campaign Description</label>
+                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Campaign Target / Notes</label>
                         <input
                           type="text"
                           value={editDesc}
                           onChange={(e) => setEditDesc(e.target.value)}
-                          className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
+                          className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-all shadow-inner"
                         />
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Outreach Template Mode</label>
-                        <select
-                          value={editTemplateType}
-                          onChange={(e) => setEditTemplateType(e.target.value)}
-                          className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
-                        >
-                          <option value="SAVED_TEMPLATE">Custom Template</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
                           <FilePdf className="w-3.5 h-3.5 text-[#FF6B1A]" weight="duotone" />
-                          Attach Resume PDF
+                          Attached Resume PDF
                         </label>
                         <select
                           value={editResumeId || ''}
                           onChange={(e) => setEditResumeId(e.target.value ? Number(e.target.value) : null)}
-                          className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
+                          className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3.5 py-2.5 text-xs text-[#2A1A0F] focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-all shadow-inner"
                         >
                           <option value="">No Resume Attachment</option>
                           {resumes.map((r) => (
@@ -1691,15 +2236,18 @@ export const Campaigns: React.FC = () => {
                           ))}
                         </select>
                       </div>
+                    </div>
 
-                      <Glass variant="nested" radius="control" className="p-3.5 flex items-center justify-between">
+                    {/* Automation switches */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Glass variant="nested" radius="control" className="p-4 flex items-center justify-between">
                         <div>
                           <div className="text-xs font-bold text-[#2A1A0F] flex items-center gap-1.5">
                             <Lightning className="w-4 h-4 text-[#FF6B1A]" weight="fill" />
                             Auto-Send Extension Leads
                           </div>
-                          <div className="text-[10px] text-[#735E50] mt-0.5">
-                            Auto-generate email & send mail via Gmail when leads added by extension
+                          <div className="text-[10.5px] text-[#735E50] mt-0.5">
+                            Auto-generate email & dispatch via Gmail as leads enter from Chrome extension
                           </div>
                         </div>
                         <button
@@ -1709,84 +2257,85 @@ export const Campaigns: React.FC = () => {
                             editAutoSendExtension ? 'bg-[#1DA365]' : 'bg-[rgba(42,26,15,0.18)]'
                           }`}
                         >
-                          <span
-                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                              editAutoSendExtension ? 'translate-x-4' : 'translate-x-0'
-                            }`}
-                          />
+                          <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${editAutoSendExtension ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </button>
+                      </Glass>
+
+                      <Glass variant="nested" radius="control" className="p-4 flex items-center justify-between">
+                        <div>
+                          <div className="text-xs font-bold text-[#2A1A0F] flex items-center gap-1.5">
+                            <EnvelopeSimple className="w-4 h-4 text-[#E63946]" weight="duotone" />
+                            Auto-Remove @gmail Leads
+                          </div>
+                          <div className="text-[10.5px] text-[#735E50] mt-0.5">
+                            Automatically drop personal @gmail.com addresses synced from extension
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setEditAutoRemoveGmailExtension(!editAutoRemoveGmailExtension)}
+                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            editAutoRemoveGmailExtension ? 'bg-[#E63946]' : 'bg-[rgba(42,26,15,0.18)]'
+                          }`}
+                        >
+                          <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${editAutoRemoveGmailExtension ? 'translate-x-4' : 'translate-x-0'}`} />
                         </button>
                       </Glass>
                     </div>
 
-                    <Glass variant="nested" radius="control" className="p-3.5 flex items-center justify-between">
-                      <div>
-                        <div className="text-xs font-bold text-[#2A1A0F] flex items-center gap-1.5">
-                          <EnvelopeSimple className="w-4 h-4 text-[#E63946]" weight="duotone" />
-                          Auto-Remove @gmail from Extension
-                        </div>
-                        <div className="text-[10px] text-[#735E50] mt-0.5">
-                          Automatically drop personal @gmail.com addresses when leads are synced from extension
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setEditAutoRemoveGmailExtension(!editAutoRemoveGmailExtension)}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          editAutoRemoveGmailExtension ? 'bg-[#E63946]' : 'bg-[rgba(42,26,15,0.18)]'
-                        }`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                            editAutoRemoveGmailExtension ? 'translate-x-4' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </Glass>
-
-                    <Glass variant="nested" radius="control" className="p-4 space-y-3">
+                    {/* Template Subject & Body */}
+                    <Glass variant="nested" radius="inner" className="p-5 space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-[#2A1A0F] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                          <Sparkle className="w-3.5 h-3.5 text-[#FF6B1A]" weight="fill" />
-                          Custom Email Template
+                        <span className="text-[11px] text-[#2A1A0F] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                          <Sparkle className="w-4 h-4 text-[#FF6B1A]" weight="fill" />
+                          Outreach Template Engine
                         </span>
-                        <span className="text-[9.5px] text-[#735E50] font-mono">Variables: {"{firstName}"}, {"{company}"}, {"{role}"}, {"{name}"}</span>
+                        <div className="flex items-center gap-1 text-[9.5px] text-[#735E50] font-mono">
+                          <span>Allowed:</span>
+                          <span className="bg-white px-1.5 py-0.5 rounded border">{"{firstName}"}</span>
+                          <span className="bg-white px-1.5 py-0.5 rounded border">{"{company}"}</span>
+                          <span className="bg-white px-1.5 py-0.5 rounded border">{"{role}"}</span>
+                          <span className="bg-white px-1.5 py-0.5 rounded border">{"{name}"}</span>
+                        </div>
                       </div>
+
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Subject Template</label>
+                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Subject Line Template</label>
                         <input
                           type="text"
                           value={editTemplateSubject}
                           onChange={(e) => setEditTemplateSubject(e.target.value)}
                           placeholder="Opportunities at {company} - {role}"
-                          className="rounded-[12px] border border-[rgba(42,26,15,0.12)] bg-white px-3.5 py-2 text-xs text-[#2A1A0F] focus:outline-none focus:border-[#FF6B1A] transition-all shadow-inner"
+                          className="rounded-[12px] border border-[rgba(42,26,15,0.12)] bg-white px-3.5 py-2.5 text-xs text-[#2A1A0F] focus:outline-none focus:border-[#FF6B1A] transition-all shadow-inner"
                         />
                       </div>
+
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Body Template</label>
+                        <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">Email Pitch Body</label>
                         <textarea
                           placeholder="Hi {firstName}, ..."
                           value={editTemplateBody}
                           onChange={(e) => setEditTemplateBody(e.target.value)}
-                          rows={6}
-                          className="rounded-[12px] border border-[rgba(42,26,15,0.12)] bg-white p-3 text-xs text-[#2A1A0F] focus:outline-none focus:border-[#FF6B1A] font-mono transition-all shadow-inner leading-relaxed"
+                          rows={7}
+                          className="rounded-[12px] border border-[rgba(42,26,15,0.12)] bg-white p-3.5 text-xs text-[#2A1A0F] focus:outline-none focus:border-[#FF6B1A] font-mono leading-relaxed transition-all shadow-inner"
                         />
                       </div>
                     </Glass>
 
-                    <div className="flex flex-col gap-1.5 p-3.5 rounded-[16px] bg-[#E63946]/5 border border-[#E63946]/20">
+                    {/* Excluded Domains Rule Box */}
+                    <div className="p-4 rounded-[16px] bg-[#E63946]/5 border border-[#E63946]/20 space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] text-[#A01B26] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                          <Prohibit className="w-3.5 h-3.5 text-[#E63946]" weight="bold" />
-                          Excluded Domains & Emails (Do Not Contact)
+                        <label className="text-[11px] text-[#A01B26] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                          <Prohibit className="w-4 h-4 text-[#E63946]" weight="bold" />
+                          Do Not Contact List (Excluded Domains & Emails)
                         </label>
                         <button
                           type="button"
                           onClick={handleSkipExcluded}
                           disabled={isSkippingExcluded}
                           className="text-[9.5px] font-bold px-2.5 py-1 bg-white hover:bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/25 rounded-[8px] transition-colors cursor-pointer disabled:opacity-50"
-                          title="Scan active contacts and immediately set matching ones to SKIPPED"
                         >
-                          {isSkippingExcluded ? 'Scanning...' : 'Skip Matching Leads Now'}
+                          {isSkippingExcluded ? 'Scanning...' : 'Apply & Skip Matching Leads'}
                         </button>
                       </div>
                       <textarea
@@ -1794,488 +2343,80 @@ export const Campaigns: React.FC = () => {
                         onChange={(e) => setEditExcludedEmails(e.target.value)}
                         placeholder="e.g. @competitor.com, .corp.example.com, .edu, hr@company.com"
                         rows={2}
-                        className="rounded-[12px] border border-[#E63946]/20 bg-white px-3.5 py-2 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:border-[#E63946] font-mono transition-all shadow-inner"
+                        className="w-full rounded-[12px] border border-[#E63946]/20 bg-white px-3.5 py-2 text-xs text-[#2A1A0F] font-mono focus:outline-none focus:border-[#E63946] shadow-inner"
                       />
-                      <span className="text-[10px] text-[#735E50]">
-                        Enter domain suffixes like <code className="text-[#A01B26] bg-white px-1 rounded border border-[#E63946]/20 font-mono">@competitor.com</code> or specific emails to block (comma/newline separated).
+                      <span className="text-[10px] text-[#735E50] block">
+                        Emails matching these domain patterns will be automatically skipped by the dispatcher.
                       </span>
                     </div>
 
-                    <div className="flex justify-end gap-2.5 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowSettingsEdit(false)}
-                        className="px-4 py-2.5 bg-white/80 hover:bg-white text-[#735E50] hover:text-[#2A1A0F] font-bold rounded-[14px] text-xs border border-[rgba(42,26,15,0.12)] transition-all cursor-pointer"
-                      >
-                        Cancel
-                      </button>
+                    <div className="flex justify-end gap-3 pt-2">
                       <button
                         type="submit"
                         disabled={isUpdatingSettings}
-                        className="px-5 py-2.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[14px] text-xs transition-all shadow-[0_8px_20px_-4px_rgba(255,107,26,0.35)] cursor-pointer disabled:opacity-40"
+                        className="px-6 py-2.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[14px] text-xs transition-all shadow-[0_8px_20px_-4px_rgba(255,107,26,0.35)] cursor-pointer disabled:opacity-40"
                       >
-                        {isUpdatingSettings ? 'Saving Settings...' : 'Save Settings'}
+                        {isUpdatingSettings ? 'Saving Configuration...' : 'Save Configuration'}
                       </button>
                     </div>
                   </form>
                 </Glass>
               )}
 
-              {/* Progress Bars */}
-              {(() => {
-                const total = campaignDetails.contacts?.length || 0;
-                if (total === 0) return null;
-
-                const pendingAI = campaignDetails.contacts?.filter(c => c.status === 'PENDING').length || 0;
-                const generating = campaignDetails.contacts?.filter(c => c.status === 'GENERATING').length || 0;
-                const sent = campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0;
-                const failed = campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0;
-
-                const isSendingActive = campaignDetails.status === 'SENDING';
-                const isGeneratingActive = campaignDetails.status === 'GENERATING' || generating > 0 || (isGeneratingEmails && (generating > 0 || pendingAI > 0));
-
-                if (isGeneratingActive) {
-                  const completed = total - pendingAI - generating;
-                  const percent = Math.min(100, Math.round((completed / total) * 100));
-                  return (
-                    <Glass variant="surface" radius="inner" className="p-5 space-y-2.5 shadow-sm campaign-reveal">
-                      <div className="flex justify-between items-center text-[10.5px] uppercase font-bold tracking-wider">
-                        <span className="text-[#FF6B1A] animate-pulse flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#FF6B1A] animate-ping" />
-                          Generative Email Drafting in Progress...
-                        </span>
-                        <span className="text-[#735E50] font-mono">{completed} / {total} Completed ({percent}%)</span>
-                      </div>
-                      <div className="w-full h-2.5 bg-white/70 rounded-full overflow-hidden border border-[rgba(42,26,15,0.08)]">
-                        <div 
-                          className="h-full bg-[#FF6B1A] rounded-full transition-all duration-500 shadow-sm" 
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                    </Glass>
-                  );
-                }
-
-                if (isSendingActive) {
-                  const completed = sent + failed;
-                  const percent = Math.min(100, Math.round((completed / total) * 100));
-                  return (
-                    <Glass variant="surface" radius="inner" className="p-5 space-y-3 shadow-sm campaign-reveal">
-                      <div className="flex flex-wrap justify-between items-center gap-2 text-[10.5px] uppercase font-bold tracking-wider">
-                        <span className="text-[#1DA365] animate-pulse flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#1DA365] animate-ping" />
-                          Campaign Sending Sequence Active...
-                        </span>
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={handleSkipQueue}
-                            disabled={isSkippingQueue || (campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND' || c.status === 'FAILED').length || 0) === 0}
-                            className="flex items-center gap-1 px-3 py-1 bg-[#7C3AED]/10 hover:bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-[#7C3AED] rounded-[8px] text-[9.5px] font-bold uppercase tracking-wider transition-all shadow-2xs cursor-pointer disabled:opacity-40"
-                            title="Skip the queue wait time for the next email only"
-                          >
-                            <FastForward className="w-3 h-3 text-[#7C3AED]" weight="bold" />
-                            <span>{isSkippingQueue ? 'Skipping...' : 'Skip Queue (Next)'}</span>
-                          </button>
-                          <span className="text-[#735E50] font-mono">{completed} / {total} Delivered ({percent}%)</span>
-                        </div>
-                      </div>
-                      <div className="w-full h-2.5 bg-white/70 rounded-full overflow-hidden border border-[rgba(42,26,15,0.08)]">
-                        <div 
-                          className="h-full bg-[#1DA365] rounded-full transition-all duration-500 shadow-sm" 
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                    </Glass>
-                  );
-                }
-
-                return null;
-              })()}
-
-              {/* Status Metrics Ribbon (7 Bento Tiles) */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 campaign-reveal">
-                {[
-                  { label: 'Total', count: campaignDetails.contacts?.length || 0, color: 'text-[#2A1A0F]' },
-                  { label: 'Pending AI', count: campaignDetails.contacts?.filter(c => c.status === 'PENDING').length || 0, color: 'text-[#735E50]' },
-                  { label: 'Generating', count: campaignDetails.contacts?.filter(c => c.status === 'GENERATING').length || 0, color: 'text-[#FF6B1A] animate-pulse' },
-                  { label: 'Ready', count: campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND').length || 0, color: 'text-[#2A1A0F]' },
-                  { label: 'Sent', count: campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0, color: 'text-[#1DA365]' },
-                  { label: 'Failed', count: campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0, color: 'text-[#E63946]' },
-                  { label: 'Skipped', count: campaignDetails.contacts?.filter(c => c.status === 'SKIPPED').length || 0, color: 'text-[#D97706]' }
-                ].map((stat, idx) => (
-                  <Glass key={idx} variant="surface" radius="inner" className="p-3.5 text-center shadow-xs">
-                    <span className="text-[9.5px] text-[#735E50] uppercase tracking-widest font-bold block">{stat.label}</span>
-                    <span className={`text-xl font-extrabold mt-1 block ${stat.color}`}>{stat.count}</span>
-                  </Glass>
-                ))}
-              </div>
-
-              {/* Live Activity Console (Deep Warm Glass Terminal) */}
-              <Glass variant="strong" radius="outer" className="overflow-hidden shadow-sm space-y-0 text-white bg-[#2A1A0F] border border-[#3D2817] campaign-reveal">
-                <div className="bg-[#24160C] px-5 py-3 border-b border-[#3D2817] flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-[#E5D5C5] uppercase tracking-widest flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1DA365] opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1DA365]"></span>
-                    </span>
-                    Live Campaign Console
-                  </span>
-                  <span className="text-[9.5px] text-[#A69282] font-mono">Real-time activity logs</span>
-                </div>
-                <div className="p-4 max-h-[160px] overflow-y-auto space-y-1.5 font-mono text-[10.5px] leading-relaxed text-[#D2C3B4] select-text">
-                  {activityLogs.length === 0 ? (
-                    <div className="text-[#8A796B] text-center py-6">No recent outreach events. Start drafting or sending to stream live activity.</div>
-                  ) : (
-                    activityLogs.map((log) => {
-                      const timeStr = new Date(log.timestamp).toLocaleTimeString();
-                      const isError = log.level === 'ERROR';
-                      const isWarn = log.level === 'WARN';
-                      return (
-                        <div key={log.id} className="flex gap-2.5 items-start">
-                          <span className="text-[#8A796B] flex-shrink-0">[{timeStr}]</span>
-                          <span className={`flex-shrink-0 font-bold ${isError ? 'text-[#FF6B6B]' : isWarn ? 'text-[#FBBF24]' : 'text-[#E5D5C5]'}`}>
-                            [{log.source}]
-                          </span>
-                          <span className={isError ? 'text-[#FFA8A8]' : isWarn ? 'text-[#FDE68A]' : 'text-[#F5EDE4]'}>
-                            {log.message}
-                          </span>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </Glass>
-
-              {/* Import Contacts Section */}
-              <div className="campaign-reveal space-y-2">
-                <div className="flex items-center gap-2 px-1">
-                  <UserMinus className="w-4 h-4 text-[#FF6B1A]" weight="duotone" />
-                  <h3 className="text-xs font-bold text-[#2A1A0F] uppercase tracking-wider">Add Contacts</h3>
-                </div>
-                <ImportWizard 
-                  campaignId={selectedCampId} 
-                  onImportComplete={() => fetchCampaignDetails(selectedCampId)} 
-                />
-              </div>
-
-              {/* Contacts Table List */}
-              <Glass variant="surface" radius="outer" className="overflow-hidden shadow-sm campaign-reveal">
-                <div className="p-5 border-b border-[rgba(42,26,15,0.08)] bg-white/40 space-y-3.5">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                    <h3 className="text-xs font-bold text-[#2A1A0F] uppercase tracking-wider flex items-center gap-2">
-                      <span>Contact List</span>
-                      <span className="text-[10.5px] font-mono font-medium text-[#735E50] lowercase">
-                        ({campaignDetails.contacts?.length || 0} total)
+              {/* ========================================================= */}
+              {/* TAB 4: LIVE DISPATCH CONSOLE */}
+              {/* ========================================================= */}
+              {detailTab === 'logs' && (
+                <Glass variant="strong" radius="outer" className="overflow-hidden shadow-sm space-y-0 text-white bg-[#2A1A0F] border border-[#3D2817] campaign-reveal">
+                  <div className="bg-[#24160C] px-5 py-3.5 border-b border-[#3D2817] flex justify-between items-center">
+                    <span className="text-xs font-bold text-[#E5D5C5] uppercase tracking-widest flex items-center gap-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1DA365] opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1DA365]"></span>
                       </span>
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleExportCampaignCsv(campaignDetails.id, campaignDetails.name)}
-                        className="text-[10px] text-[#2A1A0F] hover:text-[#FF6B1A] font-bold flex items-center gap-1.5 transition-colors cursor-pointer bg-white/80 hover:bg-white px-3 py-1.5 rounded-[10px] border border-[rgba(42,26,15,0.12)] shadow-2xs"
-                        title="Export Contacts as CSV"
-                      >
-                        <DownloadSimple className="w-3 h-3 text-[#735E50]" weight="bold" />
-                        <span>Export CSV</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openShareModal({ id: campaignDetails.id, name: campaignDetails.name, contactsCount: campaignDetails.contacts?.length || 0 })}
-                        className="text-[10px] text-[#7C3AED] hover:text-[#6D28D9] font-bold flex items-center gap-1.5 transition-colors cursor-pointer bg-white/80 hover:bg-white px-3 py-1.5 rounded-[10px] border border-[#7C3AED]/25 shadow-2xs"
-                        title="Share Campaign Contacts"
-                      >
-                        <ShareNetwork className="w-3 h-3 text-[#7C3AED]" weight="duotone" />
-                        <span>Share</span>
-                      </button>
-                      {(campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length || 0) > 0 && (
-                        <button
-                          onClick={handleDeleteFailedContacts}
-                          className="text-[10px] text-[#E63946] hover:text-[#A01B26] font-bold flex items-center gap-1 transition-colors cursor-pointer px-2 py-1"
-                        >
-                          <Trash className="w-3 h-3" weight="bold" />
-                          <span>Remove {campaignDetails.contacts?.filter(c => c.status === 'FAILED' || c.status === 'SKIPPED').length} Failed</span>
-                        </button>
-                      )}
-                      {(() => {
-                        const gmailCount = (campaignDetails.contacts || []).filter(
-                          c => isGmailEmail(c.email) && c.status !== 'SENT'
-                        ).length;
-                        if (gmailCount === 0) return null;
-                        return (
-                          <button
-                            type="button"
-                            onClick={handleOpenGmailModal}
-                            disabled={isDeletingGmail}
-                            className="text-[10px] text-[#E63946] hover:text-[#A01B26] font-bold flex items-center gap-1.5 transition-colors cursor-pointer bg-[#E63946]/10 hover:bg-[#E63946]/20 px-3 py-1.5 rounded-[10px] border border-[#E63946]/25 shadow-2xs"
-                            title="Review and remove @gmail.com contacts"
-                          >
-                            <UserMinus className="w-3 h-3 text-[#E63946]" weight="bold" />
-                            <span>Remove {gmailCount} @gmail</span>
-                          </button>
-                        );
-                      })()}
-                      {(() => {
-                        const allContactsCount = campaignDetails.contacts?.length || 0;
-                        const filteredCount = filteredContacts.length;
-                        const displayedCount = Math.min(visibleContactsCount, filteredCount);
-                        const isFiltered = contactSearch.trim() || contactStatusFilter !== 'ALL';
-                        return (
-                          <span className="text-[10px] text-[#735E50] font-medium font-mono">
-                            {isFiltered ? (
-                              <span>Showing {displayedCount} of {filteredCount} filtered ({allContactsCount} total)</span>
-                            ) : (
-                              <span>Showing {displayedCount} of {allContactsCount} contacts</span>
-                            )}
-                          </span>
-                        );
-                      })()}
-                    </div>
+                      Live Campaign Engine Terminal
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => fetchActivityLogs()}
+                      className="text-[10px] font-mono text-[#A69282] hover:text-white px-2 py-1 rounded bg-[#3D2817]"
+                    >
+                      Refresh Feed
+                    </button>
                   </div>
-
-                  {/* Search Email ID & Filter Controls */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
-                    <div className="relative flex-1">
-                      <MagnifyingGlass className="w-3.5 h-3.5 text-[#735E50] absolute left-3 top-1/2 -translate-y-1/2" weight="bold" />
-                      <input
-                        type="text"
-                        value={contactSearch}
-                        onChange={(e) => setContactSearch(e.target.value)}
-                        placeholder="Search email ID in campaign (e.g. name@company.com), name, or company..."
-                        className="w-full pl-9 pr-8 py-2 rounded-[12px] border border-[rgba(42,26,15,0.12)] bg-white/90 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-all shadow-inner"
-                      />
-                      {contactSearch && (
-                        <button
-                          type="button"
-                          onClick={() => setContactSearch('')}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-[#735E50] hover:text-[#2A1A0F] rounded-full cursor-pointer"
-                          title="Clear email search"
-                        >
-                          <X className="w-3.5 h-3.5" weight="bold" />
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <select
-                        value={contactStatusFilter}
-                        onChange={(e) => setContactStatusFilter(e.target.value)}
-                        className="rounded-[12px] border border-[rgba(42,26,15,0.12)] bg-white/90 px-3 py-2 text-xs font-semibold text-[#2A1A0F] focus:outline-none focus:border-[#FF6B1A] transition-all shadow-2xs cursor-pointer"
-                      >
-                        <option value="ALL">All Statuses ({campaignDetails.contacts?.length || 0})</option>
-                        <option value="READY_TO_SEND">Ready to Send ({campaignDetails.contacts?.filter(c => c.status === 'READY_TO_SEND').length || 0})</option>
-                        <option value="PENDING">Pending AI ({campaignDetails.contacts?.filter(c => c.status === 'PENDING').length || 0})</option>
-                        <option value="GENERATING">Generating ({campaignDetails.contacts?.filter(c => c.status === 'GENERATING').length || 0})</option>
-                        <option value="SENT">Sent ({campaignDetails.contacts?.filter(c => c.status === 'SENT').length || 0})</option>
-                        <option value="FAILED">Failed ({campaignDetails.contacts?.filter(c => c.status === 'FAILED').length || 0})</option>
-                        <option value="SKIPPED">Skipped ({campaignDetails.contacts?.filter(c => c.status === 'SKIPPED').length || 0})</option>
-                      </select>
-
-                      {(contactSearch.trim() || contactStatusFilter !== 'ALL') && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setContactSearch('');
-                            setContactStatusFilter('ALL');
-                          }}
-                          className="px-3 py-2 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[12px] text-[10px] transition-all cursor-pointer shrink-0 shadow-2xs"
-                          title="Reset search and filters"
-                        >
-                          Reset
-                        </button>
-                      )}
-                    </div>
+                  <div className="p-5 max-h-[360px] overflow-y-auto space-y-2 font-mono text-xs leading-relaxed text-[#D2C3B4] select-text">
+                    {activityLogs.length === 0 ? (
+                      <div className="text-[#8A796B] text-center py-12">No recent outreach events. Start drafting or sending to stream live activity.</div>
+                    ) : (
+                      activityLogs.map((log) => {
+                        const timeStr = new Date(log.timestamp).toLocaleTimeString();
+                        const isError = log.level === 'ERROR';
+                        const isWarn = log.level === 'WARN';
+                        return (
+                          <div key={log.id} className="flex gap-3 items-start hover:bg-white/5 p-1 rounded">
+                            <span className="text-[#8A796B] flex-shrink-0">[{timeStr}]</span>
+                            <span className={`flex-shrink-0 font-bold ${isError ? 'text-[#FF6B6B]' : isWarn ? 'text-[#FBBF24]' : 'text-[#E5D5C5]'}`}>
+                              [{log.source}]
+                            </span>
+                            <span className={isError ? 'text-[#FFA8A8]' : isWarn ? 'text-[#FDE68A]' : 'text-[#F5EDE4]'}>
+                              {log.message}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
-                </div>
+                </Glass>
+              )}
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-[rgba(42,26,15,0.08)] bg-white/50 text-[#735E50] uppercase font-bold text-[9.5px] tracking-wider">
-                        <th className="p-4">Contact</th>
-                        <th className="p-4">Company</th>
-                        <th className="p-4">Role/Title</th>
-                        <th className="p-4">Recruiter Filter</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4">Email Details</th>
-                        <th className="p-4 text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[rgba(42,26,15,0.05)]">
-                      {(!campaignDetails.contacts || campaignDetails.contacts.length === 0) ? (
-                        <tr>
-                          <td colSpan={7} className="p-8 text-center text-[#735E50] text-xs">
-                            No contacts in this campaign. Upload CSV or paste email list above.
-                          </td>
-                        </tr>
-                      ) : filteredContacts.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="p-8 text-center text-[#735E50] text-xs space-y-2">
-                            <EnvelopeSimple className="w-7 h-7 text-[#9C8E84] mx-auto" weight="duotone" />
-                            <p className="font-bold text-[#2A1A0F]">
-                              No contacts match "{contactSearch}"{contactStatusFilter !== 'ALL' ? ` with status ${contactStatusFilter}` : ''}
-                            </p>
-                            <p className="text-[11px] text-[#735E50]">Try searching for a different email ID or resetting filters.</p>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setContactSearch('');
-                                setContactStatusFilter('ALL');
-                              }}
-                              className="mt-2 px-3.5 py-1.5 bg-white/80 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[12px] text-[10px] transition-colors cursor-pointer"
-                            >
-                              Clear Filter
-                            </button>
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredContacts.slice(0, visibleContactsCount).map((contact) => (
-                          <tr key={contact.id} className="hover:bg-white/60 transition-colors">
-                            <td className="p-4">
-                              <div className="font-bold text-[#2A1A0F]">
-                                {contact.firstName ? `${contact.firstName} ${contact.lastName || ''}` : 'Recruiter'}
-                              </div>
-                              <div className={`text-[10.5px] font-mono font-medium mt-0.5 inline-block ${
-                                contactSearch.trim() && contact.email.toLowerCase().includes(contactSearch.trim().toLowerCase())
-                                  ? 'text-[#FF6B1A] bg-[#FF6B1A]/10 border border-[#FF6B1A]/25 px-1.5 py-0.5 rounded-[6px]'
-                                  : 'text-[#735E50]'
-                              }`}>
-                                {contact.email}
-                              </div>
-                            </td>
-                            <td className="p-4 text-[#2A1A0F] font-semibold">{contact.company || '—'}</td>
-                            <td className="p-4 text-[#735E50] font-medium">{contact.title || contact.role || '—'}</td>
-                            <td className="p-4">
-                              <span className="px-2.5 py-1 rounded-[8px] text-[9px] font-bold border border-[rgba(42,26,15,0.1)] bg-white/70 text-[#2A1A0F] uppercase shadow-2xs">
-                                {contact.isTechnical ? 'Technical' : 'General'}
-                              </span>
-                            </td>
-                            <td className="p-4">
-                              <span className={`px-2.5 py-1 rounded-[8px] text-[9.5px] font-bold uppercase border ${
-                                contact.status === 'SENT' 
-                                  ? 'bg-[#1DA365]/10 border-[#1DA365]/30 text-[#1DA365]'
-                                  : contact.status === 'READY_TO_SEND'
-                                  ? 'bg-[#2A1A0F]/10 border-[#2A1A0F]/20 text-[#2A1A0F]'
-                                  : contact.status === 'FAILED'
-                                  ? 'bg-[#E63946]/10 border-[#E63946]/30 text-[#E63946]'
-                                  : contact.status === 'SKIPPED'
-                                  ? 'bg-[#D97706]/10 border-[#D97706]/30 text-[#D97706]'
-                                  : 'bg-[rgba(42,26,15,0.06)] border-[rgba(42,26,15,0.12)] text-[#735E50]'
-                              }`}>
-                                {contact.status}
-                              </span>
-                            </td>
-                            <td className="p-4">
-                              {contact.emailSubject ? (
-                                <div className="flex items-center gap-3">
-                                  <button
-                                    onClick={() => openContactEditor(contact)}
-                                    className="flex items-center gap-1.5 text-[10.5px] text-[#2A1A0F] hover:text-[#FF6B1A] font-bold transition-colors cursor-pointer"
-                                  >
-                                    <Sparkle className="w-3.5 h-3.5 text-[#FF6B1A]" weight="fill" />
-                                    <span>Review Email</span>
-                                  </button>
-                                  <button
-                                    onClick={() => handleRegenerateContactDirect(contact.id)}
-                                    className="flex items-center gap-1 text-[10px] text-[#735E50] hover:text-[#2A1A0F] font-semibold transition-colors cursor-pointer"
-                                    title="Regenerate this specific email using AI"
-                                  >
-                                    <ArrowCounterClockwise className="w-3.5 h-3.5 text-[#735E50]" weight="bold" />
-                                    <span>Regen</span>
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-3">
-                                  <span className="flex items-center gap-1 text-[10px] text-[#9C8E84]">
-                                    <Question className="w-3 h-3" />
-                                    <span>No Email Gen</span>
-                                  </span>
-                                  <button
-                                    onClick={() => handleRegenerateContactDirect(contact.id)}
-                                    className="flex items-center gap-1.5 text-[10px] text-[#FF6B1A] hover:text-[#E55A0F] font-bold transition-colors cursor-pointer"
-                                    title="Generate email for this contact using AI"
-                                  >
-                                    <Sparkle className="w-3.5 h-3.5 text-[#FF6B1A]" weight="fill" />
-                                    <span>Generate</span>
-                                  </button>
-                                </div>
-                              )}
-                            </td>
-                            <td className="p-4 text-center">
-                              <button
-                                onClick={() => handleDeleteContact(contact.id)}
-                                className="p-1.5 text-[#735E50] hover:text-[#E63946] hover:bg-[#E63946]/10 rounded-[8px] transition-colors cursor-pointer"
-                                title="Remove contact"
-                              >
-                                <UserMinus className="w-3.5 h-3.5" weight="bold" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Progressive Infinite Scroll Sentinel & Load Controls */}
-                {(() => {
-                  const allCount = filteredContacts.length;
-                  const displayedCount = Math.min(visibleContactsCount, allCount);
-
-                  if (allCount === 0) return null;
-
-                  if (visibleContactsCount < allCount) {
-                    return (
-                      <div 
-                        ref={loadMoreSentinelRef}
-                        className="p-4 bg-white/40 border-t border-[rgba(42,26,15,0.08)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#735E50] font-medium"
-                      >
-                        <span className="text-[11px] text-[#735E50] font-mono flex items-center gap-2">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF6B1A] opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF6B1A]"></span>
-                          </span>
-                          Scroll down to load next 50 contacts ({displayedCount} / {allCount} loaded)
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setVisibleContactsCount(prev => Math.min(prev + 50, allCount))}
-                            className="px-4 py-2 bg-white/90 hover:bg-[#FF6B1A] hover:text-white border border-[rgba(42,26,15,0.12)] font-bold rounded-[12px] text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow-2xs"
-                          >
-                            Load 50 More (+50)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setVisibleContactsCount(allCount)}
-                            className="px-4 py-2 bg-white/70 hover:bg-white text-[#2A1A0F] font-bold rounded-[12px] text-[10px] uppercase tracking-wider transition-all cursor-pointer border border-[rgba(42,26,15,0.08)] shadow-2xs"
-                          >
-                            Load All ({allCount})
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (allCount > 50) {
-                    return (
-                      <div className="p-3 bg-white/40 border-t border-[rgba(42,26,15,0.08)] text-center text-[10px] font-mono text-[#735E50] uppercase tracking-wider">
-                        All {allCount} contacts loaded
-                      </div>
-                    );
-                  }
-
-                  return null;
-                })()}
-              </Glass>
-
-              {/* Edit Contact / Email Preview modal overlay */}
+              {/* Review Generated Email Modal */}
               {editContact && (
                 <div className="fixed inset-0 z-50 bg-[#2A1A0F]/50 backdrop-blur-md flex items-center justify-center p-4">
                   <Glass variant="strong" radius="outer" className="w-full max-w-2xl p-6 md:p-8 space-y-4 shadow-[0_24px_60px_-15px_rgba(42,26,15,0.25)] text-[#2A1A0F] max-h-[92vh] overflow-y-auto">
                     <div className="flex justify-between items-center border-b border-[rgba(42,26,15,0.08)] pb-3">
                       <div>
-                        <h3 className="text-sm font-bold text-[#2A1A0F] uppercase tracking-wider">Review Generated Outreach Email</h3>
-                        <p className="text-[11px] text-[#735E50]">Contact: <span className="font-mono text-[#2A1A0F] font-bold">{editContact.email}</span></p>
+                        <h3 className="text-sm font-extrabold text-[#2A1A0F] uppercase tracking-wider">Review Personalized Email Pitch</h3>
+                        <p className="text-[11px] text-[#735E50]">Candidate Recipient: <span className="font-mono text-[#2A1A0F] font-bold">{editContact.email}</span></p>
                       </div>
                       <button
                         onClick={() => handleRegenerateContactAI()}
@@ -2370,9 +2511,9 @@ export const Campaigns: React.FC = () => {
 
             </div>
           ) : (
-            <div className="text-center py-16">
+            <div className="text-center py-20">
               <CircleNotch className="w-8 h-8 animate-spin text-[#FF6B1A] mx-auto" />
-              <p className="text-xs text-[#735E50] mt-2 font-medium">Loading campaign details...</p>
+              <p className="text-xs text-[#735E50] mt-2 font-medium">Loading campaign cockpit...</p>
             </div>
           )}
         </>
@@ -2415,7 +2556,6 @@ export const Campaigns: React.FC = () => {
               </div>
             ) : shareToken ? (
               <div className="space-y-4">
-                {/* Share Link */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-[#2A1A0F] uppercase tracking-wider">
                     Shareable Link
@@ -2442,7 +2582,6 @@ export const Campaigns: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Share Code / Token */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-[#2A1A0F] uppercase tracking-wider">
                     Share Code (Token)
@@ -2469,7 +2608,6 @@ export const Campaigns: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Quick actions: CSV export & copy emails */}
                 <div className="pt-2 border-t border-[rgba(42,26,15,0.08)] grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -2686,7 +2824,6 @@ export const Campaigns: React.FC = () => {
         return (
           <div className="fixed inset-0 bg-[#2A1A0F]/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <Glass variant="strong" radius="outer" className="max-w-2xl w-full p-6 md:p-8 space-y-4 shadow-[0_24px_60px_-15px_rgba(42,26,15,0.25)] relative max-h-[90vh] flex flex-col text-[#2A1A0F]">
-              {/* Close Button */}
               <button
                 onClick={() => setShowGmailModal(false)}
                 className="absolute top-5 right-5 text-[#735E50] hover:text-[#2A1A0F] transition-colors p-1 cursor-pointer"
@@ -2695,7 +2832,6 @@ export const Campaigns: React.FC = () => {
                 <X className="w-5 h-5" weight="bold" />
               </button>
 
-              {/* Modal Header */}
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-[16px] bg-[#E63946]/10 border border-[#E63946]/25 flex items-center justify-center text-[#E63946] shrink-0">
                   <UserMinus className="w-6 h-6" weight="bold" />
