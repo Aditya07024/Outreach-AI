@@ -1662,7 +1662,7 @@ export const Campaigns: React.FC = () => {
           {campaignDetails ? (
             <div className="space-y-6">
               {/* Cockpit Executive Command Header */}
-              <Glass variant="surface" radius="outer" className="p-5 md:p-6 shadow-sm campaign-reveal">
+              <Glass variant="surface" radius="outer" className="p-5 md:p-6 shadow-sm campaign-reveal relative z-30 overflow-visible">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   {/* Left: Breadcrumbs & Title */}
                   <div className="flex items-center gap-3 min-w-0">
@@ -1707,7 +1707,7 @@ export const Campaigns: React.FC = () => {
                         className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[14px] text-xs uppercase tracking-wider transition-all cursor-pointer shadow-[0_8px_20px_-4px_rgba(255,107,26,0.35)] active:scale-[0.98]"
                       >
                         <Play className="w-4 h-4" weight="fill" />
-                        <span>Start Sequence</span>
+                        <span>Start to Send</span>
                       </button>
                     ) : (
                       <button
@@ -1731,7 +1731,7 @@ export const Campaigns: React.FC = () => {
                     </button>
 
                     {/* Grouped Secondary Action Dropdown */}
-                    <div className="relative">
+                    <div className="relative z-50">
                       <button
                         type="button"
                         onClick={() => setActionsMenuOpen(!actionsMenuOpen)}
@@ -1743,79 +1743,85 @@ export const Campaigns: React.FC = () => {
                       </button>
 
                       {actionsMenuOpen && (
-                        <div className="absolute right-0 mt-2 w-56 rounded-[16px] bg-white border border-[rgba(42,26,15,0.12)] shadow-[0_12px_32px_rgba(42,26,15,0.15)] py-2 z-50 text-xs text-[#2A1A0F] space-y-0.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActionsMenuOpen(false);
-                              handleExportCampaignCsv(campaignDetails.id, campaignDetails.name);
-                            }}
-                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium"
-                          >
-                            <DownloadSimple className="w-4 h-4 text-[#735E50]" weight="bold" />
-                            <span>Export CSV</span>
-                          </button>
+                        <>
+                          <div 
+                            className="fixed inset-0 z-40 cursor-default" 
+                            onClick={() => setActionsMenuOpen(false)} 
+                          />
+                          <div className="absolute right-0 top-full mt-2 w-56 rounded-[16px] bg-white border border-[rgba(42,26,15,0.12)] shadow-[0_16px_40px_rgba(42,26,15,0.22)] py-2 z-50 text-xs text-[#2A1A0F] space-y-0.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActionsMenuOpen(false);
+                                handleExportCampaignCsv(campaignDetails.id, campaignDetails.name);
+                              }}
+                              className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium"
+                            >
+                              <DownloadSimple className="w-4 h-4 text-[#735E50]" weight="bold" />
+                              <span>Export CSV</span>
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActionsMenuOpen(false);
-                              openShareModal({ id: campaignDetails.id, name: campaignDetails.name, contactsCount: campaignDetails.contacts?.length || 0 });
-                            }}
-                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#7C3AED]"
-                          >
-                            <ShareNetwork className="w-4 h-4" weight="duotone" />
-                            <span>Share Sequence</span>
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActionsMenuOpen(false);
+                                openShareModal({ id: campaignDetails.id, name: campaignDetails.name, contactsCount: campaignDetails.contacts?.length || 0 });
+                              }}
+                              className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#7C3AED]"
+                            >
+                              <ShareNetwork className="w-4 h-4" weight="duotone" />
+                              <span>Share Contacts</span>
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActionsMenuOpen(false);
-                              triggerAction('retry');
-                            }}
-                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium"
-                          >
-                            <ArrowCounterClockwise className="w-4 h-4 text-[#735E50]" weight="bold" />
-                            <span>Retry Failed Mails</span>
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActionsMenuOpen(false);
+                                triggerAction('retry');
+                              }}
+                              className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium"
+                            >
+                              <ArrowCounterClockwise className="w-4 h-4 text-[#735E50]" weight="bold" />
+                              <span>Retry Failed Mails</span>
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActionsMenuOpen(false);
-                              handleClearEmails();
-                            }}
-                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#E63946]"
-                          >
-                            <Trash className="w-4 h-4" weight="bold" />
-                            <span>Clear Generated Drafts</span>
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActionsMenuOpen(false);
+                                handleClearEmails();
+                              }}
+                              className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#E63946]"
+                            >
+                              <Trash className="w-4 h-4" weight="bold" />
+                              <span>Clear Generated Drafts</span>
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActionsMenuOpen(false);
-                              handleDeleteFailedContacts();
-                            }}
-                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#E63946]"
-                          >
-                            <Trash className="w-4 h-4" weight="bold" />
-                            <span>Delete Failed / Skipped Emails</span>
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActionsMenuOpen(false);
+                                handleDeleteFailedContacts();
+                              }}
+                              className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#E63946]"
+                            >
+                              <Trash className="w-4 h-4" weight="bold" />
+                              <span>Delete Failed / Skipped Emails</span>
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActionsMenuOpen(false);
-                              handleOpenGmailModal();
-                            }}
-                            className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#E63946]"
-                          >
-                            <UserMinus className="w-4 h-4" weight="bold" />
-                            <span>Review & Remove @gmail Emails</span>
-                          </button>
-                        </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActionsMenuOpen(false);
+                                handleOpenGmailModal();
+                              }}
+                              className="w-full px-3.5 py-2 text-left hover:bg-stone-50 flex items-center gap-2 font-medium text-[#E63946]"
+                            >
+                              <UserMinus className="w-4 h-4" weight="bold" />
+                              <span>Review & Remove @gmail Emails</span>
+                            </button>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>

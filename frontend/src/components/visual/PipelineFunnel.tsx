@@ -35,7 +35,7 @@ export const PipelineFunnel: React.FC<PipelineFunnelProps> = ({
       status: draftsCount > 0 ? 'completed' : contactsCount > 0 ? 'active' : 'pending',
     },
     {
-      label: 'Ready to Review',
+      label: 'Ready to Send',
       count: reviewCount,
       icon: Tray,
       status: reviewCount > 0 ? 'active' : draftsCount > 0 ? 'completed' : 'pending',

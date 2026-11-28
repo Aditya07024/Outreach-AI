@@ -212,7 +212,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-display tracking-tight text-[#2A1A0F]">
             {totalPending > 0 ? (
               <>
-                You have <span className="text-[#FF6B1A] underline decoration-[#FF6B1A]/40 decoration-wavy decoration-2">{totalPending} emails</span> ready to review.
+                You have <span className="text-[#FF6B1A] underline decoration-[#FF6B1A]/40 decoration-wavy decoration-2">{totalPending} emails</span> Ready to Send.
               </>
             ) : (
               <>
@@ -343,9 +343,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <h3 className="text-lg font-bold font-display text-[#2A1A0F]">
               Check & Send Next Email
             </h3>
-            <p className="text-xs text-[#735E50] mt-0.5">
-              Nothing is sent without your review. Check each email here before sending.
-            </p>
           </div>
 
           {/* Queued Emails Card */}
@@ -365,13 +362,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 </div>
               </div>
               <span className="text-[10px] font-mono font-bold text-[#D99B00] shrink-0 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
-                {queue.length > 0 ? 'Ready in Queue' : 'Ready to review'}
+                {queue.length > 0 ? 'Ready in Queue' : 'Ready to Send'}
               </span>
             </div>
 
             {/* List of Next Emails in Queue */}
             {queue.length > 0 ? (
-              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-0.5">
+              <div className="space-y-2 max-h-[110px] overflow-y-auto pr-0.5">
                 {queue.slice(0, 4).map((item, idx) => {
                   const contactName = [item.firstName, item.lastName].filter(Boolean).join(' ') || item.email.split('@')[0];
                   return (
@@ -386,15 +383,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                             #{idx + 1}
                           </span>
                           <div className="min-w-0">
-                            <div className="font-bold text-xs text-[#2A1A0F] truncate group-hover:text-[#FF6B1A] transition-colors">
-                              {contactName}
-                              {item.company && (
-                                <span className="font-normal text-[#735E50] text-[11px] ml-1">
-                                  @ {item.company}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[10px] text-[#735E50] truncate font-mono">
+                            <div className="font-bold text-xs text-[#2a1a0fc9] truncate group-hover:text-[#FF6B1A] transition-colors">
                               {item.email}
                             </div>
                           </div>
@@ -407,11 +396,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                           {item.status === 'READY_TO_SEND' ? 'Ready' : 'Queued'}
                         </span>
                       </div>
-                      {item.emailSubject && (
-                        <p className="text-[10.5px] text-[#735E50] line-clamp-1 italic mt-1 pl-7">
-                          "{item.emailSubject}"
-                        </p>
-                      )}
                     </Link>
                   );
                 })}

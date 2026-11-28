@@ -168,7 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'Outreach',
       items: [
         { to: '/', name: 'Overview', icon: SquaresFour, badge: null },
-        { to: '/campaigns', name: 'Campaigns', icon: Stack, badge: null },
+        { to: '/campaigns', name: 'Email Folders', icon: Stack, badge: null },
         { to: '/outbox', name: 'Review Emails', icon: Tray, badge: null },
       ],
     },
@@ -247,8 +247,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-5 pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[16px] bg-gradient-to-br from-[#FF6B1A] to-[#FF8C42] p-2 shadow-[0_4px_12px_rgba(255,107,26,0.35)] flex items-center justify-center text-white">
-                <img src={logo} alt="Outreach AI" className="h-6 w-6 object-contain invert brightness-0" />
+              <div className="w-10 h-10 rounded-[14px] bg-white border border-[rgba(42,26,15,0.1)] p-1.5 shadow-[0_2px_8px_rgba(42,26,15,0.06)] flex items-center justify-center">
+                <img src={logo} alt="Outreach AI" className="h-7 w-7 object-contain rounded-lg" />
               </div>
               <div>
                 <h3 className="text-base font-bold font-display tracking-tight text-[#2A1A0F] leading-tight">
