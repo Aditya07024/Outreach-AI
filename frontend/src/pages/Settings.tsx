@@ -1015,29 +1015,21 @@ Sign-In Key (If you failed to sign-in then use this code)
           <div className="p-5 sm:p-6 rounded-[22px] bg-white/80 border border-white/95 shadow-sm flex flex-col justify-between space-y-4">
             <div className="space-y-4">
               {/* Header with Anti-Spam Focus */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-[rgba(42,26,15,0.06)]">
-                <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-between gap-3 pb-2 border-b border-[rgba(42,26,15,0.06)]">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-9 h-9 rounded-[12px] bg-[#FF6B1A]/10 text-[#FF6B1A] flex items-center justify-center border border-[#FF6B1A]/20 shrink-0">
                     <Clock size={19} weight="duotone" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-[#2A1A0F]">Anti-Spam Human Pacing</h3>
-                      {/* <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-[#1DA365] border border-emerald-200 font-mono text-[9px] font-bold uppercase tracking-wider">
-                        Zero Spam Flags
-                      </span> */}
-                    </div>
-                    <p className="text-[11px] text-[#735E50]">Random pause between emails to bypass Google spam detection</p>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-[#2A1A0F]">Anti-Spam Human Pacing</h3>
+                    <p className="text-[11px] text-[#735E50] line-clamp-1">Random pause between emails to bypass Google spam detection</p>
                   </div>
                 </div>
 
-                <div className="text-left sm:text-right">
-                  <div className="inline-block px-2.5 py-1 rounded-[10px] bg-[#FF6B1A]/10 text-[#FF6B1A] font-mono text-xs font-bold border border-[#FF6B1A]/20">
+                <div className="shrink-0 text-right">
+                  <div className="inline-flex items-center px-2.5 py-1 rounded-[10px] bg-[#FF6B1A]/10 text-[#FF6B1A] font-mono text-xs font-bold border border-[#FF6B1A]/20 whitespace-nowrap">
                     {formatSeconds(delayMin)} – {formatSeconds(delayMax)}
                   </div>
-                  {/* <div className="text-[10px] text-[#735E50] font-mono mt-0.5">
-                    ({delayMin}s – {delayMax}s random jitter)
-                  </div> */}
                 </div>
               </div>
 
