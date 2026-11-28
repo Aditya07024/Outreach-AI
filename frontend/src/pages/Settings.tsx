@@ -554,7 +554,7 @@ export const Settings: React.FC<SettingsProps> = ({
   };
 
   // Preset daily limit values
-  const presetLimits = [
+  const presetLimits: { value: number; label: string; desc: string; badge?: string }[] = [
     { value: 25, label: '25', desc: 'Ultra Safe' },
     { value: 50, label: '50', desc: 'Personal Gmail', badge: 'Default' },
     { value: 100, label: '100', desc: 'High Volume' },
@@ -612,29 +612,6 @@ export const Settings: React.FC<SettingsProps> = ({
           <p className="text-xs sm:text-sm text-[#735E50] max-w-2xl leading-relaxed">
             Choose your daily email limits, set safe pauses between sends to stay out of spam filters, and manage your blocked companies.
           </p>
-        </div>
-
-        {/* Auto-Save Live Status Indicator */}
-        <div className="flex items-center gap-2 shrink-0">
-          {isSaving ? (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold shadow-2xs">
-              <div className="w-3.5 h-3.5 rounded-full border-2 border-amber-600/30 border-t-amber-600 animate-spin" />
-              <span>Saving changes...</span>
-            </div>
-          ) : saveSuccess ? (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-[#1DA365] text-xs font-bold animate-fade-in shadow-2xs">
-              <CheckCircle size={15} weight="fill" />
-              <span>All changes auto-saved!</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/90 border border-[rgba(42,26,15,0.08)] shadow-2xs text-xs">
-              <span className="w-2 h-2 rounded-full bg-[#1DA365]" />
-              <span className="font-semibold text-[#2A1A0F]">Auto-Save Active</span>
-              <span className="text-[10px] text-[#735E50] border-l border-[rgba(42,26,15,0.1)] pl-2 hidden sm:inline">
-                Changes apply instantly
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -715,13 +692,6 @@ export const Settings: React.FC<SettingsProps> = ({
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] pt-1 border-t border-stone-100 text-[#735E50]">
-                  <span className="font-mono">Google API 2.0 Auth</span>
-                  <span className="text-[#1DA365] font-semibold flex items-center gap-1">
-                    <ShieldCheck size={13} weight="fill" /> Review Required Before Send
-                  </span>
-                </div>
-
                 {isStep2Active && (
                   <div className="pt-1 text-[11px] font-semibold text-[#FF6B1A] flex items-center gap-1.5">
                     <ArrowRight size={13} weight="bold" />
@@ -758,7 +728,7 @@ export const Settings: React.FC<SettingsProps> = ({
               className="flex-1 px-4 py-2.5 rounded-[12px] bg-white hover:bg-[#2A1A0F] text-[#2A1A0F] hover:text-white border border-[rgba(42,26,15,0.15)] text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
             >
               <PaperPlaneRight size={14} weight="bold" className="text-[#FF6B1A]" />
-              <span>Send a Test Email</span>
+              <span>Send a Demo Email</span>
             </button>
           </div>
         </Glass>
@@ -988,12 +958,7 @@ Sign-In Key (If you failed to sign-in then use this code)
                   <h2 className="text-base sm:text-lg font-bold font-display text-[#2A1A0F]">
                     Set Sending Delays & Safety Controls
                   </h2>
-                  {!areOtherSettingsDulled && (
-                    <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[#1DA365] font-mono text-[10px] font-bold items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#1DA365] animate-pulse" />
-                      Ready to Configure
-                    </span>
-                  )}
+
                 </div>
                 <p className="text-xs text-[#735E50] mt-0.5">
                   Set your random pause delay between emails, volume ramp-up, and recruiter filters.
@@ -1831,55 +1796,6 @@ Sign-In Key (If you failed to sign-in then use this code)
 
       </div>
 
-      {/* ========================================================
-          5. TACTILE COMMAND FOOTER (Save / Reset Bar)
-         ======================================================== */}
-      <div
-        className={`bento-reveal p-4 sm:p-5 rounded-[22px] bg-white/85 backdrop-blur-[24px] border border-white/95 shadow-md shadow-[#2A1A0F]/5 flex flex-col sm:flex-row items-center justify-between gap-3 transition-all duration-300 ${
-          areOtherSettingsDulled ? 'settings-dulled-card' : ''
-        }`}
-        style={
-          areOtherSettingsDulled
-            ? { opacity: 0.18, filter: 'grayscale(100%) contrast(0.8) blur(0.5px)', pointerEvents: 'none', userSelect: 'none' }
-            : undefined
-        }
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-[10px] bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-[#1DA365] shrink-0">
-            <CheckCircle size={18} weight="fill" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-[#2A1A0F]">Auto-Save Enabled</span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-[#1DA365] font-mono text-[9px] font-bold border border-emerald-200">
-                Instant Sync
-              </span>
-            </div>
-            <p className="text-[11px] text-[#735E50] mt-0.5">
-              Every setting applies automatically. No need to click any save button.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-          {isSaving ? (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-[12px] bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold">
-              <div className="w-3.5 h-3.5 rounded-full border-2 border-amber-600/30 border-t-amber-600 animate-spin" />
-              <span>Saving changes...</span>
-            </div>
-          ) : saveSuccess ? (
-            <div className="flex items-center gap-1.5 px-4 py-2 rounded-[12px] bg-emerald-50 border border-emerald-200 text-[#1DA365] text-xs font-bold animate-fade-in">
-              <CheckCircle size={15} weight="fill" />
-              <span>All changes synced!</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-[12px] bg-stone-50 border border-stone-200 text-[#735E50] text-xs font-medium">
-              <span className="w-2 h-2 rounded-full bg-[#1DA365]" />
-              <span>All settings up to date</span>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* ========================================================
           7. MODALS: Google Verification & Test Email Studio
@@ -1938,15 +1854,6 @@ Sign-In Key (If you failed to sign-in then use this code)
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-semibold text-[#735E50]">Send To Email</label>
-                      {gmailStatus?.email && (
-                        <button
-                          type="button"
-                          onClick={() => setTestTo(gmailStatus.email || '')}
-                          className="text-[10px] font-semibold text-[#FF6B1A] hover:underline cursor-pointer"
-                        >
-                          Use my email ({gmailStatus.email})
-                        </button>
-                      )}
                     </div>
                     <input
                       type="email"

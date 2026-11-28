@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Upload, FileSpreadsheet, ClipboardList, UserPlus, AlertCircle, CheckCircle2, Share2, Link, Loader2 } from 'lucide-react';
+import {
+  UploadSimple,
+  FileCsv,
+  ClipboardText,
+  UserPlus,
+  WarningCircle,
+  CheckCircle,
+  ShareNetwork,
+  LinkSimple,
+  CircleNotch,
+  Check,
+  EnvelopeSimple,
+  Buildings,
+  IdentificationBadge,
+  Phone,
+  LinkedinLogo,
+  GlobeHemisphereWest,
+  Plus
+} from '@phosphor-icons/react';
+import { Glass } from './glass/Glass';
 
 interface ImportWizardProps {
   campaignId: number;
@@ -247,79 +266,59 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
     }
   };
 
+  const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
+    { id: 'csv', label: 'CSV File Upload', icon: <FileCsv className="w-4 h-4" weight="duotone" /> },
+    { id: 'paste', label: 'Paste Email List', icon: <ClipboardText className="w-4 h-4" weight="duotone" /> },
+    { id: 'manual', label: 'Manual Entry', icon: <UserPlus className="w-4 h-4" weight="duotone" /> },
+    { id: 'shared', label: 'Shared Link / Code', icon: <ShareNetwork className="w-4 h-4 text-[#7C3AED]" weight="duotone" /> },
+  ];
+
   return (
-    <div className="w-full bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-      {/* Tabs list */}
-      <div className="flex border-b border-slate-200 bg-slate-50">
-        <button
-          onClick={() => handleTabChange('csv')}
-          className={`flex items-center gap-2 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
-            activeTab === 'csv'
-              ? 'border-slate-900 text-slate-900 bg-white'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          <FileSpreadsheet className="w-4 h-4" />
-          CSV File Upload
-        </button>
-        <button
-          onClick={() => handleTabChange('paste')}
-          className={`flex items-center gap-2 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
-            activeTab === 'paste'
-              ? 'border-slate-900 text-slate-900 bg-white'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          <ClipboardList className="w-4 h-4" />
-          Paste Email List
-        </button>
-        <button
-          onClick={() => handleTabChange('manual')}
-          className={`flex items-center gap-2 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
-            activeTab === 'manual'
-              ? 'border-slate-900 text-slate-900 bg-white'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          <UserPlus className="w-4 h-4" />
-          Manual Entry
-        </button>
-        <button
-          onClick={() => handleTabChange('shared')}
-          className={`flex items-center gap-2 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
-            activeTab === 'shared'
-              ? 'border-slate-900 text-slate-900 bg-white'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          <Share2 className="w-4 h-4 text-indigo-600" />
-          Shared Link / Code
-        </button>
+    <Glass variant="surface" radius="outer" className="w-full overflow-hidden shadow-[0_16px_36px_-12px_rgba(42,26,15,0.06)] border border-white/90">
+      {/* Tabs bar */}
+      <div className="flex border-b border-[rgba(42,26,15,0.08)] bg-white/40 backdrop-blur-sm overflow-x-auto">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`flex items-center gap-2 px-5 py-3.5 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                isActive
+                  ? 'border-[#FF6B1A] text-[#2A1A0F] bg-white/70 shadow-2xs'
+                  : 'border-transparent text-[#735E50] hover:text-[#2A1A0F] hover:bg-white/30'
+              }`}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="p-6">
+      <div className="p-6 md:p-7">
         {/* Results Toast Alerts */}
         {statusMsg && (
           <div
-            className={`mb-6 p-4 rounded-xl flex items-start gap-3 border text-xs leading-relaxed ${
+            className={`mb-6 p-4 rounded-[18px] flex items-start gap-3 border text-xs leading-relaxed transition-all ${
               statusMsg.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                : 'bg-rose-50 border-rose-200 text-rose-900'
+                ? 'bg-[#1DA365]/10 border-[#1DA365]/25 text-[#146C43]'
+                : 'bg-[#E63946]/10 border-[#E63946]/25 text-[#A01B26]'
             }`}
           >
             {statusMsg.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+              <CheckCircle className="w-5 h-5 flex-shrink-0 text-[#1DA365] mt-0.5" weight="fill" />
             ) : (
-              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
+              <WarningCircle className="w-5 h-5 flex-shrink-0 text-[#E63946] mt-0.5" weight="fill" />
             )}
             <div className="flex-1">
-              <span className="font-bold">{statusMsg.text}</span>
+              <span className="font-bold text-sm block">{statusMsg.text}</span>
               {statusMsg.details && (
-                <div className="mt-2 grid grid-cols-3 gap-4 border-t border-slate-200 pt-2 font-semibold text-[10px] text-slate-600 uppercase tracking-wider">
-                  <div>Added: <span className="text-slate-900 font-bold">{statusMsg.details.imported}</span></div>
-                  <div>Duplicates: <span className="text-slate-900 font-bold">{statusMsg.details.duplicates}</span></div>
+                <div className="mt-2.5 grid grid-cols-3 gap-3 border-t border-[rgba(42,26,15,0.08)] pt-2.5 font-semibold text-[10px] text-[#735E50] uppercase tracking-wider">
+                  <div>Added: <span className="text-[#2A1A0F] font-bold">{statusMsg.details.imported}</span></div>
+                  <div>Duplicates: <span className="text-[#2A1A0F] font-bold">{statusMsg.details.duplicates}</span></div>
                   {statusMsg.details.skipped !== undefined && (
-                    <div>Skipped: <span className="text-slate-900 font-bold">{statusMsg.details.skipped}</span></div>
+                    <div>Skipped: <span className="text-[#2A1A0F] font-bold">{statusMsg.details.skipped}</span></div>
                   )}
                 </div>
               )}
@@ -330,7 +329,7 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
         {/* CSV File Upload Form */}
         {activeTab === 'csv' && (
           <form onSubmit={handleCsvSubmit} className="space-y-4">
-            <div className="border border-dashed border-slate-300 hover:border-slate-500 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-slate-50 cursor-pointer relative group transition-colors">
+            <div className="border-2 border-dashed border-[rgba(42,26,15,0.15)] hover:border-[#FF6B1A]/60 rounded-[20px] p-8 flex flex-col items-center justify-center gap-3 bg-white/40 hover:bg-white/60 cursor-pointer relative group transition-all">
               <input
                 type="file"
                 accept=".csv"
@@ -338,23 +337,35 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 required
               />
-              <Upload className="w-8 h-8 text-slate-400 group-hover:text-slate-600 transition-colors" />
+              <div className="w-12 h-12 rounded-[16px] bg-[#FF6B1A]/10 text-[#FF6B1A] flex items-center justify-center transition-transform group-hover:scale-105">
+                <UploadSimple className="w-6 h-6" weight="bold" />
+              </div>
               <div className="text-center">
-                <p className="text-xs font-bold text-slate-800">
+                <p className="text-xs font-bold text-[#2A1A0F]">
                   {csvFile ? csvFile.name : 'Click or drag CSV file to upload'}
                 </p>
-                <p className="text-[10px] text-slate-500 mt-1">
+                <p className="text-[11px] text-[#735E50] mt-1 max-w-md">
                   Supported columns: First Name, Last Name, Company, Title, Active Email, Phone, LinkedIn, Country
                 </p>
               </div>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-1">
               <button
                 type="submit"
                 disabled={isSubmitting || !csvFile}
-                className="px-5 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-[0.98]"
+                className="px-5 py-2.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[14px] text-xs transition-all disabled:opacity-40 cursor-pointer shadow-[0_8px_20px_-4px_rgba(255,107,26,0.35)] active:scale-[0.98] flex items-center gap-2"
               >
-                {isSubmitting ? 'Importing CSV...' : 'Start Import'}
+                {isSubmitting ? (
+                  <>
+                    <CircleNotch className="w-4 h-4 animate-spin" />
+                    <span>Importing CSV...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" weight="bold" />
+                    <span>Start Import</span>
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -363,8 +374,9 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
         {/* Paste Email List Form */}
         {activeTab === 'paste' && (
           <form onSubmit={handlePasteSubmit} className="space-y-4">
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <EnvelopeSimple className="w-3.5 h-3.5 text-[#FF6B1A]" weight="duotone" />
                 Recruiter Emails
               </label>
               <textarea
@@ -372,129 +384,161 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
                 onChange={(e) => setPasteText(e.target.value)}
                 placeholder="hr@company.com&#10;jobs@company.com&#10;careers@company.com, engineering@company.com"
                 rows={5}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                className="w-full rounded-[16px] border border-[rgba(42,26,15,0.12)] bg-white/80 p-3.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all font-mono leading-relaxed shadow-inner"
                 required
               />
-              <span className="text-[10px] text-slate-500">
+              <span className="text-[10px] text-[#735E50]">
                 You can separate emails using newlines, commas, semicolons or spaces.
               </span>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-1">
               <button
                 type="submit"
                 disabled={isSubmitting || !pasteText.trim()}
-                className="px-5 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-[0.98]"
+                className="px-5 py-2.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[14px] text-xs transition-all disabled:opacity-40 cursor-pointer shadow-[0_8px_20px_-4px_rgba(255,107,26,0.35)] active:scale-[0.98] flex items-center gap-2"
               >
-                {isSubmitting ? 'Importing...' : 'Import Emails'}
+                {isSubmitting ? (
+                  <>
+                    <CircleNotch className="w-4 h-4 animate-spin" />
+                    <span>Importing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" weight="bold" />
+                    <span>Import Emails</span>
+                  </>
+                )}
               </button>
             </div>
           </form>
         )}
 
-        {/* Manual entry Form */}
+        {/* Manual Entry Form */}
         {activeTab === 'manual' && (
           <form onSubmit={handleSubmit(onSubmitManual)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <EnvelopeSimple className="w-3.5 h-3.5 text-[#FF6B1A]" weight="duotone" />
                   Active Email *
                 </label>
                 <input
                   type="email"
                   {...register('email', { required: 'Email address is required' })}
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                  placeholder="recruiter@company.com"
+                  className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/80 px-3.5 py-2.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
                 />
-                {errors.email && <span className="text-[10px] text-rose-600 font-bold">{errors.email.message}</span>}
+                {errors.email && <span className="text-[10px] text-[#E63946] font-bold">{errors.email.message}</span>}
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Buildings className="w-3.5 h-3.5 text-[#735E50]" weight="duotone" />
                   Company Name
                 </label>
                 <input
                   type="text"
+                  placeholder="e.g. Acme Corp"
                   {...register('company')}
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                  className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/80 px-3.5 py-2.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
                 />
               </div>
 
-              <div className="flex grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                  <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">
                     First Name
                   </label>
                   <input
                     type="text"
+                    placeholder="Jane"
                     {...register('firstName')}
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                    className="w-full rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/80 px-3.5 py-2.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                  <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider">
                     Last Name
                   </label>
                   <input
                     type="text"
+                    placeholder="Doe"
                     {...register('lastName')}
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                    className="w-full rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/80 px-3.5 py-2.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <IdentificationBadge className="w-3.5 h-3.5 text-[#735E50]" weight="duotone" />
                   Job Title / Role
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. Technical Recruiter"
                   {...register('title')}
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                  className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/80 px-3.5 py-2.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-[#735E50]" weight="duotone" />
                   Phone Number
                 </label>
                 <input
                   type="text"
+                  placeholder="+1 (555) 000-0000"
                   {...register('phone')}
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                  className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/80 px-3.5 py-2.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <LinkedinLogo className="w-3.5 h-3.5 text-[#0A66C2]" weight="duotone" />
                   LinkedIn URL
                 </label>
                 <input
                   type="text"
                   placeholder="https://linkedin.com/in/..."
                   {...register('linkedin')}
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                  className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/80 px-3.5 py-2.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <GlobeHemisphereWest className="w-3.5 h-3.5 text-[#735E50]" weight="duotone" />
                   Country
                 </label>
                 <input
                   type="text"
+                  placeholder="e.g. United States"
                   {...register('country')}
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                  className="rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/80 px-3.5 py-2.5 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all shadow-inner"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-2">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-[0.98]"
+                className="px-5 py-2.5 bg-[#FF6B1A] hover:bg-[#E55A0F] text-white font-bold rounded-[14px] text-xs transition-all disabled:opacity-40 cursor-pointer shadow-[0_8px_20px_-4px_rgba(255,107,26,0.35)] active:scale-[0.98] flex items-center gap-2"
               >
-                {isSubmitting ? 'Saving Contact...' : 'Save Contact'}
+                {isSubmitting ? (
+                  <>
+                    <CircleNotch className="w-4 h-4 animate-spin" />
+                    <span>Saving Contact...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" weight="bold" />
+                    <span>Save Contact</span>
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -504,18 +548,19 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
         {activeTab === 'shared' && (
           <form onSubmit={handleSharedSubmit} className="space-y-4">
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+              <label className="text-[10px] text-[#735E50] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <ShareNetwork className="w-3.5 h-3.5 text-[#7C3AED]" weight="duotone" />
                 Paste Campaign Share Link or Share Code
               </label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
-                  <Link className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <LinkSimple className="w-4 h-4 text-[#735E50] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={shareInput}
                     onChange={(e) => setShareInput(e.target.value)}
                     placeholder="e.g. https://outreach-ai.com/campaigns?import_share=... or share token"
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition-colors"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-[14px] border border-[rgba(42,26,15,0.12)] bg-white/80 text-xs text-[#2A1A0F] placeholder-[#9C8E84] focus:outline-none focus:bg-white focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 transition-all font-mono shadow-inner"
                     required
                   />
                 </div>
@@ -523,71 +568,81 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ campaignId, onImport
                   type="button"
                   onClick={() => handleFetchSharePreview()}
                   disabled={isLoadingPreview || !shareInput.trim()}
-                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-40 shrink-0 flex items-center justify-center gap-1.5"
+                  className="px-4 py-2.5 bg-white/90 hover:bg-white border border-[rgba(42,26,15,0.12)] text-[#2A1A0F] font-bold rounded-[14px] text-xs transition-all cursor-pointer disabled:opacity-40 shrink-0 flex items-center justify-center gap-1.5 shadow-2xs active:scale-[0.98]"
                 >
                   {isLoadingPreview ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Checking...
+                      <CircleNotch className="w-4 h-4 animate-spin text-[#7C3AED]" />
+                      <span>Checking...</span>
                     </>
                   ) : (
                     'Preview Contacts'
                   )}
                 </button>
               </div>
-              <span className="text-[10px] text-slate-500">
+              <span className="text-[10px] text-[#735E50]">
                 Paste a link or code shared by someone else to import their contacts directly into this campaign.
               </span>
             </div>
 
             {/* Live Shared Contacts Preview */}
             {sharedPreview && (
-              <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-3">
+              <Glass variant="nested" radius="inner" className="p-4 space-y-3 bg-[#7C3AED]/5 border-[#7C3AED]/20">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#7C3AED] block">
                       Shared Source Campaign
                     </span>
-                    <h4 className="text-sm font-bold text-slate-900">{sharedPreview.campaignName}</h4>
+                    <h4 className="text-sm font-bold text-[#2A1A0F]">{sharedPreview.campaignName}</h4>
                     {sharedPreview.campaignDescription && (
-                      <p className="text-[11px] text-slate-500 mt-0.5">{sharedPreview.campaignDescription}</p>
+                      <p className="text-[11px] text-[#735E50] mt-0.5">{sharedPreview.campaignDescription}</p>
                     )}
                   </div>
-                  <span className="text-xs font-mono font-bold text-indigo-900 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 self-start sm:self-auto">
+                  <span className="text-xs font-mono font-bold text-[#7C3AED] bg-white px-2.5 py-1 rounded-[10px] border border-[#7C3AED]/20 self-start sm:self-auto shadow-2xs">
                     {sharedPreview.totalContacts} Contacts Available
                   </span>
                 </div>
 
                 {sharedPreview.contactsPreview && sharedPreview.contactsPreview.length > 0 && (
-                  <div className="border border-slate-200/80 rounded-lg overflow-hidden bg-white text-xs">
-                    <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                  <div className="border border-[rgba(42,26,15,0.08)] rounded-[14px] overflow-hidden bg-white/90 text-xs shadow-2xs">
+                    <div className="px-3.5 py-2 bg-white/60 border-b border-[rgba(42,26,15,0.08)] text-[10px] font-bold text-[#735E50] uppercase tracking-wider">
                       Previewing first {sharedPreview.contactsPreview.length} contacts
                     </div>
-                    <div className="divide-y divide-slate-100 max-h-36 overflow-y-auto font-mono text-[11px]">
+                    <div className="divide-y divide-[rgba(42,26,15,0.05)] max-h-36 overflow-y-auto font-mono text-[11px]">
                       {sharedPreview.contactsPreview.map((c: any) => (
-                        <div key={c.id} className="px-3 py-1.5 flex justify-between items-center text-slate-700">
+                        <div key={c.id} className="px-3.5 py-2 flex justify-between items-center text-[#2A1A0F]">
                           <span className="font-medium truncate mr-2">{c.email}</span>
-                          <span className="text-[10px] text-slate-400 font-sans truncate">{c.company || c.title || 'Contact'}</span>
+                          <span className="text-[10px] text-[#735E50] font-sans truncate">{c.company || c.title || 'Contact'}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-              </div>
+              </Glass>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-1">
               <button
                 type="submit"
                 disabled={isSubmitting || !shareInput.trim()}
-                className="px-5 py-2.5 bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-900 font-bold rounded-xl text-xs transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-[0.98]"
+                className="px-5 py-2.5 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-bold rounded-[14px] text-xs transition-all disabled:opacity-40 cursor-pointer shadow-[0_8px_20px_-4px_rgba(124,58,237,0.35)] active:scale-[0.98] flex items-center gap-2"
               >
-                {isSubmitting ? 'Importing Contacts...' : sharedPreview ? `Import ${sharedPreview.totalContacts} Contacts` : 'Import Shared Contacts'}
+                {isSubmitting ? (
+                  <>
+                    <CircleNotch className="w-4 h-4 animate-spin" />
+                    <span>Importing Contacts...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" weight="bold" />
+                    <span>{sharedPreview ? `Import ${sharedPreview.totalContacts} Contacts` : 'Import Shared Contacts'}</span>
+                  </>
+                )}
               </button>
             </div>
           </form>
         )}
       </div>
-    </div>
+    </Glass>
   );
 };
